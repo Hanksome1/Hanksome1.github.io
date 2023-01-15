@@ -16,14 +16,17 @@
   <meta name="author" content="Hank">
   <meta name="keywords" content="">
   
-    <meta property="og:type" content="article">
+    <meta name="description" content="My first post 這個部落格今天來建了這個靜態網站，用hexo架出來的，就是一直套用模板，目前正在努力改模板，希望能把自己的部落格做的漂亮一點。之後應該會把這個網站加上一些酷酷的東西，像是頭會動的貓貓還有酷酷的特效之類的。關於這個網頁，然後這個部落格我用的 theme 是 fluid 模板，然後我目前遇到的技術上的困難是我更改&#x2F;public&#x2F;img的圖片之後網頁上傳github之後網站會">
+<meta property="og:type" content="article">
 <meta property="og:title" content="TheVeryBeginning">
 <meta property="og:url" content="http://example.com/2023/01/15/TheVeryBeginning/index.html">
 <meta property="og:site_name" content="HanksomeBlog">
+<meta property="og:description" content="My first post 這個部落格今天來建了這個靜態網站，用hexo架出來的，就是一直套用模板，目前正在努力改模板，希望能把自己的部落格做的漂亮一點。之後應該會把這個網站加上一些酷酷的東西，像是頭會動的貓貓還有酷酷的特效之類的。關於這個網頁，然後這個部落格我用的 theme 是 fluid 模板，然後我目前遇到的技術上的困難是我更改&#x2F;public&#x2F;img的圖片之後網頁上傳github之後網站會">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2023-01-15T10:31:27.000Z">
-<meta property="article:modified_time" content="2023-01-15T10:31:27.029Z">
+<meta property="article:modified_time" content="2023-01-15T13:11:17.813Z">
 <meta property="article:author" content="Hank">
+<meta property="article:tag" content="code , web">
 <meta name="twitter:card" content="summary_large_image">
   
   
@@ -217,7 +220,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          0 words
+          1.2k words
         
       </span>
     
@@ -228,7 +231,7 @@
         
         
         
-          1 mins
+          11 mins
         
       </span>
     
@@ -271,7 +274,16 @@
             
               <div class="markdown-body">
                 
-                
+                <h1 id="My-first-post"><a href="#My-first-post" class="headerlink" title="My first post"></a>My first post</h1><hr>
+<h2 id="這個部落格"><a href="#這個部落格" class="headerlink" title="這個部落格"></a>這個部落格</h2><p>今天來建了這個靜態網站，用<code>hexo</code>架出來的，就是一直套用模板，目前正在努力改模板，希望能把自己的部落格做的漂亮一點。之後應該會把這個網站加上一些酷酷的東西，像是頭會動的貓貓還有酷酷的特效之類的。<br>關於這個網頁，然後這個部落格我用的 theme 是 <strong>fluid</strong> 模板，然後我目前遇到的技術上的困難是我更改<code>/public/img</code>的圖片之後網頁上傳github之後網站會的圖片跟文章會更新，但是它的色彩卻沒有更新；相對地當我想要用local host先預覽的時候我卻發現他的圖片並沒有變動，但是顏色有更動。</p>
+<h2 id="來由"><a href="#來由" class="headerlink" title="來由"></a>來由</h2><p>關於為何要件這個網站呢，簡單記錄一些有趣的活動、大學修課的心得，一些自己學習的心路歷程，或是分享一些筆記之類的(大一上有用notion做一些筆記，看之後能不能傳上來)。加上之前看到兩個資工電神在架，感覺非常有趣，想說恰巧放寒假就來架一下，</p>
+<h2 id="心得"><a href="#心得" class="headerlink" title="心得"></a>心得</h2><p>今天是第一次認真想要架自己的部落格，而且是學程式以來第一次做出一個網頁式的成品，真的非常感動，而且這是我第一次用terminal跟vscode架一個網站，雖然只是靜態網站而且還是改別人的模板，但這對目前的我來說是一大進步了。加上我本來就喜歡自己做東西，今天這樣自己從零開始生出一個網站感覺就超級開心的。</p>
+<h2 id="今日份的筆記"><a href="#今日份的筆記" class="headerlink" title="今日份的筆記"></a>今日份的筆記</h2><ul>
+<li>以下是hexo之後會常常用到的筆記<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs bash">hexo n <span class="hljs-string">&quot;xxx&quot;</span> = hexo new <span class="hljs-string">&quot;xxx&quot;</span> <span class="hljs-comment"># 新增名為 xxx 的文章</span><br>hexo g = hexo generate <span class="hljs-comment"># 生成靜態網站</span><br>hexo s = hexo sever <span class="hljs-comment"># 啟動本地預覽</span><br>hexo d = hexo deploy <span class="hljs-comment"># 部屬網站</span><br>hexo clean <span class="hljs-comment"># 清除緩存 ，一般不會用到</span><br></code></pre></td></tr></table></figure></li>
+<li>一個今天遇到的技術上的問題<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs markdown">. : 因為這個系統上已停用指令碼執行，所以無法載入 C:UsersUSERNAMEDocumentsWindows<br>PowerShellprofile.ps1 檔案。如需詳細資訊，請參閱 about<span class="hljs-emphasis">_Execution_</span>Policies，網址為<br>https:/go.microsoft.com/fwlink/?LinkID=135170。<br>位於 線路:1 字元:3<br><span class="hljs-bullet">+</span> . &#x27;C:UsersUSERNAMEDocumentsWindowsPowerShellprofile.ps1&#x27;<br><span class="hljs-bullet">+</span>   <span class="hljs-code">~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span><br><span class="hljs-bullet">    +</span> CategoryInfo          : SecurityError: (:) [], PSSecurityException<br><span class="hljs-bullet">    +</span> FullyQualifiedErrorId : UnauthorizedAccess<br></code></pre></td></tr></table></figure>
+後來用administrator的身分開啟shell，然後打下面的指令就解決了，雖然我也不是很確定為甚麼可以這樣解決，但是我卡在這個地方快一個小時，所以還是紀錄一下。<figure class="highlight gams"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs gams"><span class="hljs-keyword">Set</span>-ExecutionPolicy <span class="hljs-comment">RemoteSigned</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+
                 
               </div>
             
@@ -279,6 +291,13 @@
             <div>
               <div class="post-metas my-3">
   
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/code-web/">#code , web</a>
+      
+    </div>
   
 </div>
 
