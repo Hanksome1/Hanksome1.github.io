@@ -1,0 +1,866 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#ff7f50">
+  <meta name="author" content="Hank">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Reverse This article is mostly about the basic knowledge of assembly.Including some basic instruction, calling convention and a lot more. There might have dozens of grammar mistake. Please tell me">
+<meta property="og:type" content="article">
+<meta property="og:title" content="reverse_asseembly">
+<meta property="og:url" content="http://example.com/2023/09/22/reverse-asseembly/index.html">
+<meta property="og:site_name" content="HanksomeBlog">
+<meta property="og:description" content="Reverse This article is mostly about the basic knowledge of assembly.Including some basic instruction, calling convention and a lot more. There might have dozens of grammar mistake. Please tell me">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-09-22T14:26:36.000Z">
+<meta property="article:modified_time" content="2023-09-22T14:51:55.555Z">
+<meta property="article:author" content="Hank">
+<meta property="article:tag" content="reverse CTF">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>reverse_asseembly - HanksomeBlog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.4","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Hank</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="reverse_asseembly"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-09-22 22:26" pubdate>
+          September 22, 2023 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          10k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          86 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">reverse_asseembly</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="reverse">Reverse</h1>
+<p>This article is mostly about the basic knowledge of
+assembly.Including some basic instruction, calling convention and a lot
+more. There might have dozens of grammar mistake. Please tell me if you
+find any.
+註:大部分筆記都是在我用虛擬機的時候打的，因為在虛擬機不想要一直切換輸入法，所以虛擬機中只有英文，請多多見諒。</p>
+<h2 id="register">Register</h2>
+<p>Most register don't have specific function. While <code>ESP</code>
+and <code>EBP</code> have specific function.</p>
+<ul>
+<li><strong>ESP</strong>: stack pointer.</li>
+<li><strong>EBP</strong>: base pointer.</li>
+<li><strong>rip</strong>: the instruction pointer, point to the next
+intruction.</li>
+<li><strong>rsp</strong>: the stack pointer, point to the top of the
+stack. <code>EAX(32bits)</code> can be viewed as two
+<code>AX(16bits)</code> combine together. and the higher part of
+<code>AX</code> is <code>AH(bits)</code>, while the lower part of
+<code>AX</code> is <code>AL(bits)</code>.</li>
+</ul>
+<h1 id="assembly">Assembly</h1>
+<h3 id="declaration-of-static-data">Declaration of static data</h3>
+<p>use <code>data</code> to start declaration data. <code>.byte</code>,
+<code>short</code>, <code>long</code>, are instruction of declaration,
+which decide how many memory will this variable take. <code>byte</code>:
+one byte. <code>short</code>: two byte. <code>long</code>: four byte.
+<code>zero</code>: to setup series of zero. <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c">.data<br>    barr:<br>           .zero <span class="hljs-number">10</span>; <span class="hljs-comment">// declaring ten bytes of zero right afer the position of the label.</span><br>    var :<br>           .byte <span class="hljs-number">64</span> ;declare var, and the data is <span class="hljs-number">64</span><br>           .byte <span class="hljs-number">10</span> ;declare a nother data <span class="hljs-number">10</span>, this data have no so-called label, the address is var+<span class="hljs-number">1.</span><br>       <br></code></pre></td></tr></table></figure> ##
+commands</p>
+<h3 id="the-operating-suffix">the operating suffix:</h3>
+<p>a given memory address of the data types from referenced Assembly
+instructions inferred. However, in some cases, we use the memory in the
+“ pit “ of the size is not clear. Say this Directive mov
+<code>$2,(%ebx)</code>. This Directive whether it should be “ 2 “ for
+this value to move to EBX in value represents the address of the “ pit “
+of a single byte ? Perhaps it is represented by a 32-bit integer
+representation of 2 is moved to the From address EBX beginning of the 4
+bytes. Since these two explanations are plausible, but computer
+assembler must be clear which explanation is correct, the computer is
+very simple, either is wrong or right. Prefix <code>b</code>,
+<code>w</code>, and <code>l</code> is to solve this problem, which are
+denoted 1, 2 and 4 bytes in size. ## Data Movement Instruction</p>
+<h3 id="move">move:</h3>
+<p>this command basically copy the data of the first parameter, and
+cover the data of the second parameter. <figure class="highlight llvm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs llvm">mov (<span class="hljs-variable">%ebx</span>)<span class="hljs-punctuation">,</span> <span class="hljs-variable">%eax</span><span class="hljs-comment">; move the data inside ebx into eax. (%eax) means the data stored inside eax</span><br>mov (<span class="hljs-variable">%ebx</span>)<span class="hljs-punctuation">,</span> var<span class="hljs-comment">; move four bytes of data inside ebx into var. </span><br>mov (<span class="hljs-variable">%esi</span><span class="hljs-punctuation">,</span> <span class="hljs-variable">%ebx</span><span class="hljs-punctuation">,</span> <span class="hljs-number">4</span>)<span class="hljs-punctuation">,</span> ESI<span class="hljs-comment">; To move the four bytes of data, which starts from ESI+4*EBX, into EDX; </span><br></code></pre></td></tr></table></figure> :warning: Noted
+that if you write to a 32-bit partial(e.g. eax), the CPU will zero out
+the rest of the register.</p>
+<h3 id="push">push:</h3>
+<p>move the parameter into the top of the stack. First of all, the
+number of <code>ESP-4</code>, and the <code>ESP</code> will point to the
+next bytes. &gt; the stack memory is from high to low. <figure class="highlight arcade"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs arcade"><span class="hljs-built_in">push</span> %eax; <span class="hljs-built_in">push</span> eax into stach <br><span class="hljs-built_in">push</span> <span class="hljs-keyword">var</span>; <span class="hljs-built_in">push</span> <span class="hljs-keyword">var</span> into stack (<span class="hljs-number">4</span> bytes)<br></code></pre></td></tr></table></figure></p>
+<h3 id="pop">pop:</h3>
+<p>remove 4 bytes of data from stack, and put into a specific parameter.
+and let <code>ESP+4</code> <figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs livecodeserver">pop %edi; remove <span class="hljs-keyword">the</span> data <span class="hljs-built_in">from</span> stack, <span class="hljs-keyword">and</span> <span class="hljs-built_in">put</span> <span class="hljs-keyword">it</span> <span class="hljs-keyword">into</span> edi.<br>pop (%ebx); remove <span class="hljs-keyword">the</span> data <span class="hljs-built_in">from</span> stack, <span class="hljs-keyword">and</span> <span class="hljs-keyword">and</span> <span class="hljs-built_in">put</span> <span class="hljs-keyword">it</span> <span class="hljs-keyword">in</span> <span class="hljs-keyword">the</span> <span class="hljs-literal">four</span> <span class="hljs-keyword">bytes</span> starting <span class="hljs-built_in">from</span> edx.<br></code></pre></td></tr></table></figure> &gt; stack is the
+data-structure that is first in last out, last in first out.</p>
+<h3 id="lea">lea:</h3>
+<ul>
+<li>Load effective address.</li>
+<li>lea Instruct to the first parameter specifies the memory unit into
+the second parameter of the specified register. Note that this command
+does not load the memory unit of the content, just calculate the
+effective address and put it into the register. This is for obtaining a
+pointer to a memory area of a pointer or to perform simple arithmetic
+operations is very useful.</li>
+<li>Noted that lea is one of the few function that can directly access
+the rip register. <figure class="highlight llvm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs llvm">lea (<span class="hljs-variable">%ebx</span><span class="hljs-punctuation">,</span><span class="hljs-variable">%esi</span><span class="hljs-punctuation">,</span><span class="hljs-number">8</span>)<span class="hljs-punctuation">,</span> <span class="hljs-variable">%edi</span> <span class="hljs-comment">;the value of EBX+8*ESI is moved to EDI</span><br>lea val(<span class="hljs-punctuation">,</span><span class="hljs-number">1</span>)<span class="hljs-punctuation">,</span> <span class="hljs-variable">%eax</span> <span class="hljs-comment">;the value of val is moved to EAX</span><br>lea eax<span class="hljs-punctuation">,</span> [rip] # <span class="hljs-keyword">load</span> the next instruction into rax.<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="logical-operation-instruction">Logical Operation
+Instruction</h2>
+<h3 id="add">add:</h3>
+<p><code>add</code> Instruction will sum up the two parameter, and the
+resulted will be stored in second parameter. <figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">add</span> $<span class="hljs-number">10</span>, %eax ;EAX 中的值被设置为了 EAX+<span class="hljs-number">10</span>.<br><span class="hljs-attribute">addb</span> $<span class="hljs-number">10</span>, (%eax) ;往 EAX 中的值 所代表的内存单元地址 加上 <span class="hljs-number">1</span> 个字节的数字 <span class="hljs-number">10</span>.<br></code></pre></td></tr></table></figure> ### sub:
+subInstruction will be the second parameter value of the first
+subtraction, is behind the minus in front of that, then the result is
+stored to the second parameter. And addAs, both parameters can be a
+register, but the two parameters can have at most one memory unit.
+<figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs perl"><span class="hljs-function"><span class="hljs-keyword">sub</span> %<span class="hljs-title">ah</span>, %<span class="hljs-title">al</span> </span>;AL 被设置成 AL-AH<br><span class="hljs-function"><span class="hljs-keyword">sub</span> $216, %<span class="hljs-title">eax</span> </span>;将 EAX 中的值减去 <span class="hljs-number">216</span><br></code></pre></td></tr></table></figure></p>
+<h3 id="inc-dec">inc, dec:</h3>
+<p><code>inc</code> make the parameter plus 1, and <code>dec</code> make
+the parameter minus 1.</p>
+<h3 id="imul">imul:</h3>
+<ul>
+<li>integer multiplication</li>
+<li>There are two form: 2 parameter, 3parameter.</li>
+</ul>
+<ol type="1">
+<li>two parameter:the first two parameters are multiplied, then the
+result is stored to the second parameter. Result of the operation ( i.e.
+the second parameter ) must be a register.</li>
+<li>three parameter: the first is it will be the 1st parameter and the
+first 2 parameters are multiplied, then the result is stored to the
+first 3 parameters, and of course, the 3rd parameter must be a register.
+In addition, the 1 argument must be a constant. <figure class="highlight llvm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs llvm">imul (<span class="hljs-variable">%ebx</span>)<span class="hljs-punctuation">,</span> <span class="hljs-variable">%eax</span> <span class="hljs-comment">;将 EAX 中的 32 位整数, 与 EBX 中的内容所指的内存单元, 相乘, 然后把结果存到 EAX 中.</span><br>imul $<span class="hljs-number">25</span><span class="hljs-punctuation">,</span> <span class="hljs-variable">%edi</span><span class="hljs-punctuation">,</span> <span class="hljs-variable">%esi</span> <span class="hljs-comment">;ESI 被设置为 EDI * 25.</span><br></code></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="idiv">idiv:</h3>
+<ul>
+<li>integer divider</li>
+<li>此操作數為除數，而被除數則為EDX : EAX 中的內容（一個64位的整數），
+除法結果( 商) 存在EAX 中, 而所得的餘數存在EDX 中. <figure class="highlight llvm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs llvm">idiv <span class="hljs-variable">%ebx</span> <span class="hljs-comment">;用 EDX : EAX 的值除以 EBX 的值. 商存放在 EAX 中, 余数存放在 EDX 中.</span><br>idivw (<span class="hljs-variable">%ebx</span>) <span class="hljs-comment">;将 EDX : EAX 的值除以存储在 EBX 所对应内存单元的 32 位值. 商存放在 EAX 中, 余数存放在 EDX 中.</span><br></code></pre></td></tr></table></figure> ### and
+, or , xor: These instructions are for their parameters to the
+appropriate logic operation, the operation result is stored to the
+<strong>first </strong>parameter. ### shr, shl: bitwise shift, move the
+digit by the second parameter of the decision, to move after the vacancy
+to get 0 up.</li>
+</ul>
+<h2 id="flow-control-instruction">Flow Control Instruction</h2>
+<p>x86 處理器有一個指令指針寄存器( EIP ), 該寄存器為32 位寄存器,
+它用來在內存中指示我們輸入彙編指令的位置.
+就是說這個寄存器指向哪個內存單元,
+那個單元存儲的機器碼就是程序執行的指令.
+通常它是指向我們程序要執行的下一條指令. 但是你不能直接操作EIP 寄存器,
+你需要流程控制指令來隱式地給它賦值.</p>
+<h3 id="jmp">jmp:</h3>
+<p>jump to the assigned address. And execute the code at the address.
+&gt; jmp ususally jump to label. <figure class="highlight llvm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs llvm">    mov <span class="hljs-number">8</span>(<span class="hljs-variable">%ebp</span>)<span class="hljs-punctuation">,</span> <span class="hljs-variable">%esi</span><br><span class="hljs-symbol">begin:</span><br>    <span class="hljs-keyword">xor</span> <span class="hljs-variable">%ecx</span><span class="hljs-punctuation">,</span> <span class="hljs-variable">%ecx</span><br>    mov (<span class="hljs-variable">%esi</span>)<span class="hljs-punctuation">,</span> <span class="hljs-variable">%eax</span><br> ...................<br> jmp <span class="hljs-keyword">begin</span> <span class="hljs-comment">; jump to the begin label </span><br>          <br></code></pre></td></tr></table></figure></p>
+<h3 id="cmp">cmp:</h3>
+<p>compare the value of two number. <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c">cmpb $<span class="hljs-number">10</span>, (%ebx)<br>jeq loop; <span class="hljs-comment">// if the number in ebx is equal to 10, then jump into the &quot;loop&quot; label.</span><br></code></pre></td></tr></table></figure></p>
+<h3 id="jcondition">jcondition:</h3>
+<p>這些指令是條件跳轉指令, 它們基於一組條件代碼的狀態,
+這些條件代碼的狀態存放在稱為機器狀態字( machine status word )
+的特殊寄存器中. 機器狀態字的內容包括關於最後執行的算術運算的信息. 例如,
+這個字的一個位表示最後的結果是否為0. 另一個位表示最後結果是否為負數.
+基於這些條件代碼, 可以執行許多條件跳轉. 例如,
+如果最後一次算術運算結果為0, 則 jz 指令就是跳轉到指定參數標籤. 否則,
+程序就按照流程進入下一條指令.</p>
+<p>許多條件分支的名稱都是很直觀的, 這些指令的運行,
+都和一個特殊的比較指令有關, cmp( 見下文). 例如, 像 jle 和 jne 這種指令,
+它們首先對參數進行 cmp 操作. <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c">je &lt;label; <span class="hljs-comment">//jump when equal; </span><br>jne &lt;label; <span class="hljs-comment">//jump when not equal;</span><br>jz &lt;label; <span class="hljs-comment">//jump when the result is 0;</span><br>jg &lt;label; <span class="hljs-comment">//jump when greater;</span><br>jge &lt;label;<span class="hljs-comment">//jump when greater or equal;</span><br>jl &lt;label; <span class="hljs-comment">//jump when less;</span><br>jle &lt;label; <span class="hljs-comment">//jump when less or equal;</span><br></code></pre></td></tr></table></figure></p>
+<h4 id="example">example</h4>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c">cmp %ebx, %eax<br>jle done<br>;<span class="hljs-keyword">if</span> the value in ebx is smaller than eax, then jump to <span class="hljs-string">&quot; done &quot;</span> label, or execute the following instruction.<br></code></pre></td></tr></table></figure>
+<h3 id="call-ret">call, ret:</h3>
+<p>while calling a function, the computer record the current address
+into the stack. when the process is over, return will bring the EIP to
+the previous address. <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c">call &lt;label;<br>ret ;<br></code></pre></td></tr></table></figure></p>
+<h2 id="calling-convention">Calling Convention:</h2>
+<p>為了方便不同的程序員去分享代碼和運行庫, 並簡化一般子程序的使用,
+程序員們通常會遵守一定的約定( Calling Convention ).
+調用約定是關於如何從例程調用和返回的協議.
+例如，給定一組調用約定規則，程序員不需要檢查子例程的定義來確定如何將參數傳遞給該子例程.
+此外，給定一組調用約定規則，可以使高級語言編譯器遵循規則，從而允許手動編碼的彙編語言例程和高級語言例程相互調用</p>
+<h3 id="caller-rules">Caller Rules:</h3>
+<ol type="1">
+<li>In the subroutine call, should save some of the contents of the
+register. Caller saved register are EAX, ECX, EDX. Because these
+register may be used when the subroutine is running, so the value of
+register should be push into stack.</li>
+<li>If we want to pass some parameter to the subroutine, we should push
+the parameter into stack before calling function. The last parameter
+should be put into the stack first.</li>
+<li>To call a subroutine, use <code>call</code> instruction.</li>
+</ol>
+<blockquote>
+<p>After return, the return value should be inside EAX. To return to
+machine state, we should 1.remove parameter from stack. 2.put the EAX,
+ECX, EDX previous value, which is put into stack previously, back into
+EAX, ECX, EDX.</p>
+</blockquote>
+<h3 id="example-1">Example:</h3>
+<p>下面的代碼就是個活生生的例子, 它展示了遵循約定的函數調用.
+調用者正在調用一個帶有3 個整數參數的函數myFunc. 第一個參數是EAX,
+第二個參數是常數216; 第三個參數位於EBX 的值所代表的內存地址.
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs c">push (%ebx) <span class="hljs-comment">//put the third parameter into stack.</span><br>push $<span class="hljs-number">216</span> ;<span class="hljs-comment">//put the second parameter into stack.</span><br>push %eax ; <span class="hljs-comment">//put the first parameter into stack.</span><br>call myFunc ;<span class="hljs-comment">//calling this function </span><br>add $<span class="hljs-number">12</span>, %esp <span class="hljs-comment">// to move the pointer of the stack, to where there are no parameter.</span><br></code></pre></td></tr></table></figure> &gt; Stack is viewed as a temperary data saver.</p>
+<h3 id="callee-rules">Callee Rules:</h3>
+<p>subroutine should follow the some rule at the beginning of
+subroutine. 1. Push the value of EBP into stack, and copy the data of
+ESP into EBP. 2. Create space inside stack. Recall that stack growth
+downward, therefore, we should minus the pointer to stack to create more
+space. <figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs livecodeserver">sub $<span class="hljs-number">12</span>, %esp; <span class="hljs-built_in">create</span> <span class="hljs-number">12</span>bits <span class="hljs-keyword">of</span> <span class="hljs-literal">space</span> <span class="hljs-built_in">to</span> stack, which is <span class="hljs-keyword">the</span> <span class="hljs-literal">space</span> <span class="hljs-keyword">of</span> <span class="hljs-literal">three</span> <span class="hljs-keyword">words</span>.<br></code></pre></td></tr></table></figure> 3. Callee-saved register EBX,EDI,ESI will be
+retained by calling convention.</p>
+<h3 id="return">return:</h3>
+<ol type="1">
+<li>save the return value inside EAX.</li>
+<li>Restore any modified register value.calleed saved old value.</li>
+<li>release some variable, done this by adding corresponding value.</li>
+<li>After returning, pop EBP in stack to restore caller's base point
+value. Recall that we push the EBP when we were calling a
+subroutine.</li>
+<li>Through the implementation of <code>ret</code> Instruction to
+return.</li>
+</ol>
+<h3 id="example-2">Example</h3>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs c">.text;<span class="hljs-comment">//将 myFunc 定义为全局 ( 导出 ) 函数</span><br>    .globl myFunc<br>    .type myFunc, @function<br>    myFunc :<br>    ;prologue<br>    push %ebp ;<span class="hljs-comment">//saved the caller&#x27;s base pointer</span><br>    mov %esp, %ebp ;<span class="hljs-comment">//set new base pointer.</span><br>    sub $<span class="hljs-number">4</span>, %esp ; <span class="hljs-comment">//create 4 bytes space. </span><br>    push %edi; <br>    push %esi ;this function will modify EDI and ESI, so push them into <span class="hljs-built_in">stack</span>.<br>    ;<span class="hljs-comment">//there is no need to save EBX, EBP and ESP</span><br>    ;<span class="hljs-comment">//main part of the subroutine</span><br>    mov <span class="hljs-number">8</span>(%ebp), %eax ;<span class="hljs-comment">//move parameter 1 into EAX. [ebp+8] -&gt; eax</span><br>    mov <span class="hljs-number">12</span>(%ebp), %esi ;<span class="hljs-comment">//move second parameter into ESI. [ebp+12]-&gt;esi</span><br>    mov <span class="hljs-number">16</span>(%ebp), %edi ;<span class="hljs-comment">//move the third parameter into EDI.</span><br>    mov %edi, <span class="hljs-number">-4</span>(%ebp) ;<span class="hljs-comment">//move EDI to temperary variable.</span><br>    add %esi, <span class="hljs-number">-4</span>(%ebp) ;<span class="hljs-comment">//add ESI to temperary variable</span><br>    add <span class="hljs-number">-4</span>(%ebp), %eax ;<span class="hljs-comment">// add the value of temperary variable to eax; </span><br>    ; <span class="hljs-comment">// the end of the subroutine</span><br>    pop %esi ;<span class="hljs-comment">//restore the value of the</span><br>    pop %edi<br>    mov %ebp, %esp ;释放局部变量<br>    pop %ebp ;恢复调用者的基指针值<br>    ret<br></code></pre></td></tr></table></figure>
+<h1 id="x64-assembler">X64 Assembler</h1>
+<p>x86-64 is the 64-bits version of x86. Most registers are general
+purpopse. While some have specific function. - rsp: used as the stack
+pointer. - rax: the function return value.</p>
+<h3 id="setx-and-movx">setx and movx</h3>
+<p>execute the instruction if x(the condition) is true.
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs xmp">sete dst; if equal then set the dst from 0 to 1.<br>setge dst; if greater equal, set the dst from 0 to 1.<br>cmovle src, dst; if less equal ,mov the src to dst. <br></code></pre></td></tr></table></figure></p>
+<h1 id="elf">ELF</h1>
+<ul>
+<li>ELF header: in the front of the file, describe the the basic
+properties.</li>
+<li>Program header table: is optional, it tells the system how to create
+a process image. The executable file must have a program header table,
+and the relocatable files do not need.</li>
+<li>section:</li>
+</ul>
+<h2 id="readelf">readelf</h2>
+<h3 id="analysis">analysis</h3>
+<p>a better way to use readelf, is using c++filter to change demangle
+symbol name into readable symbol name. <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-variable">$readelf</span> -Ws &lt;library&gt; | c++filt<br></code></pre></td></tr></table></figure></p>
+<h3 id="find-dependant-libraries">find dependant libraries</h3>
+<p>can simply use ldd to find out, or usign readelf and grep command.
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-variable">$readelf</span> -d &lt;executable binary|library&gt; | grep NEEDED<br></code></pre></td></tr></table></figure></p>
+<h1 id="memory">Memory</h1>
+<p>In order to use the user program in the runtime has a private address
+space, has its own CPU, just like the exclusivity of the entire computer
+as a modern operating system proposes the virtual memory concept.</p>
+<h2 id="stack">Stack</h2>
+<p>Is the First In First Out(FIFO) volume. Stack grow from high memory
+address to low memory address, <code>ebp</code> is pointed to the botton
+of the stack, while <code>esp</code> is pointed to the top of the stack.
+- <code>Push</code>: <code>esp</code> will minus, and put the operand
+into the address where the <code>rsp</code> pointed to. -
+<code>Pop</code>: get the number inside <code>esp</code> and minus
+<code>esp</code> with 4.</p>
+<h3 id="calling-convention-of-x86-system">calling convention of x86
+system</h3>
+<ol type="1">
+<li>push specific parameter into stack.</li>
+<li>push the next instruction into stack.</li>
+<li>jump to the function.</li>
+</ol>
+<p>the second step and the third step execute with
+<code>call</code>.</p>
+<h3 id="the-beginning-of-the-function-of-x86">the beginning of the
+function of x86</h3>
+<ul>
+<li>begin
+<ul>
+<li><code>push ebp</code> -&gt;push ebp into stack.</li>
+<li><code>mov ebp, esp</code>-&gt;make the botton of the stack be the
+top of the stack</li>
+<li><code>sub esp, xxx</code>-&gt;create spaces for the stack.</li>
+</ul></li>
+<li>return
+<ul>
+<li><code>pop XXX</code> : restore the stored register value.</li>
+<li><code>mov esp, ebp</code>: make the top of the stack the address
+where it used to start.</li>
+<li><code>pop ebp</code>: get the stored ebp value.</li>
+<li><code>ret</code> : get the return address from the stack and return
+to the main function.</li>
+</ul></li>
+</ul>
+<h2 id="reference">Reference</h2>
+<p>https://www.bookstack.cn/read/CTF-All-In-One/doc-1.4_web_basic.md</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/reverse-CTF/">#reverse CTF</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>reverse_asseembly</div>
+      <div>http://example.com/2023/09/22/reverse-asseembly/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>Hank</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>September 22, 2023</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/01/19/%E4%BF%AE%E8%AA%B2%E5%BF%83%E5%BE%97/" title="大一上修課心得">
+                        <span class="hidden-mobile">大一上修課心得</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hanksome1.github.io/" target="_blank" rel="nofollow noopener"><span>Hank</span></a> <i class="iconfont icon-love"></i> <a href="https://hanksome1.github.io/" target="_blank" rel="nofollow noopener"><span>Wu</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>
