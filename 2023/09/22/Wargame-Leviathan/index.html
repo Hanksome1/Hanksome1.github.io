@@ -23,11 +23,13 @@
 <meta property="og:site_name" content="HanksomeBlog">
 <meta property="og:description" content="This is a write up of Leviathan. Leviathan is a wargame, mostly about reverese engineering. There are seven level in this wargame. I collect the key to every level at the end of this blog, please us">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://hackmd.io/_uploads/B1Yg6sMKn.png">
 <meta property="article:published_time" content="2023-09-22T15:35:48.000Z">
-<meta property="article:modified_time" content="2023-09-22T15:37:38.476Z">
+<meta property="article:modified_time" content="2023-09-22T15:38:28.787Z">
 <meta property="article:author" content="Hank">
 <meta property="article:tag" content="Wargame,Reverse">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://hackmd.io/_uploads/B1Yg6sMKn.png">
   
   
   
@@ -281,46 +283,60 @@ want to get access of certain level.</p>
 <h2 id="leviathan0">Leviathan0</h2>
 <p>first use string to detect some useful imformation, and we can find
 out their is a password inside. Then we cansimply use grep to findout
-the password. <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-variable">$cat</span> bookmark.htmp|grep password. <br></code></pre></td></tr></table></figure> ## Leviathan1 - Their is a ececutable file
-inside. so i use radare2 to see the outlook of the program. we can fond
-four string"secret","god","sex","love" inside. inside and the and before
-the function call strcmp function, the put "sex" into the register, so
-we can know that this program check the input with "sex". - Therefore, i
-simply input sex, and get the root of leviathan2, and then cat the
-password file inside 'Leviathan_pass/Leviathan2' ## Leviathan2 this one
-is a hard question, this problem i look out other people's write up, and
-they utilize the access function. when their is a file with a space
-inside the filename, the access function will check the two file
-seperately. &gt;For example, if the filename is "hank heroine.txt", then
-the access function &gt;will check both hank and heroine inside the
+the password. <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-variable">$cat</span> bookmark.htmp|grep password. <br></code></pre></td></tr></table></figure></p>
+<h2 id="leviathan1">Leviathan1</h2>
+<ul>
+<li>Their is a ececutable file inside. so i use radare2 to see the
+outlook of the program. we can fond four
+string"secret","god","sex","love" inside. inside and the and before the
+function call strcmp function, the put "sex" into the register, so we
+can know that this program check the input with "sex".</li>
+<li>Therefore, i simply input sex, and get the root of leviathan2, and
+then cat the password file inside 'Leviathan_pass/Leviathan2'</li>
+</ul>
+<h2 id="leviathan2">Leviathan2</h2>
+<p>this one is a hard question, this problem i look out other people's
+write up, and they utilize the access function. when their is a file
+with a space inside the filename, the access function will check the two
+file seperately. &gt;For example, if the filename is "hank heroine.txt",
+then the access function &gt;will check both hank and heroine inside the
 file.</p>
-After using radare2 to check the function, we can see that the function
-will printout the file using the shell of leviathan3. Therefore, I make
-a file named <code>hank\ heroine.txt</code> and make a link from
-heroine.txt to <code>/etc/leviathan_pass/leviathan3</code> ## Leviathan3
-simply using <code>ltrace</code> to see how this file work. We can find
-out that this program call a strcmp function, and compare the input with
-a specific string "snlprintf". so we can get the shell of leviathan4. ##
-Leviathan4 another simple problem, use <code>ltrace</code> we can find
-out this program call the <code>fopen</code> function, so we can know
-that this function is printing the content of the password. the only
-thing we need to do is to tranfer the ASCII code into strings. ##
-Leviathan5 This program open the file at <code>/etc/file.log</code> but
-their is no such file. What's more this program print out the file using
-the shell of leviathan6. Similar to Leviathan2, I create a linkage
-between <code>/etc/file.log</code> and
+<p>After using radare2 to check the function, we can see that the
+function will printout the file using the shell of leviathan3.
+Therefore, I make a file named <code>hank\ heroine.txt</code> and make a
+link from heroine.txt to <code>/etc/leviathan_pass/leviathan3</code></p>
+<h2 id="leviathan3">Leviathan3</h2>
+<p>simply using <code>ltrace</code> to see how this file work. We can
+find out that this program call a strcmp function, and compare the input
+with a specific string "snlprintf". so we can get the shell of
+leviathan4.</p>
+<h2 id="leviathan4">Leviathan4</h2>
+<p>another simple problem, use <code>ltrace</code> we can find out this
+program call the <code>fopen</code> function, so we can know that this
+function is printing the content of the password. the only thing we need
+to do is to tranfer the ASCII code into strings.</p>
+<h2 id="leviathan5">Leviathan5</h2>
+<p>This program open the file at <code>/etc/file.log</code> but their is
+no such file. What's more this program print out the file using the
+shell of leviathan6. Similar to Leviathan2, I create a linkage between
+<code>/etc/file.log</code> and
 <code>/etc/leviathan_pass/leviathan6</code> , so it will print out the
-content of leviathan6. ## Leviathan6 - First i use <code>ltrace</code>
-to find out what this program, and i found that it calls the
-<code>atoi</code> function, which transfer a string into an interger. So
-i think the correct code of this function is inside this program. -
-Therefore, i use radare2 to reassemble the program, and there is one var
-that store a hex number<code>1bd3</code>, and the later compare code
-also compare the input with this variable. - So i use the Decimal number
-<code>7123</code> (0x1bd3) as the code of this program. and get the
-shell of leviathan7. ## Leviathan7 <img
-src="https://hackmd.io/_uploads/B1Yg6sMKn.png" srcset="/img/loading.gif" lazyload /> ## the password to
-every tlevel
+content of leviathan6.</p>
+<h2 id="leviathan6">Leviathan6</h2>
+<ul>
+<li>First i use <code>ltrace</code> to find out what this program, and i
+found that it calls the <code>atoi</code> function, which transfer a
+string into an interger. So i think the correct code of this function is
+inside this program.</li>
+<li>Therefore, i use radare2 to reassemble the program, and there is one
+var that store a hex number<code>1bd3</code>, and the later compare code
+also compare the input with this variable.</li>
+<li>So i use the Decimal number <code>7123</code> (0x1bd3) as the code
+of this program. and get the shell of leviathan7.</li>
+</ul>
+<h2 id="leviathan7">Leviathan7</h2>
+<p><img src="https://hackmd.io/_uploads/B1Yg6sMKn.png" srcset="/img/loading.gif" lazyload /></p>
+<h2 id="the-password-to-every-tlevel">the password to every tlevel</h2>
 <center>
 <table>
 <thead>
