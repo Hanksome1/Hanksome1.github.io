@@ -1,0 +1,19 @@
+<%
+  var byYear = [];
+  posts.forEach(function (post) {
+    var y = date(post.date, 'YYYY');
+    var last = byYear[byYear.length - 1];
+    if (!last || last.year !== y) byYear.push(last = { year: y, items: [] });
+    last.items.push(post);
+  });
+%>
+<div class="year-list">
+  <% byYear.forEach(function (g) { %>
+    <section class="year-block">
+      <h2 class="year-num"><%= g.year %><sup><%= g.items.length %></sup></h2>
+      <div class="log-list">
+        <% g.items.forEach(function (post) { %><%- partial('_partial/post-row', { post: post }) %><% }) %>
+      </div>
+    </section>
+  <% }) %>
+</div>

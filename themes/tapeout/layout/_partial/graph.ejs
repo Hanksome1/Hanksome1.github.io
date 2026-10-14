@@ -1,0 +1,34 @@
+<%
+  // 參數：graph（graph_data() 的回傳值）、variant（global | local）、file、height、tagsOn（Tags 預設開啟）
+  var isGlobal = variant === 'global';
+  var tagsChecked = typeof tagsOn !== 'undefined' && tagsOn;
+%>
+<figure class="wave netlist netlist-<%= variant %>" data-graph data-variant="<%= variant %>">
+  <figcaption class="wave-bar">
+    <span class="wave-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="wave-file"><%= file %></span>
+    <span class="netlist-legend" aria-hidden="true">
+      <span><i class="lg lg-project"></i>Project</span>
+      <span><i class="lg lg-post"></i>Writing</span>
+      <span><i class="lg lg-note"></i>Note</span>
+      <span><i class="lg lg-ghost"></i>Unwritten</span>
+    </span>
+    <span class="wave-spec"><%= graph.nodes %> nodes · <%= graph.links %> nets</span>
+  </figcaption>
+  <div class="netlist-stage" style="height: <%= height %>">
+    <canvas role="img" aria-label="<%= __(isGlobal ? 'graph.global' : 'graph.local', graph.nodes) %>"></canvas>
+    <div class="netlist-tools">
+      <% if (isGlobal) { %>
+        <input type="search" class="nl-search" placeholder="Find node…" aria-label="<%= __('graph.search') %>" data-graph-search>
+      <% } %>
+      <label class="nl-check"><input type="checkbox" data-graph-tags<%= tagsChecked ? ' checked' : '' %>> Tags</label>
+      <span class="nl-zoom">
+        <button type="button" data-graph-zoom="1.3" aria-label="<%= __('graph.zoom_in') %>">+</button>
+        <button type="button" data-graph-zoom="0.77" aria-label="<%= __('graph.zoom_out') %>">−</button>
+        <button type="button" data-graph-fit>Fit</button>
+      </span>
+    </div>
+    <p class="netlist-info" data-graph-info aria-live="polite">Drag to pan · ⌘/Ctrl + scroll to zoom · click a node to open</p>
+  </div>
+  <script type="application/json"><%- graph.json %></script>
+</figure>

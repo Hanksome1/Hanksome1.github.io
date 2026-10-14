@@ -1,0 +1,41 @@
+# tapeout theme — 預設值
+# 個人化設定請寫在網站根目錄的 _config.tapeout.yml。
+# 這裡刻意不放陣列，因為 Hexo 會把兩邊的陣列合併而不是覆蓋。
+
+profile:
+  name: Your Name
+  name_zh: ''
+  role: ''
+  affiliation: ''
+  focus: ''
+  location: ''
+  email: ''
+  tagline: ''
+  intro: ''
+  status: ''
+
+home:
+  projects_count: 4
+  posts_count: 5
+
+waveform:
+  file: wave.vcd
+  period_ns: 10
+
+notes:
+  dir: notes
+
+math:
+  enable: true
+
+statusbar: true
+
+# 配色：schemes 是陣列，請寫在 _config.tapeout.yml，例如 schemes: [datasheet, phosphor]
+# 沒寫就只有 tapeout。
+
+fonts:
+  google: https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=Noto+Sans+TC:wght@400;500;700&display=swap
+
+wavedrom:
+  js: https://cdnjs.cloudflare.com/ajax/libs/wavedrom/3.1.0/wavedrom.min.js
+  skin: https://cdnjs.cloudflare.com/ajax/libs/wavedrom/3.1.0/skins/default.js

@@ -1,0 +1,28 @@
+<%
+  var local = graph_data(page, 2);
+  var mentions = backlinks(page);
+  var badge = { project: 'PRJ', post: 'LOG', note: 'NOTE' };
+%>
+<% if (local.links) { %>
+<section class="connections" data-section="CONNECTIONS">
+  <header class="conn-head">
+    <p class="kicker">§ Connections</p>
+    <h2 class="conn-title">Linked mentions<sup><%= mentions.length %></sup></h2>
+  </header>
+  <div class="conn-grid">
+    <div class="conn-list">
+      <% if (mentions.length) { %>
+        <% mentions.forEach(function (m) { %>
+          <a class="conn-item" href="<%- m.url %>">
+            <span class="conn-top"><span class="log-kind" data-kind="<%= m.kind %>"><%= badge[m.kind] %></span><span class="conn-name"><%= m.title %></span></span>
+            <% if (m.context) { %><span class="conn-ctx"><%= m.context %></span><% } %>
+          </a>
+        <% }) %>
+      <% } else { %>
+        <p class="empty"><%= __('no_backlinks') %></p>
+      <% } %>
+    </div>
+    <%- partial('_partial/graph', { graph: local, variant: 'local', file: 'local.graph', height: '380px' }) %>
+  </div>
+</section>
+<% } %>

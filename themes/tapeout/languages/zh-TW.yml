@@ -1,0 +1,23 @@
+# 介面文字（中文）。版型裡用 <%= __('key') %> 取用；英文版在 en.yml。
+language_name: 中文
+skip_to_content: 跳到主要內容
+back_home: 回到首頁
+main_nav: 主選單
+language: 語言
+color_scheme: 配色
+color_scheme_named: 配色：%s
+toggle_theme: 切換深色 / 淺色模式
+toggle_theme_title: 切換主題
+toc: 目錄
+pinout: 技能腳位圖
+prev_next: 上一篇 / 下一篇
+filter_by_tag: 依標籤篩選
+filter_more: 更多
+filter_less: 收合
+no_backlinks: 還沒有其他頁面連到這裡，但這一頁連出去了 —— 右邊是它的鄰居。
+graph:
+  global: 全站筆記與文章的關聯圖，共 %d 個節點
+  local: 這一頁的關聯圖，共 %d 個節點
+  search: 搜尋節點
+  zoom_in: 放大
+  zoom_out: 縮小

@@ -1,0 +1,11 @@
+<article class="article" data-section="<%= (page.title || 'PAGE').toUpperCase() %>">
+  <header class="article-head wrap">
+    <p class="kicker">§ <%= page.kicker || 'Page' %></p>
+    <h1 class="article-title"><%= page.title %></h1>
+    <% if (page.summary) { %><p class="article-lede"><%= page.summary %></p><% } %>
+  </header>
+  <div class="article-grid wrap">
+    <aside class="article-aside"></aside>
+    <div class="prose no-numbering"><%- page.content %></div>
+  </div>
+</article>

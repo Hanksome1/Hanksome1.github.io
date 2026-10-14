@@ -1,0 +1,38 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hexo",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "hexo",
+        "server",
+        "-p",
+        "4000"
+      ],
+      "port": 4000
+    },
+    {
+      "name": "hexo-4001",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "hexo",
+        "server",
+        "-p",
+        "4001"
+      ],
+      "port": 4001
+    },
+    {
+      "name": "hexo-4002",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "hexo",
+        "server",
+        "-p",
+        "4002"
+      ],
+      "port": 4002
+    }
+  ]
+}

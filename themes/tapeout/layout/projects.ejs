@@ -1,0 +1,25 @@
+<%
+  var projects = split_posts(site.posts, page.lang).projects;
+  var tagCount = {};
+  projects.forEach(function (p) { tag_names(p).forEach(function (t) { tagCount[t] = (tagCount[t] || 0) + 1; }); });
+  var allTags = Object.keys(tagCount).sort(function (a, b) { return tagCount[b] - tagCount[a]; });
+%>
+<section class="page-head wrap" data-section="PROJECTS">
+  <p class="kicker">§01 — Bill of materials<%- partial('_partial/lang-switch') %></p>
+  <h1 class="page-title"><%= page.title || 'Projects' %><sup><%= projects.length %></sup></h1>
+  <% if (page.content) { %><div class="page-lede"><%- page.content %></div><% } %>
+  <% if (allTags.length) { %>
+    <div class="filters" role="group" aria-label="<%= __('filter_by_tag') %>" data-filter-group=".chip-grid" data-collapsible id="project-filters">
+      <button type="button" class="is-on" data-filter="*">All</button>
+      <% allTags.forEach(function (t) { %><button type="button" data-filter="<%= t %>"><%= t %><sup><%= tagCount[t] %></sup></button><% }) %>
+      <button type="button" class="filters-toggle" data-filters-toggle aria-controls="project-filters" aria-expanded="false" data-more="<%= __('filter_more') %>" data-less="<%= __('filter_less') %>" hidden></button>
+    </div>
+  <% } %>
+</section>
+<section class="section section-tight wrap">
+  <div class="chip-grid chip-grid-all">
+    <% projects.forEach(function (post, i) { %>
+      <%- partial('_partial/project-card', { post: post, index: i, featured: false }) %>
+    <% }) %>
+  </div>
+</section>

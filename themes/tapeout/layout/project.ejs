@@ -1,0 +1,73 @@
+<%- partial('_partial/progress') %>
+<%
+  var partNo = part_no(page);
+  var links = page.links || [];
+%>
+<article class="article article-project" data-section="DATASHEET">
+  <header class="article-head wrap">
+    <p class="kicker">
+      <a href="<%- url_for(localized_path('/projects/')) %>">§ Projects</a>
+      <span>·</span><%= partNo %>
+      <span>·</span><%= page.period || date(page.date, 'YYYY') %>
+      <%- partial('_partial/lang-switch') %>
+    </p>
+    <h1 class="article-title"><%= page.title %></h1>
+    <% if (page.summary) { %><p class="article-lede"><%= page.summary %></p><% } %>
+  </header>
+
+  <% var hasNote = (page.metrics || []).some(function (m) { return m.note; }); %>
+  <div class="wrap">
+    <div class="datasheet">
+      <figure class="ds-art">
+        <% if (page.cover) { %>
+          <img src="<%- url_for(page.cover) %>" alt="">
+        <% } else { %>
+          <%- floorplan(page.part || page.title, page.floorplan, { w: 1200, h: 440, fit: 'meet' }) %>
+        <% } %>
+        <figcaption class="ds-caption">
+          <span>Fig. 0 — <%= page.cover ? 'Cover' : 'Floorplan (generated)' %></span>
+          <span><%= partNo %></span>
+        </figcaption>
+      </figure>
+      <div class="ds-table">
+        <div class="ds-specs">
+          <p class="label">General description</p>
+          <dl>
+            <% if (page.role) { %><div><dt>Role</dt><dd><%= page.role %></dd></div><% } %>
+            <% if (page.team) { %><div><dt>Team</dt><dd><%= page.team %></dd></div><% } %>
+            <% if (page.course) { %><div><dt>Context</dt><dd><%= page.course %></dd></div><% } %>
+            <div><dt>Period</dt><dd><%= page.period || date(page.date, 'YYYY.MM') %></dd></div>
+            <% if (page.stack && page.stack.length) { %>
+              <div><dt>Stack</dt><dd class="ds-chips"><% page.stack.forEach(function (s) { %><span><%= s %></span><% }) %></dd></div>
+            <% } %>
+            <% if (page.tools && page.tools.length) { %>
+              <div><dt>Tools</dt><dd><%= page.tools.join(' · ') %></dd></div>
+            <% } %>
+          </dl>
+        </div>
+        <% if ((page.metrics && page.metrics.length) || links.length) { %>
+        <div class="ds-electrical">
+          <% if (page.metrics && page.metrics.length) { %>
+            <p class="label">Key characteristics</p>
+            <table class="ds-metrics">
+              <thead><tr><th>Parameter</th><th>Value</th><% if (hasNote) { %><th>Condition</th><% } %></tr></thead>
+              <tbody>
+                <% page.metrics.forEach(function (m) { %>
+                  <tr><td><%= m.label %></td><td><%= m.value %></td><% if (hasNote) { %><td><%= m.note || '—' %></td><% } %></tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } %>
+          <% if (links.length) { %>
+            <div class="ds-links">
+              <% links.forEach(function (l) { %><a href="<%- l.url %>" rel="noopener"><%= l.label %> <span aria-hidden="true">↗</span></a><% }) %>
+            </div>
+          <% } %>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <%- partial('_partial/article-body') %>
+</article>

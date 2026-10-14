@@ -1,0 +1,42 @@
+<footer class="site-footer" data-section="CONTACT">
+  <div class="wrap">
+    <div class="footer-cta">
+      <p class="kicker">§ EOF — CONTACT</p>
+      <p class="footer-big">Let's build <em>something</em> together.</p>
+      <% if (theme.profile.email) { %>
+        <a class="footer-mail" href="mailto:<%= theme.profile.email %>"><%= theme.profile.email %> <span aria-hidden="true">↗</span></a>
+      <% } %>
+    </div>
+    <div class="footer-grid">
+      <div>
+        <p class="label">Links</p>
+        <ul class="footer-links">
+          <% (theme.social || []).forEach(function (s) { %>
+            <li><a href="<%- s.url %>" rel="noopener"><%= s.label %></a></li>
+          <% }) %>
+        </ul>
+      </div>
+      <div>
+        <p class="label">Index</p>
+        <ul class="footer-links">
+          <li><a href="<%- url_for(localized_path('/projects/')) %>">Projects</a></li>
+          <li><a href="<%- url_for(localized_path('/blog/')) %>">Writing</a></li>
+          <li><a href="<%- url_for(localized_path('/notes/')) %>">Notes</a></li>
+          <li><a href="<%- url_for(localized_path('/archives/')) %>">Archive</a></li>
+        </ul>
+      </div>
+      <div class="footer-colophon">
+        <p class="label">Colophon</p>
+        <p>Set in IBM Plex &amp; Instrument Serif.<br>Built with Hexo · theme “tapeout”.</p>
+        <% var schemes = scheme_list(); if (schemes.length > 1) { %>
+          <div class="scheme-switch footer-scheme" role="group" aria-label="<%= __('color_scheme') %>">
+            <% schemes.forEach(function (s) { %>
+              <button class="scheme-swatch" type="button" data-scheme-set="<%= s %>" aria-pressed="false"><i></i><%= scheme_info(s).name %></button>
+            <% }) %>
+          </div>
+        <% } %>
+        <p class="mono">© <%= new Date().getFullYear() %> <%= theme.profile.name %></p>
+      </div>
+    </div>
+  </div>
+</footer>

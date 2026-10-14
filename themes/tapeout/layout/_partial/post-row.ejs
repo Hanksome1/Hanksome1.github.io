@@ -1,0 +1,16 @@
+<%
+  var kind = post_kind(post);
+  var tags = tag_names(post);
+  var when = (typeof useUpdated !== 'undefined' && useUpdated) ? post.updated : post.date;
+%>
+<a class="log-row reveal" href="<%- url_for(post.path) %>" data-kind="<%= kind %>" data-tags="<%= tags.join('|') %>">
+  <time class="log-date" datetime="<%= date_xml(when) %>"><%= date(when, 'YYYY.MM.DD') %></time>
+  <span class="log-kind"><%= { project: 'PRJ', post: 'LOG', note: 'NOTE' }[kind] %></span>
+  <span class="log-main">
+    <span class="log-title"><%= post.title %></span>
+    <% if (post.summary) { %><span class="log-summary"><%= post.summary %></span><% } %>
+  </span>
+  <span class="log-tags"><% tags.slice(0, 3).forEach(function (t) { %><span>#<%= t %></span><% }) %></span>
+  <span class="log-read"><%= reading_time(post.content) %> min</span>
+  <span class="log-arrow" aria-hidden="true">→</span>
+</a>

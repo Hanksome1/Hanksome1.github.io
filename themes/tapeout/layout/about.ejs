@@ -1,0 +1,60 @@
+<%
+  var p = theme.profile;
+  var pin = page.pinout || {};
+  var left = pin.left || [];
+  var right = pin.right || [];
+  var rows = Math.max(left.length, right.length);
+  var total = left.length + right.length;
+  var history = page.timeline || [];
+%>
+<section class="page-head wrap" data-section="ABOUT">
+  <p class="kicker">§04 — Pin description<%- partial('_partial/lang-switch') %></p>
+  <h1 class="page-title"><%= page.title || 'About' %></h1>
+</section>
+
+<section class="section section-tight wrap about-grid">
+  <div class="prose no-numbering about-body"><%- page.content %></div>
+
+  <% if (rows) { %>
+  <figure class="pinout reveal" aria-label="<%= __('pinout') %>">
+    <div class="pinout-chip" style="--rows: <%= rows %>">
+      <ul class="pins pins-left">
+        <% left.forEach(function (s, i) { %><li><span class="pin-label"><%= s %></span><span class="pin-no"><%= i + 1 %></span></li><% }) %>
+      </ul>
+      <div class="pinout-body">
+        <span class="pinout-dot" aria-hidden="true"></span>
+        <span class="pinout-name"><%= p.name %></span>
+        <span class="pinout-part"><%= pin.part || 'EE-MS-NTHU' %></span>
+      </div>
+      <ul class="pins pins-right">
+        <% right.forEach(function (s, i) { %><li><span class="pin-no"><%= total - i %></span><span class="pin-label"><%= s %></span></li><% }) %>
+      </ul>
+    </div>
+    <figcaption>Fig. 1 — Pin configuration (top view)</figcaption>
+  </figure>
+  <% } %>
+</section>
+
+<% if (history.length) { %>
+<section class="section wrap" data-section="HISTORY">
+  <header class="section-head">
+    <p class="kicker">§05 — Revision history</p>
+    <h2 class="section-title">Timeline</h2>
+  </header>
+  <div class="rev-table" role="table">
+    <div class="rev-row rev-head" role="row">
+      <span role="columnheader">Rev</span><span role="columnheader">Date</span><span role="columnheader">Description</span>
+    </div>
+    <% history.forEach(function (h, i) { %>
+      <div class="rev-row reveal" role="row">
+        <span role="cell" class="rev-no"><%= (history.length - i) %>.0</span>
+        <span role="cell" class="rev-date"><%= h.period %></span>
+        <span role="cell" class="rev-desc">
+          <strong><%= h.title %></strong><% if (h.org) { %> <span class="rev-org">@ <%= h.org %></span><% } %>
+          <% if (h.note) { %><span class="rev-note"><%= h.note %></span><% } %>
+        </span>
+      </div>
+    <% }) %>
+  </div>
+</section>
+<% } %>

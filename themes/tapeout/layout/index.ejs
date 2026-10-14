@@ -1,0 +1,94 @@
+<%
+  var p = theme.profile;
+  var groups = split_posts(site.posts, page.lang);
+  var nProj = (theme.home && theme.home.projects_count) || 4;
+  var nLog = (theme.home && theme.home.posts_count) || 5;
+  var picked = groups.projects.filter(function (x) { return x.featured; })
+    .concat(groups.projects.filter(function (x) { return !x.featured; }))
+    .slice(0, nProj);
+  var logs = groups.logs.slice(0, nLog);
+%>
+<section class="hero wrap" data-section="OVERVIEW">
+  <div class="hero-top">
+    <p class="kicker">§00 — Overview<%- partial('_partial/lang-switch') %></p>
+    <% if (p.status) { %><p class="status-pill"><i></i><%= localize(p.status) %></p><% } %>
+  </div>
+  <h1 class="hero-name">
+    <span class="hero-line"><%= p.name %></span>
+    <% if (p.name_zh) { %><span class="hero-zh"><%= p.name_zh %></span><% } %>
+  </h1>
+  <p class="hero-tagline"><%- emphasize(localize(p.tagline)) %></p>
+
+  <%- partial('_partial/waveform') %>
+
+  <dl class="spec-strip">
+    <div><dt>Role</dt><dd><%= localize(p.role) %></dd></div>
+    <div><dt>Affiliation</dt><dd><%= localize(p.affiliation) %></dd></div>
+    <div><dt>Focus</dt><dd><%= localize(p.focus) %></dd></div>
+    <div><dt>Based in</dt><dd><%= localize(p.location) %></dd></div>
+  </dl>
+</section>
+
+<section class="section wrap" data-section="PROJECTS">
+  <header class="section-head">
+    <p class="kicker">§01 — Selected Work</p>
+    <h2 class="section-title">Projects</h2>
+    <a class="more-link" href="<%- url_for(localized_path('/projects/')) %>">All <%= groups.projects.length %> projects <span aria-hidden="true">→</span></a>
+  </header>
+  <% if (picked.length) { %>
+    <div class="chip-grid">
+      <% picked.forEach(function (post, i) { %>
+        <%- partial('_partial/project-card', { post: post, index: i, featured: i === 0 }) %>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <p class="empty">還沒有專案。用 <code>npx hexo new project "名稱" -p projects/slug</code> 新增第一個。</p>
+  <% } %>
+</section>
+
+<section class="section wrap" data-section="WRITING">
+  <header class="section-head">
+    <p class="kicker">§02 — Writing</p>
+    <h2 class="section-title">Essays &amp; logs</h2>
+    <a class="more-link" href="<%- url_for(localized_path('/blog/')) %>">All writing <span aria-hidden="true">→</span></a>
+  </header>
+  <div class="log-list">
+    <% logs.forEach(function (post) { %><%- partial('_partial/post-row', { post: post }) %><% }) %>
+  </div>
+</section>
+
+<% var g = graph_data(); if (g.nodes > 1) { %>
+<section class="section wrap" data-section="NETLIST">
+  <header class="section-head">
+    <p class="kicker">§03 — Knowledge graph</p>
+    <h2 class="section-title">Netlist</h2>
+    <a class="more-link" href="<%- url_for(localized_path('/notes/')) %>">All <%= groups.notes.length %> notes <span aria-hidden="true">→</span></a>
+  </header>
+  <div class="netlist-home reveal">
+    <%- partial('_partial/graph', { graph: g, variant: 'global', file: 'netlist.graph', height: 'min(62vh, 480px)' }) %>
+  </div>
+</section>
+<% } %>
+
+<section class="section wrap" data-section="ABOUT">
+  <header class="section-head">
+    <p class="kicker">§04 — About</p>
+    <h2 class="section-title">Register map</h2>
+    <a class="more-link" href="<%- url_for(localized_path('/about/')) %>">Full profile <span aria-hidden="true">→</span></a>
+  </header>
+  <div class="about-teaser">
+    <p class="about-intro reveal"><%= localize(p.intro) %></p>
+    <div class="regmap reveal" role="table" aria-label="Now">
+      <div class="regmap-row regmap-head" role="row">
+        <span role="columnheader">Offset</span><span role="columnheader">Field</span><span role="columnheader">Value</span>
+      </div>
+      <% (theme.now || []).forEach(function (r, i) { %>
+        <div class="regmap-row" role="row">
+          <span role="cell">0x<%= pad((i * 4).toString(16).toUpperCase(), 2) %></span>
+          <span role="cell"><%= r.field %></span>
+          <span role="cell"><%= localize(r.value) %></span>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</section>

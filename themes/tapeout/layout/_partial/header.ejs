@@ -1,0 +1,34 @@
+<%
+  var navItems = theme.nav && theme.nav.length ? theme.nav : [
+    { label: 'Projects', path: '/projects/' },
+    { label: 'Writing', path: '/blog/' },
+    { label: 'Notes', path: '/notes/' },
+    { label: 'About', path: '/about/' }
+  ];
+%>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="<%- url_for(localized_path('/')) %>" aria-label="<%= __('back_home') %>">
+      <span class="brand-chip" aria-hidden="true"><i></i></span>
+      <span class="brand-name"><%= theme.profile.name %></span>
+    </a>
+    <nav class="site-nav" aria-label="<%= __('main_nav') %>">
+      <% navItems.forEach(function (item, i) { var path = localized_path(item.path); %>
+        <a href="<%- url_for(path) %>"<% if (is_current(path)) { %> class="is-active" aria-current="page"<% } %>>
+          <span class="nav-pin"><%= pad(i + 1) %></span><%= item.label %>
+        </a>
+      <% }) %>
+      <% var schemes = scheme_list(); if (schemes.length > 1) { %>
+        <span class="scheme-switch" role="group" aria-label="<%= __('color_scheme') %>">
+          <% schemes.forEach(function (s) { %>
+            <button class="scheme-swatch" type="button" data-scheme-set="<%= s %>" aria-pressed="false" aria-label="<%= __('color_scheme_named', scheme_info(s).name) %>" title="<%= scheme_info(s).name %>"><i></i></button>
+          <% }) %>
+        </span>
+      <% } %>
+      <button class="theme-toggle" type="button" aria-label="<%= __('toggle_theme') %>" title="<%= __('toggle_theme_title') %>">
+        <span class="tt-track" aria-hidden="true"><span class="tt-knob"></span></span>
+        <span class="tt-label" aria-hidden="true">1'b<span data-theme-bit>0</span></span>
+      </button>
+    </nav>
+  </div>
+</header>

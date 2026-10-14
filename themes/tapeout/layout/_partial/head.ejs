@@ -1,0 +1,55 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<%
+  var titleText = page.title && page.layout !== 'index' ? page.title + ' — ' + (theme.profile.name || config.author) : config.title;
+  if (is_archive()) titleText = 'Archive — ' + config.title;
+  if (is_tag()) titleText = '#' + page.tag + ' — ' + config.title;
+  if (is_category()) titleText = page.category + ' — ' + config.title;
+  var desc = page.summary || page.description || config.description;
+%>
+<title><%= titleText %></title>
+<%- open_graph({ title: titleText, description: desc }) %>
+<%
+  var schemes = scheme_list();
+  var schemeBg = {};
+  schemes.forEach(function (s) { schemeBg[s] = scheme_info(s).bg; });
+%>
+<meta name="theme-color" content="<%= schemeBg[schemes[0]][0] %>" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="<%= schemeBg[schemes[0]][1] %>" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="<%- url_for('/favicon.svg') %>" type="image/svg+xml">
+<% page_versions(page).forEach(function (v) { %><link rel="alternate" hreflang="<%= v.lang %>" href="<%- full_url_for(v.path) %>">
+<% }) %>
+<script>
+  (function () {
+    var root = document.documentElement;
+    root.classList.add('js');
+    try {
+      var t = localStorage.getItem('tapeout-theme');
+      if (t === 'light' || t === 'dark') root.setAttribute('data-theme', t);
+    } catch (e) {}
+    // 配色：訪客在右上角色塊選的配色記在 localStorage；main.js 也透過這個函式切換
+    var schemeBg = <%- JSON.stringify(schemeBg) %>;
+    window.tapeoutScheme = function (name) {
+      if (!schemeBg[name]) return false;
+      root.setAttribute('data-scheme', name);
+      var metas = document.querySelectorAll('meta[name="theme-color"]');
+      if (metas.length === 2) { metas[0].content = schemeBg[name][0]; metas[1].content = schemeBg[name][1]; }
+      return true;
+    };
+    try { window.tapeoutScheme(localStorage.getItem('tapeout-scheme')); } catch (e) {}
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="<%- theme.fonts.google %>">
+<%- css('css/style') %>
+<% if (page.content && page.content.indexOf('class="katex') > -1) { %><%- css('katex/katex.min') %><% } %>
+<% var ga = theme.analytics && theme.analytics.google; if (ga) { %>
+<script async src="https://www.googletagmanager.com/gtag/js?id=<%= ga %>"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', '<%= ga %>');
+</script>
+<% } %>

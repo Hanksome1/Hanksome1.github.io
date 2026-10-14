@@ -1,0 +1,39 @@
+<%
+  var tocHtml = page.toc === false ? '' : math_toc(page.content, { list_number: false, max_depth: 3 });
+  var isNote = post_kind(page) === 'note';
+  // 筆記預設不加 §01 編號，可用 front-matter 的 numbering 覆蓋
+  var numbered = page.numbering !== undefined ? page.numbering !== false : !isNote;
+  var near = post_neighbors(page);
+%>
+<div class="article-grid wrap">
+  <aside class="article-aside">
+    <% if (tocHtml) { %>
+      <nav class="toc" aria-label="<%= __('toc') %>">
+        <p class="label">Pin list</p>
+        <%- tocHtml %>
+      </nav>
+    <% } %>
+  </aside>
+  <div class="prose<% if (!numbered) { %> no-numbering<% } %>">
+    <%- page.content %>
+  </div>
+</div>
+
+<div class="wrap">
+  <% var tags = tag_names(page); if (tags.length) { %>
+    <div class="article-tags">
+      <% page.tags.each(function (t) { %><a href="<%- url_for(t.path) %>">#<%= t.name %></a><% }) %>
+    </div>
+  <% } %>
+  <%- partial('_partial/connections') %>
+  <% if (!isNote) { %>
+  <nav class="article-nav" aria-label="<%= __('prev_next') %>">
+    <% if (near.prev) { %>
+      <a class="an-prev" href="<%- url_for(near.prev.path) %>"><span class="label">← Newer</span><span class="an-title"><%= near.prev.title %></span></a>
+    <% } else { %><span></span><% } %>
+    <% if (near.next) { %>
+      <a class="an-next" href="<%- url_for(near.next.path) %>"><span class="label">Older →</span><span class="an-title"><%= near.next.title %></span></a>
+    <% } %>
+  </nav>
+  <% } %>
+</div>

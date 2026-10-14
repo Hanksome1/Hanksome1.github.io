@@ -1,0 +1,83 @@
+# ─────────────────────────────────────────────────────────────
+#  tapeout theme — 你的個人設定
+#  這個檔案會覆蓋 themes/tapeout/_config.yml 的預設值。
+#  注意：陣列（nav、social、now、waveform.signals）不要同時寫在兩個檔案，否則會被合併。
+# ─────────────────────────────────────────────────────────────
+
+# 首頁有中英文兩版（/ 與 /en/）。要分語言的文字寫成 { zh-TW: …, en: … }，例如下面的 intro；
+# 只寫一個字串就兩邊共用。profile 的文字欄位和 now 的 value 都可以這樣寫。
+profile:
+  name: Hank Wu                    # Hero 大標（建議英文名）
+  name_zh: 吳承翰
+  role: M.S. Student, Electrical Engineering
+  affiliation: National Tsing Hua University
+  focus: Digital IC Design · Computer Architecture · Computer Vision
+  location: Hsinchu, Taiwan
+  email: wu20040814@gmail.com
+  # 一句話 tagline，*星號* 包起來的字會用斜體襯線字強調
+  tagline: Designing *silicon* that thinks — one clock edge at a time.
+  intro:
+    zh-TW: 清大電機所碩士生，指導教授是黃朝宗老師。我喜歡把演算法一路搬上硬體：從 Python golden model、RTL 到後端流程；也做電腦視覺的演算法。這裡收錄我做過的專案與學習筆記。
+    en: I'm an M.S. student in Electrical Engineering at NTHU, advised by Prof. Chao-Tsung Huang. I like taking an algorithm all the way down to hardware, from a Python golden model to RTL and through the back-end flow, and I also work on computer vision algorithms. This site collects the projects I've built and the notes I've taken along the way.
+  # 右上角的狀態標籤，留空就不顯示
+  status: ''
+
+nav:
+  - { label: Projects, path: /projects/ }
+  - { label: Writing, path: /blog/ }
+  - { label: Notes, path: /notes/ }
+  - { label: About, path: /about/ }
+
+social:
+  - { label: Email, url: mailto:wu20040814@gmail.com }
+  - { label: CV, url: /files/Hank-Wu-CV.pdf }
+
+# 首頁 §03 的「暫存器表」，寫你最近在做什麼
+now:
+  - { field: FOCUS,    value: { zh-TW: 高效能運算硬體, en: High-performance computing devices } }
+  - { field: LEARNING, value: { zh-TW: 量子力學, en: Quantum mechanics } }
+  - { field: READING,  value: { zh-TW: 針對複雜硬體的編譯器, en: Compilers for complex hardware } }
+  - { field: STATUS,   value: { zh-TW: 碩士在學, en: Pursuing an M.S. degree } }
+
+# 瀏覽統計：Google Analytics 4 的評估 ID（G- 開頭），留空就不載入
+analytics:
+  google: ''
+
+home:
+  projects_count: 4   # 首頁顯示幾個專案（front-matter 有 featured: true 的優先）
+  posts_count: 5      # 首頁顯示幾篇文章
+
+# 首頁的波形檢視器動畫。語法類似 WaveDrom：
+#   p = 時脈   0 / 1 = 位準   x = 未知   . = 延續上一拍   = = 匯流排（依序取 data 的值）
+waveform:
+  file: hello_world.vcd
+  period_ns: 10
+  signals:
+    - { name: clk,        wave: "p..............................." }
+    - { name: rst_n,      wave: "0.1............................." }
+    - { name: "state[2:0]", wave: "=...=.....=.......=......=......", data: [IDLE, LEARN, DESIGN, VERIFY, TAPEOUT] }
+    - { name: valid,      wave: "0...1.0.1..0..1.0...1..0..1...0." }
+    - { name: ready,      wave: "1.....0.1.....1......0.1.......1" }
+    - { name: "data[31:0]", wave: "x...=.x.=..x..=.x...=..x..=...x.", data: [C0FFEE, CAFEF00D, 5EED, FEEDBEEF, ACCE55] }
+
+# Obsidian 筆記：用 Obsidian 打開 source/ 資料夾當 vault，
+# 放在 source/_posts/<dir>/ 的筆記會出現在 /notes/ 與知識圖譜裡。
+notes:
+  dir: notes
+
+# LaTeX 數學式（伺服器端 KaTeX）。macros 是全站共用的巨集，等同 LaTeX 導言區的 \newcommand，
+# 名稱前面的反斜線可省略；值請用單引號包起來。改完要 npx hexo clean 再重新產生。
+math:
+  enable: true
+  macros:
+    R: '\mathbb{R}'
+    E: '\mathbb{E}'
+    VDD: 'V_{\mathrm{DD}}'
+    abs: '\left|#1\right|'
+
+# 右下角狀態列（游標座標、閱讀區段），手機上自動隱藏
+statusbar: true
+
+# 配色：訪客可以在右上角的色塊切換，每套都有 light / dark。第一個是預設值。
+# 可選 tapeout | datasheet | phosphor | soldermask；只寫一個就不會出現切換色塊。
+schemes: [tapeout, datasheet]

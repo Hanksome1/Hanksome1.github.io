@@ -1,0 +1,23 @@
+# Interface strings (English). Pages under /en/ use these; missing keys fall back to zh-TW.yml.
+language_name: EN
+skip_to_content: Skip to main content
+back_home: Back to home
+main_nav: Main navigation
+language: Language
+color_scheme: Color scheme
+color_scheme_named: "Color scheme: %s"
+toggle_theme: Toggle dark / light mode
+toggle_theme_title: Toggle theme
+toc: Table of contents
+pinout: Skills pinout diagram
+prev_next: Previous / next post
+filter_by_tag: Filter by tag
+filter_more: More
+filter_less: Less
+no_backlinks: Nothing links here yet, but this page links out — its neighbors are on the right.
+graph:
+  global: Graph of all notes and posts, %d nodes
+  local: Graph around this page, %d nodes
+  search: Search nodes
+  zoom_in: Zoom in
+  zoom_out: Zoom out

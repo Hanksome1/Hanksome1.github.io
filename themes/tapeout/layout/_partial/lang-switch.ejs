@@ -1,0 +1,11 @@
+<%
+  // 這一頁有其他語言版本時，顯示 中文 / EN 切換（scripts/i18n.js 的 page_versions）
+  var versions = page_versions(page);
+%>
+<% if (versions.length) { %>
+<span class="lang-switch" role="group" aria-label="<%= __('language') %>">
+  <% versions.forEach(function (v) { %>
+    <% if (v.current) { %><span class="is-on" lang="<%= v.lang %>" aria-current="true"><%= v.name %></span><% } else { %><a href="<%- url_for(v.path) %>" hreflang="<%= v.lang %>" lang="<%= v.lang %>"><%= v.name %></a><% } %>
+  <% }) %>
+</span>
+<% } %>

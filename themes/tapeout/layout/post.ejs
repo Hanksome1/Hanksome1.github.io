@@ -1,0 +1,25 @@
+<%- partial('_partial/progress') %>
+<% var isNote = post_kind(page) === 'note'; %>
+<article class="article<% if (isNote) { %> article-note<% } %>" data-section="<%= isNote ? 'NOTE' : 'ARTICLE' %>">
+  <header class="article-head wrap">
+    <p class="kicker">
+      <% if (isNote) { %>
+        <a href="<%- url_for('/notes/') %>">§ Note</a>
+        <span>·</span>tended <time datetime="<%= date_xml(page.updated) %>"><%= date(page.updated, 'YYYY.MM.DD') %></time>
+      <% } else { %>
+        <a href="<%- url_for('/blog/') %>">§ Log</a>
+        <span>·</span><time datetime="<%= date_xml(page.date) %>"><%= date(page.date, 'YYYY.MM.DD') %></time>
+      <% } %>
+      <span>·</span><%= reading_time(page.content) %> min read
+    </p>
+    <h1 class="article-title"><%= page.title %></h1>
+    <% if (page.summary) { %><p class="article-lede"><%= page.summary %></p><% } %>
+    <% if (isNote && page.aliases) { %>
+      <p class="note-aliases"><span class="label">aka</span><% [].concat(page.aliases).forEach(function (a) { %><span><%= a %></span><% }) %></p>
+    <% } %>
+  </header>
+  <% if (page.cover) { %>
+    <div class="wrap"><img class="article-cover" src="<%- url_for(page.cover) %>" alt=""></div>
+  <% } %>
+  <%- partial('_partial/article-body') %>
+</article>

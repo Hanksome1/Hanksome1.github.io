@@ -1,0 +1,14 @@
+.DS_Store
+Thumbs.db
+db.json
+*.log
+node_modules/
+public/
+.deploy*/
+_multiconfig.yml
+# Obsidian 的個人視窗狀態
+source/.obsidian/workspace*.json
+source/.obsidian/cache
+source/.trash/
+# 內部用的待辦清單，不公開
+資料補充清單.md

@@ -1,0 +1,27 @@
+<%
+  var notes = split_posts(site.posts).notes.sort(function (a, b) { return b.updated - a.updated; });
+  var g = graph_data();
+%>
+<section class="page-head wrap" data-section="NOTES">
+  <p class="kicker">§03 — Netlist</p>
+  <h1 class="page-title"><%= page.title || 'Notes' %><sup><%= notes.length %></sup></h1>
+  <% if (page.content) { %><div class="page-lede"><%- page.content %></div><% } %>
+</section>
+
+<section class="section section-tight wrap" data-section="GRAPH">
+  <%- partial('_partial/graph', { graph: g, variant: 'global', file: 'netlist.graph', height: 'min(72vh, 640px)' }) %>
+</section>
+
+<section class="section wrap" data-section="INDEX">
+  <header class="section-head">
+    <p class="kicker">§03.1 — Index</p>
+    <h2 class="section-title">Recently tended</h2>
+  </header>
+  <% if (notes.length) { %>
+    <div class="log-list">
+      <% notes.forEach(function (post) { %><%- partial('_partial/post-row', { post: post, useUpdated: true }) %><% }) %>
+    </div>
+  <% } else { %>
+    <p class="empty">還沒有筆記。用 Obsidian 打開 <code>source/</code> 資料夾，新筆記會自動存到 <code>source/_posts/notes/</code>。</p>
+  <% } %>
+</section>

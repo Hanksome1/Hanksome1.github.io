@@ -1,0 +1,35 @@
+<%
+  var wf = theme.waveform || {};
+  var signals = wf.signals || [];
+  var json = JSON.stringify({ signals: signals, period: wf.period_ns || 10 }).replace(/</g, '\\u003c');
+  var initial = function (s) {
+    var w = String(s.wave || '');
+    if (w[0] === 'p' || w[0] === 'n') return w[0] === 'p' ? '1' : '0';
+    if (w[0] === '=') return (s.data && s.data[0]) || '';
+    return w[0] || 'x';
+  };
+%>
+<figure class="wave" data-waveform>
+  <figcaption class="wave-bar">
+    <span class="wave-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="wave-file"><%= wf.file %></span>
+    <span class="wave-spec"><%= Math.round(1000 / (wf.period_ns || 10)) %> MHz · <%= wf.period_ns || 10 %> ns/cycle</span>
+    <span class="wave-live"><i></i>LIVE</span>
+  </figcaption>
+  <div class="wave-grid">
+    <div class="wave-col wave-names">
+      <div class="wave-head">signal</div>
+      <% signals.forEach(function (s) { %><div class="wave-cell"><%= s.name %></div><% }) %>
+    </div>
+    <div class="wave-col wave-values">
+      <div class="wave-head">value</div>
+      <% signals.forEach(function (s) { %><div class="wave-cell wave-value"><%= initial(s) %></div><% }) %>
+    </div>
+    <div class="wave-pane">
+      <div class="wave-head wave-ruler"><span class="wave-time">t = <b data-wv-time>0</b> ns</span></div>
+      <div class="wave-canvas" data-wv-canvas></div>
+      <div class="wave-cursor" data-wv-cursor aria-hidden="true"></div>
+    </div>
+  </div>
+  <script type="application/json"><%- json %></script>
+</figure>

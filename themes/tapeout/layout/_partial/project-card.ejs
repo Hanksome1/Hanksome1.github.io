@@ -1,0 +1,35 @@
+<%
+  var tags = tag_names(post);
+  var stack = post.stack || tags;
+%>
+<article class="chip-card reveal<% if (typeof featured !== 'undefined' && featured) { %> is-featured<% } %>" data-tags="<%= tags.join('|') %>">
+  <span class="chip-designator" aria-hidden="true">U<%= index + 1 %></span>
+  <a class="chip-link" href="<%- url_for(post.path) %>">
+    <div class="chip-art">
+      <% if (post.cover) { %>
+        <img src="<%- url_for(post.cover) %>" alt="" loading="lazy">
+      <% } else { %>
+        <%- floorplan(post.part || post.title, post.floorplan, (typeof featured !== 'undefined' && featured) ? { w: 560, h: 420, fit: 'meet' } : {}) %>
+      <% } %>
+    </div>
+    <div class="chip-body">
+      <div class="chip-meta">
+        <span><%= part_no(post) %></span>
+        <span><%= post.period || date(post.date, 'YYYY') %></span>
+      </div>
+      <h3 class="chip-title"><%= post.title %></h3>
+      <% if (post.summary) { %><p class="chip-summary"><%= post.summary %></p><% } %>
+      <% if (post.metrics && post.metrics.length) { %>
+        <dl class="chip-metrics">
+          <% post.metrics.slice(0, 3).forEach(function (m) { %>
+            <div><dt><%= m.label %></dt><dd><%= m.value %></dd></div>
+          <% }) %>
+        </dl>
+      <% } %>
+      <ul class="chip-stack">
+        <% stack.slice(0, 5).forEach(function (s) { %><li><%= s %></li><% }) %>
+      </ul>
+    </div>
+    <span class="chip-arrow" aria-hidden="true">→</span>
+  </a>
+</article>

@@ -1,0 +1,20 @@
+<%
+  var logs = split_posts(site.posts).logs;
+  var tags = [];
+  site.tags.each(function (t) { var n = in_lang(t.posts).length; if (n) tags.push({ tag: t, n: n }); });
+  tags.sort(function (a, b) { return b.n - a.n || (a.tag.name < b.tag.name ? -1 : a.tag.name > b.tag.name ? 1 : 0); });
+%>
+<section class="page-head wrap" data-section="WRITING">
+  <p class="kicker">§02 — Simulation log</p>
+  <h1 class="page-title"><%= page.title || 'Writing' %><sup><%= logs.length %></sup></h1>
+  <% if (page.content) { %><div class="page-lede"><%- page.content %></div><% } %>
+  <% if (tags.length) { %>
+    <div class="filters" data-collapsible id="writing-tags">
+      <% tags.forEach(function (x) { %><a href="<%- url_for(x.tag.path) %>">#<%= x.tag.name %><sup><%= x.n %></sup></a><% }) %>
+      <button type="button" class="filters-toggle" data-filters-toggle aria-controls="writing-tags" aria-expanded="false" data-more="<%= __('filter_more') %>" data-less="<%= __('filter_less') %>" hidden></button>
+    </div>
+  <% } %>
+</section>
+<section class="section section-tight wrap">
+  <%- partial('_partial/year-list', { posts: logs }) %>
+</section>

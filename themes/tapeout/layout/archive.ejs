@@ -1,0 +1,21 @@
+<%
+  var heading = 'Archive';
+  var kicker = '§ Everything, newest first';
+  if (is_tag()) { heading = '#' + page.tag; kicker = '§ Tag'; }
+  else if (is_category()) { heading = page.category; kicker = '§ Category'; }
+  else if (page.year) { heading = String(page.year); kicker = '§ Archive'; }
+  var posts = in_lang(page.posts);
+%>
+<section class="page-head wrap" data-section="ARCHIVE">
+  <p class="kicker"><%= kicker %></p>
+  <h1 class="page-title"><%= heading %><sup><%= posts.length %></sup></h1>
+  <div class="filters" role="group" aria-label="依類型篩選" data-filter-group=".year-list" data-filter-attr="kind">
+    <button type="button" class="is-on" data-filter="*">All</button>
+    <button type="button" data-filter="project">Projects</button>
+    <button type="button" data-filter="post">Writing</button>
+    <button type="button" data-filter="note">Notes</button>
+  </div>
+</section>
+<section class="section section-tight wrap">
+  <%- partial('_partial/year-list', { posts: posts }) %>
+</section>

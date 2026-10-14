@@ -1,0 +1,128 @@
+# Hexo Configuration
+## Docs: https://hexo.io/docs/configuration.html
+## Source: https://github.com/hexojs/hexo/
+
+# Site
+title: Hank Wu — Digital Design Notes
+subtitle: ''
+description: 清大電機所碩士生的數位 IC 設計專案與筆記。
+keywords: digital design, verilog, rtl, asic, fpga, nthu
+author: Hank Wu
+language: zh-TW
+timezone: Asia/Taipei
+
+# URL
+## 部署到 GitHub Pages 時改成 https://<帳號>.github.io
+url: https://hanksome1.github.io
+# 文章放在 _posts/projects/ 與 _posts/blog/，網址就會是 /projects/xxx/ 與 /blog/xxx/
+permalink: :title/
+permalink_defaults:
+pretty_urls:
+  trailing_index: false
+  trailing_html: true
+
+# Directory
+source_dir: source
+public_dir: public
+tag_dir: tags
+archive_dir: archives
+category_dir: categories
+code_dir: downloads/code
+i18n_dir: :lang
+skip_render:
+
+# Writing
+new_post_name: :title.md # File name of new posts
+default_layout: post
+titlecase: false # Transform title into titlecase
+external_link:
+  enable: true # Open external links in new tab
+  field: site # Apply to the whole site
+  exclude: ''
+filename_case: 0
+render_drafts: false
+post_asset_folder: false
+relative_link: false
+future: true
+syntax_highlighter: highlight.js
+highlight:
+  line_number: false
+  auto_detect: false
+  tab_replace: '  '
+  wrap: true
+  hljs: true
+prismjs:
+  preprocess: true
+  line_number: true
+  tab_replace: ''
+
+# Markdown
+marked:
+  figcaption: true # ![說明](img.png) 會自動變成有圖說的 figure
+  lazyload: true
+
+# Home page setting
+# 首頁由佈景主題自行排版，不需要分頁
+index_generator:
+  path: ''
+  per_page: 0
+  order_by: -date
+
+archive_generator:
+  per_page: 0
+  yearly: true
+  monthly: false
+
+tag_generator:
+  per_page: 0
+
+category_generator:
+  per_page: 0
+
+# Category & Tag
+default_category: uncategorized
+category_map:
+tag_map:
+
+# Metadata elements
+## https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
+meta_generator: true
+
+# Date / Time format
+## Hexo uses Moment.js to parse and display date
+## You can customize the date format as defined in
+## http://momentjs.com/docs/#/displaying/format/
+date_format: YYYY-MM-DD
+time_format: HH:mm:ss
+## updated_option supports 'mtime', 'date', 'empty'
+updated_option: 'mtime'
+
+# Pagination
+## Set per_page to 0 to disable pagination
+per_page: 0
+pagination_dir: page
+
+# Include / Exclude file(s)
+## include:/exclude: options only apply to the 'source/' folder
+include:
+exclude:
+ignore:
+
+# Extensions
+## Plugins: https://hexo.io/plugins/
+## Themes: https://hexo.io/themes/
+## 佈景主題設定請改根目錄的 _config.tapeout.yml
+theme: tapeout
+
+# Obsidian 主 vault → 網站（npm run sync，說明見 tools/sync-vault.js）
+obsidian_sync:
+  vault: ~/Library/Mobile Documents/iCloud~md~obsidian/Documents/hanksome
+  flag: publish          # front-matter 這個欄位是 true 才發佈；可以寫成陣列，例如 [publish, dg-publish]
+  ignore: [Template]     # 不掃描的資料夾（. 開頭的一律略過）
+  private_links: text    # 連到沒發佈的筆記：text = 純文字、ghost = 跟還沒寫的筆記一樣畫成虛線
+
+# Deployment
+## Docs: https://hexo.io/docs/one-command-deployment
+## 建議使用 .github/workflows/pages.yml 自動部署
+deploy:
+  type: ''

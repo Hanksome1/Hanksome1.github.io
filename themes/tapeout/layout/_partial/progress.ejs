@@ -1,0 +1,8 @@
+<%
+  var d = 'M0 8';
+  for (var i = 0; i < 50; i++) { var x = i * 40; d += 'H' + (x + 20) + 'V1H' + (x + 40) + 'V8'; }
+%>
+<div class="progress" aria-hidden="true">
+  <svg class="pg-base" viewBox="0 0 2000 9" preserveAspectRatio="none"><path d="<%= d %>"/></svg>
+  <svg class="pg-fill" viewBox="0 0 2000 9" preserveAspectRatio="none"><path d="<%= d %>"/></svg>
+</div>

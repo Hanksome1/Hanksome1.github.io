@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="<%= page.lang || config.language || 'zh-TW' %>" data-scheme="<%= scheme_list()[0] %>">
+<head>
+<%- partial('_partial/head') %>
+</head>
+<%
+  // 英文首頁是 layout: index 的 page（source/en/index.md），is_home() 只認得 index generator 產生的首頁
+  var home = is_home() || page.layout === 'index';
+  var kind = home ? 'home' : (page.layout === 'project' ? 'project' : (is_post() ? 'post' : (page.layout || 'page')));
+%>
+<body class="is-<%= kind %>">
+  <a class="skip-link" href="#main"><%= __('skip_to_content') %></a>
+  <%- partial('_partial/header') %>
+  <main id="main"><%- body %></main>
+  <%- partial('_partial/footer') %>
+  <% if (theme.statusbar) { %><%- partial('_partial/statusbar') %><% } %>
+  <%- js('js/main') %>
+  <% if (home) { %><%- js('js/waveform') %><% } %>
+  <%- js('js/graph') %>
+  <% if (page.content && page.content.indexOf('type="WaveDrom"') > -1) { %>
+  <script src="<%- theme.wavedrom.skin %>"></script>
+  <script src="<%- theme.wavedrom.js %>"></script>
+  <script>window.addEventListener('load', function () { WaveDrom.ProcessAll(); });</script>
+  <% } %>
+</body>
+</html>
