@@ -19,7 +19,7 @@
     <canvas role="img" aria-label="<%= __(isGlobal ? 'graph.global' : 'graph.local', graph.nodes) %>"></canvas>
     <div class="netlist-tools">
       <% if (isGlobal) { %>
-        <input type="search" class="nl-search" placeholder="Find node…" aria-label="<%= __('graph.search') %>" data-graph-search>
+        <input type="search" class="nl-search" placeholder="Find node…" aria-label="<%= __('graph.search') %>" enterkeyhint="search" data-graph-search>
       <% } %>
       <label class="nl-check"><input type="checkbox" data-graph-tags<%= tagsChecked ? ' checked' : '' %>> Tags</label>
       <span class="nl-zoom">
@@ -27,8 +27,28 @@
         <button type="button" data-graph-zoom="0.77" aria-label="<%= __('graph.zoom_out') %>">−</button>
         <button type="button" data-graph-fit>Fit</button>
       </span>
+      <button type="button" class="nl-expand" data-graph-expand aria-expanded="false" aria-label="<%= __('graph.expand') %>" data-label-open="<%= __('graph.expand') %>" data-label-close="<%= __('graph.collapse') %>">
+        <svg class="nl-i nl-i-expand" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
+        <svg class="nl-i nl-i-close" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg>
+        <span class="nl-expand-text">Expand</span>
+      </button>
     </div>
-    <p class="netlist-info" data-graph-info aria-live="polite">Drag to pan · ⌘/Ctrl + scroll to zoom · click a node to open</p>
+    <p class="netlist-info" data-graph-info aria-live="polite"
+       data-hint="Drag to pan · ⌘/Ctrl + scroll to zoom · click a node to open"
+       data-hint-touch="Tap a node to preview · Expand to explore"
+       data-hint-full="Drag to pan · scroll to zoom · click a node to open"
+       data-hint-full-touch="Drag to pan · pinch to zoom · tap a node">Drag to pan · ⌘/Ctrl + scroll to zoom · click a node to open</p>
+    <div class="netlist-card" data-graph-card hidden>
+      <div class="nl-card-main">
+        <p class="nl-card-meta" data-card-meta></p>
+        <p class="nl-card-title" data-card-title></p>
+      </div>
+      <a class="nl-card-open" data-card-open href="#">Open <span aria-hidden="true">→</span></a>
+      <button type="button" class="nl-card-close" data-card-close aria-label="<%= __('graph.deselect') %>">
+        <svg class="nl-i" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg>
+      </button>
+      <div class="nl-card-nb" data-card-nb aria-label="<%= __('graph.neighbors') %>"></div>
+    </div>
   </div>
   <script type="application/json"><%- graph.json %></script>
 </figure>

@@ -21,3 +21,7 @@ graph:
   search: 搜尋節點
   zoom_in: 放大
   zoom_out: 縮小
+  expand: 全螢幕檢視
+  collapse: 關閉全螢幕
+  deselect: 取消選取
+  neighbors: 相連的節點

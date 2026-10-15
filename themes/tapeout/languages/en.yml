@@ -21,3 +21,7 @@ graph:
   search: Search nodes
   zoom_in: Zoom in
   zoom_out: Zoom out
+  expand: Full screen
+  collapse: Exit full screen
+  deselect: Clear selection
+  neighbors: Linked nodes
