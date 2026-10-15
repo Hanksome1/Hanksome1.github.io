@@ -1,6 +1,7 @@
 <%
   var notes = split_posts(site.posts).notes.sort(function (a, b) { return b.updated - a.updated; });
   var g = graph_data();
+  var courses = note_courses();
 %>
 <section class="page-head wrap" data-section="NOTES">
   <p class="kicker">§03 — Netlist</p>
@@ -8,13 +9,45 @@
   <% if (page.content) { %><div class="page-lede"><%- page.content %></div><% } %>
 </section>
 
+<% if (courses.length) { %>
+<section class="section section-tight wrap" data-section="COURSES">
+  <header class="section-head">
+    <p class="kicker">§03.1 — Courses</p>
+    <h2 class="section-title">Courses</h2>
+  </header>
+  <div class="chip-grid course-grid">
+    <% courses.forEach(function (c, i) { %>
+      <article class="chip-card course-card reveal">
+        <span class="chip-designator" aria-hidden="true">J<%= i + 1 %></span>
+        <a class="chip-link" href="<%- url_for(c.hub.path) %>">
+          <div class="chip-body">
+            <div class="chip-meta"><span><%= [c.code || c.tag, c.term].filter(Boolean).join(' · ') %></span></div>
+            <h3 class="chip-title"><%= c.name || c.hub.title %></h3>
+            <% if (c.hub.summary || c.summary) { %><p class="chip-summary"><%= c.hub.summary || c.summary %></p><% } %>
+            <dl class="chip-metrics">
+              <div><dt>Notes</dt><dd><%= c.notes.length %></dd></div>
+              <div><dt>Reading</dt><dd><%= c.minutes %> min</dd></div>
+              <div><dt>Tended</dt><dd><time datetime="<%= date_xml(c.updated) %>"><%= date(c.updated, 'YYYY.MM.DD') %></time></dd></div>
+            </dl>
+            <% if (c.topics.length) { %>
+              <ul class="chip-stack"><% c.topics.forEach(function (t) { %><li><%= t %></li><% }) %></ul>
+            <% } %>
+          </div>
+          <span class="chip-arrow" aria-hidden="true">→</span>
+        </a>
+      </article>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
 <section class="section section-tight wrap" data-section="GRAPH">
   <%- partial('_partial/graph', { graph: g, variant: 'global', file: 'netlist.graph', height: 'min(72vh, 640px)' }) %>
 </section>
 
 <section class="section wrap" data-section="INDEX">
   <header class="section-head">
-    <p class="kicker">§03.1 — Index</p>
+    <p class="kicker">§03.<%= courses.length ? 2 : 1 %> — Index</p>
     <h2 class="section-title">Recently tended</h2>
   </header>
   <% if (notes.length) { %>

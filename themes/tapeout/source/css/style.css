@@ -789,6 +789,10 @@ code, pre, kbd { font-family: var(--font-mono); }
 .chip-card.is-featured .chip-title { font-size: clamp(26px, 2.6vw, 36px); line-height: 1.15; letter-spacing: -0.025em; }
 .chip-card.is-featured .chip-summary { font-size: 16px; }
 
+/* 課程入口（/notes/ 頂端）：沒有插圖的 chip card，一列兩張 */
+.course-grid .chip-card { grid-column: span 6; }
+.course-card .chip-title { font-size: clamp(22px, 2.2vw, 28px); line-height: 1.2; letter-spacing: -0.02em; }
+
 /* Floorplan illustration */
 .floorplan { display: block; }
 .fp-die { fill: var(--fp-bg); stroke: none; }
@@ -1372,7 +1376,7 @@ details.note > summary + * { margin-top: 8px; }
   .wave-head { padding: 0 10px; }
   .spec-strip dd { font-size: 14px; }
   .chip-grid { gap: 32px; }
-  .chip-card { grid-column: 1 / -1; }
+  .chip-card, .course-grid .chip-card { grid-column: 1 / -1; }
   .chip-metrics dd { font-size: 13px; }
   .section-head { grid-template-columns: minmax(0, 1fr); }
   .more-link { justify-self: start; }

@@ -64,6 +64,17 @@ waveform:
 # 放在 source/_posts/<dir>/ 的筆記會出現在 /notes/ 與知識圖譜裡。
 notes:
   dir: notes
+  # /notes/ 頂端的課程入口，課程裡的每篇筆記標頭也會連回總覽。新增一門課的筆記時在這裡加一筆：
+  #   hub   課程總覽筆記的網址          tag   這門課的筆記共用的標籤，決定哪些筆記算在這門課
+  #   name  卡片上的課名（預設用總覽的標題）  code、term  課號、學期
+  #   summary  總覽筆記沒有 summary 時，卡片用這段
+  courses:
+    - { hub: /notes/iclab/, tag: ICLAB, name: ICLAB 積體電路設計實驗, code: EE4292, term: 2025 Fall }
+    - hub: /notes/quantumn-mechanics/
+      tag: QM
+      name: 量子力學
+      term: 2026 Fall
+      summary: 物理所量子力學的課堂筆記：bra-ket 與 Hilbert space 的數學、量子假設、一維位能井與散射，到 Heisenberg 的矩陣力學。
 
 # LaTeX 數學式（伺服器端 KaTeX）。macros 是全站共用的巨集，等同 LaTeX 導言區的 \newcommand，
 # 名稱前面的反斜線可省略；值請用單引號包起來。改完要 npx hexo clean 再重新產生。

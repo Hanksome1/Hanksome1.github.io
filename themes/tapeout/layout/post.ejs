@@ -1,10 +1,16 @@
 <%- partial('_partial/progress') %>
-<% var isNote = post_kind(page) === 'note'; %>
+<%
+  var isNote = post_kind(page) === 'note';
+  var course = isNote ? note_course(page) : null;
+%>
 <article class="article<% if (isNote) { %> article-note<% } %>" data-section="<%= isNote ? 'NOTE' : 'ARTICLE' %>">
   <header class="article-head wrap">
     <p class="kicker">
       <% if (isNote) { %>
         <a href="<%- url_for('/notes/') %>">§ Note</a>
+        <% if (course) { %>
+          <span>/</span><% if (course.isHub) { %><span><%= course.tag %></span><% } else { %><a href="<%- url_for(course.hub) %>" title="<%= course.name || course.tag %>"><%= course.tag %></a><% } %>
+        <% } %>
         <span>·</span>tended <time datetime="<%= date_xml(page.updated) %>"><%= date(page.updated, 'YYYY.MM.DD') %></time>
       <% } else { %>
         <a href="<%- url_for('/blog/') %>">§ Log</a>

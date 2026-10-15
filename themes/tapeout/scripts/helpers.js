@@ -61,6 +61,46 @@ hexo.extend.helper.register('emphasize', text =>
 hexo.extend.helper.register('tag_names', post =>
   post && post.tags ? post.tags.map(t => t.name) : []);
 
+// ── 課程 ─────────────────────────────────────────────────────
+// _config.tapeout.yml 的 notes.courses：hub 是課程總覽筆記的網址，tag 是這門課的筆記共用的標籤。
+// /notes/ 頂端用 note_courses() 排出課程入口；筆記頁用 note_course() 在標頭連回所屬課程的總覽。
+
+const trimSlash = s => String(s || '').replace(/^\/+|\/+$/g, '');
+const courseConfig = theme => [].concat((theme.notes || {}).courses || []).filter(c => c && c.hub && c.tag);
+
+hexo.extend.helper.register('note_courses', function () {
+  const tagNames = hexo.extend.helper.get('tag_names');
+  const readingTime = hexo.extend.helper.get('reading_time');
+  const notes = hexo.extend.helper.get('split_posts')(this.site.posts).notes;
+  return courseConfig(this.theme).map(c => {
+    const hub = notes.find(p => trimSlash(p.path) === trimSlash(c.hub));
+    if (!hub) {
+      hexo.log.warn(`[notes] 找不到課程總覽筆記 ${c.hub}，課程 ${c.tag} 不會出現在 /notes/`);
+      return null;
+    }
+    const members = notes.filter(p => p !== hub && tagNames(p).includes(c.tag));
+    // 卡片上的主題：成員筆記最常用的其他標籤
+    const count = {};
+    members.forEach(p => tagNames(p).forEach(t => {
+      if (t !== c.tag && t !== 'MOC') count[t] = (count[t] || 0) + 1;
+    }));
+    return Object.assign({}, c, {
+      hub,
+      notes: members,
+      minutes: members.reduce((sum, p) => sum + readingTime(p.content), 0),
+      updated: [hub].concat(members).reduce((a, p) => (p.updated > a ? p.updated : a), hub.updated),
+      topics: Object.keys(count).sort((a, b) => count[b] - count[a]).slice(0, 5)
+    });
+  }).filter(Boolean);
+});
+
+// 這篇筆記屬於哪一門課（總覽筆記本身也算），沒有就回傳 null
+hexo.extend.helper.register('note_course', function (post) {
+  const tags = hexo.extend.helper.get('tag_names')(post);
+  const course = courseConfig(this.theme).find(c => trimSlash(c.hub) === trimSlash(post && post.path) || tags.includes(c.tag));
+  return course ? Object.assign({}, course, { isHub: trimSlash(course.hub) === trimSlash(post.path) }) : null;
+});
+
 // ── Floorplan ────────────────────────────────────────────────
 // 以標題當種子，產生一張確定性的晶片佈局圖（沒有封面圖的專案會用它當插圖）
 
