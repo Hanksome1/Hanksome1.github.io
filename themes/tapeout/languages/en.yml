@@ -25,3 +25,4 @@ graph:
   collapse: Exit full screen
   deselect: Clear selection
   neighbors: Linked nodes
+  settings: Graph settings

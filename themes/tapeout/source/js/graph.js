@@ -39,7 +39,9 @@
     var tools = fig.querySelector('.netlist-tools');
     var info = fig.querySelector('[data-graph-info]');
     var search = fig.querySelector('[data-graph-search]');
-    var tagToggle = fig.querySelector('[data-graph-tags]');
+    var gear = fig.querySelector('[data-graph-gear]');
+    var panel = fig.querySelector('[data-graph-panel]');
+    var inputs = Array.prototype.slice.call(panel.querySelectorAll('[data-set]'));
     var expandBtn = fig.querySelector('[data-graph-expand]');
     var card = fig.querySelector('[data-graph-card]');
     var cardMeta = card.querySelector('[data-card-meta]');
@@ -60,25 +62,66 @@
     var raf = 0, visible = true;
     var full = false, holder = null;
 
+    // ── settings ──────────────────────────────────────────
+    // 仿 Obsidian 的圖譜設定（Filters / Display / Forces）。全站圖和頁面底下的局部圖各存一份；
+    // localStorage 只存和預設值不同的項目，之後調整預設值時，沒動過的項目會跟著更新
+    var storeKey = 'tapeout-graph-' + (isLocal ? 'local' : 'global');
+    var DEFAULTS = {
+      tags: panel.querySelector('[data-set="tags"]').checked, ghosts: true, orphans: true,
+      size: 1, width: 1, labels: isLocal ? 1 : 0.5,
+      center: 0.5, repel: 10, link: 1, distance: isLocal ? 90 : 80
+    };
+    var opt = {};
+    (function load() {
+      var saved = null;
+      try { saved = JSON.parse(localStorage.getItem(storeKey)); } catch (err) {}
+      Object.keys(DEFAULTS).forEach(function (key) {
+        opt[key] = saved && typeof saved[key] === typeof DEFAULTS[key] ? saved[key] : DEFAULTS[key];
+      });
+    })();
+    function save() {
+      var diff = {}, any = false;
+      Object.keys(DEFAULTS).forEach(function (key) {
+        if (opt[key] !== DEFAULTS[key]) { diff[key] = opt[key]; any = true; }
+      });
+      try {
+        if (any) localStorage.setItem(storeKey, JSON.stringify(diff));
+        else localStorage.removeItem(storeKey);
+      } catch (err) {}
+    }
+    function syncInputs() {
+      inputs.forEach(function (el) {
+        var v = opt[el.getAttribute('data-set')];
+        if (el.type === 'checkbox') el.checked = v; else el.value = v;
+      });
+    }
+
     // ── data ──────────────────────────────────────────────
-    function build(withTags) {
+    function build() {
       var keep = {};
       nodes.forEach(function (n) { keep[n.id] = n; });
       var selId = sel && sel.id;
-      nodes = raw.nodes.map(function (d, i) {
-        return { id: 'n' + i, title: d.t, kind: d.k, url: d.u, tags: d.g || [], level: d.l || 0, deg: 0, nb: [] };
+      var byRaw = [];
+      nodes = [];
+      raw.nodes.forEach(function (d, i) {
+        if (d.k === 'ghost' && !opt.ghosts) return;
+        nodes.push(byRaw[i] = { id: 'n' + i, title: d.t, kind: d.k, url: d.u, tags: d.g || [], level: d.l || 0, deg: 0, nb: [] });
       });
-      links = raw.links.map(function (l) { return { s: nodes[l[0]], t: nodes[l[1]] }; });
-      if (withTags) {
+      links = [];
+      raw.links.forEach(function (l) {
+        if (byRaw[l[0]] && byRaw[l[1]]) links.push({ s: byRaw[l[0]], t: byRaw[l[1]] });
+      });
+      if (opt.tags) {
         var tagNodes = {};
         raw.nodes.forEach(function (d, i) {
+          if (!byRaw[i]) return;
           (d.g || []).forEach(function (tag) {
             var tn = tagNodes[tag];
             if (!tn) {
               tn = tagNodes[tag] = { id: 'tag:' + tag, title: '#' + tag, kind: 'tag', url: (raw.tags || {})[tag], tags: [], level: 0, deg: 0, nb: [] };
               nodes.push(tn);
             }
-            links.push({ s: nodes[i], t: tn, tag: true });
+            links.push({ s: byRaw[i], t: tn, tag: true });
           });
         });
       }
@@ -86,7 +129,9 @@
         l.s.deg++; l.t.deg++;
         l.s.nb.push(l.t); l.t.nb.push(l.s);
       });
-      focus = raw.focus != null ? nodes[raw.focus] : null;
+      focus = raw.focus != null ? byRaw[raw.focus] || null : null;
+      // 孤立節點在套用 Unwritten、Tags 之後才判斷：只連到未撰寫節點的筆記，關掉 Unwritten 後也算孤立
+      if (!opt.orphans) nodes = nodes.filter(function (n) { return n.deg || n === focus; });
 
       // 初始位置：沿用舊位置，否則用 phyllotaxis 螺旋（度數高的節點在中心）
       nodes.forEach(function (n, i) {
@@ -112,14 +157,18 @@
 
     function radius(n) {
       var base = { project: 6.5, post: 5, note: 4.2, ghost: 3.6, tag: 3.2 }[n.kind] || 4;
-      return Math.min(base + Math.sqrt(n.deg) * 1.5, base + 7);
+      return Math.min(base + Math.sqrt(n.deg) * 1.5, base + 7) * opt.size;
     }
 
     // ── simulation ────────────────────────────────────────
+    // 四個力對應設定面板的 Forces：Center、Repel（many-body）、Link force、Link distance；
+    // 另外有固定的碰撞力，讓節點之間至少留 COLLIDE_PAD 的空隙。
+    // 斥力只作用在 REPEL_RANGE 以內：不相連的群組不會互相推得老遠，fit 之後群組內部才有空間
+    var COLLIDE_PAD = 10, REPEL_RANGE = 400;
     function tick() {
       alpha += (alphaTarget - alpha) * ALPHA_DECAY;
-      var n = nodes.length, i, j, a, b, dx, dy, l2, w;
-      var charge = isLocal ? -190 : -170;
+      var n = nodes.length, i, j, a, b, dx, dy, l2, w, rr;
+      var charge = -20 * opt.repel * alpha;
 
       for (i = 0; i < n; i++) {
         a = nodes[i];
@@ -127,11 +176,17 @@
           b = nodes[j];
           dx = b.x - a.x; dy = b.y - a.y;
           l2 = dx * dx + dy * dy;
-          if (l2 > 360000) continue;
+          if (l2 > REPEL_RANGE * REPEL_RANGE) continue;
           if (l2 < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; l2 = 1; }
-          w = charge * alpha / l2;
+          w = charge / l2;
           a.vx += dx * w; a.vy += dy * w;
           b.vx -= dx * w; b.vy -= dy * w;
+          rr = a.r + b.r + COLLIDE_PAD;
+          if (l2 < rr * rr) {
+            w = (rr / Math.sqrt(l2) - 1) * 0.35;
+            a.vx -= dx * w; a.vy -= dy * w;
+            b.vx += dx * w; b.vy += dy * w;
+          }
         }
       }
 
@@ -139,21 +194,20 @@
         var s = l.s, t = l.t;
         var lx = t.x + t.vx - s.x - s.vx, ly = t.y + t.vy - s.y - s.vy;
         var d = Math.sqrt(lx * lx + ly * ly) || 1e-6;
-        var dist = l.tag ? 40 : (isLocal ? 72 : 62);
-        var k = (d - dist) / d * alpha / Math.min(s.deg, t.deg);
+        // 連到 hub 的線拉長一點：連結很多的節點周圍才排得開，不會擠成一團
+        var dist = opt.distance * (l.tag ? 0.6 : 1) * (1 + 0.2 * Math.sqrt(Math.max(s.deg, t.deg) - 1));
+        var k = (d - dist) / d * alpha * opt.link / Math.min(s.deg, t.deg);
         lx *= k; ly *= k;
         var bias = s.deg / (s.deg + t.deg);
         t.vx -= lx * bias; t.vy -= ly * bias;
         s.vx += lx * (1 - bias); s.vy += ly * (1 - bias);
       });
 
-      // 往中心拉：依面板長寬比調整兩個方向的力道，讓圖形的形狀貼合面板。
-      // 直式面板（手機）開根號不夠力，各群組還是會橫著排，所以直接用長寬比
-      var ratio = W / H;
-      var aspect = ratio < 1 ? Math.max(0.4, ratio) : Math.sqrt(Math.min(2.5, ratio));
-      var gx = 0.045 / aspect * alpha, gy = 0.045 * aspect * alpha;
+      // 往中心拉：依面板長寬比調整兩個方向的力道，讓圖形的形狀貼合面板（開根號不夠力，各群組會擠在中間）
+      var aspect = Math.max(0.4, Math.min(2.5, W / H));
+      var gx = 0.09 * opt.center / aspect * alpha, gy = 0.09 * opt.center * aspect * alpha;
       nodes.forEach(function (p) {
-        var g = p.deg ? 1 : 4; // 沒有連結的節點拉得更緊，免得漂到角落
+        var g = p.deg ? 1 : 2; // 沒有連結的節點拉得緊一點，免得漂到角落
         p.vx -= p.x * gx * g; p.vy -= p.y * gy * g;
         if (press && press.node === p) {
           p.x = p.fx; p.y = p.fy; p.vx = 0; p.vy = 0;
@@ -237,7 +291,7 @@
         var dim = isLocal && (l.s.level >= 2 || l.t.level >= 2);
         ctx.globalAlpha = hl ? (on ? 0.95 : 0.07) : (dim ? 0.3 : 0.55);
         ctx.strokeStyle = on ? palette['--accent'] : palette['--ink-3'];
-        ctx.lineWidth = on ? 1.4 : 1;
+        ctx.lineWidth = (on ? 1.4 : 1) * opt.width;
         ctx.setLineDash(l.tag || l.t.kind === 'ghost' ? [3, 3] : []);
         ctx.beginPath();
         ctx.moveTo(l.s.x * k + ox, l.s.y * k + oy);
@@ -286,9 +340,11 @@
       ctx.lineJoin = 'round';
       var rank = function (n) { return n === hover ? 1e6 : n === sel ? 5e5 : n === focus ? 1e5 : n.deg; };
       var placed = [];
+      // Labels 設定：縮放到 fade 以上顯示全部標籤，到 fade × 0.46 以上顯示連結數 ≥ 3 的；拉到最右邊一律顯示
+      var fade = opt.labels >= 1 ? 0 : 1.2 * Math.pow(6, 0.5 - opt.labels);
       nodes.filter(function (n) {
         if (hl) return hl.has(n);
-        return isLocal || n === focus || k >= 1.2 || (n.deg >= 3 && k >= 0.55);
+        return n === focus || k >= fade || (n.deg >= 3 && k >= fade * 0.46);
       }).sort(function (a, b) { return rank(b) - rank(a); }).forEach(function (n) {
         var x = n.x * k + ox, y = n.y * k + oy + n.r * rs + 5;
         if (x < -80 || y < -20 || x > W + 80 || y > H + 20) return;
@@ -557,14 +613,47 @@
         if (best) { select(best); search.blur(); }
       });
     }
-    if (tagToggle) {
-      tagToggle.addEventListener('change', function () {
-        build(tagToggle.checked);
-        userView = false; target = null; autoPan = false;
-        if (reduceMotion) settle(); else reheat(0.7);
-      });
-    }
     card.querySelector('[data-card-close]').addEventListener('click', function () { select(null); });
+
+    // ── settings panel ────────────────────────────────────
+    function setPanel(on) {
+      panel.hidden = !on;
+      gear.setAttribute('aria-expanded', on ? 'true' : 'false');
+      gear.classList.toggle('is-on', on);
+      fitPanel();
+    }
+    // 面板放不下時在面板內捲動，不超出圖的下緣
+    function fitPanel() {
+      if (!panel.hidden) panel.style.maxHeight = Math.max(120, H - tools.offsetTop - tools.offsetHeight - 20) + 'px';
+    }
+    function rebuild() {
+      build();
+      userView = false; target = null; autoPan = false;
+      kick(0.7);
+    }
+    function applySetting(key) {
+      if (key === 'tags' || key === 'ghosts' || key === 'orphans') rebuild();
+      else if (key === 'size') { nodes.forEach(function (n) { n.r = radius(n); }); kick(0.2); }
+      else if (key === 'width' || key === 'labels') request();
+      else kick(0.5);
+    }
+    gear.addEventListener('click', function () { setPanel(panel.hidden); });
+    inputs.forEach(function (el) {
+      var key = el.getAttribute('data-set');
+      el.addEventListener('input', function () {
+        opt[key] = el.type === 'checkbox' ? el.checked : parseFloat(el.value);
+        applySetting(key);
+      });
+      el.addEventListener('change', save);
+    });
+    panel.querySelector('[data-graph-reset]').addEventListener('click', function () {
+      var filtersChanged = ['tags', 'ghosts', 'orphans'].some(function (key) { return opt[key] !== DEFAULTS[key]; });
+      Object.keys(DEFAULTS).forEach(function (key) { opt[key] = DEFAULTS[key]; });
+      syncInputs();
+      save();
+      if (filtersChanged) rebuild();
+      else { nodes.forEach(function (n) { n.r = radius(n); }); kick(0.5); }
+    });
 
     // ── full screen ───────────────────────────────────────
     // 用 position: fixed 疊在頁面上（iPhone 的 Safari 不支援對一般元素用 Fullscreen API）。
@@ -592,7 +681,7 @@
       setInfo(null);
       resize();
       // 面板的長寬比變了，讓圖重新排一下
-      if (reduceMotion) settle(); else reheat(0.3);
+      kick(0.3);
       if (sel) ensureVisible(sel);
       try { expandBtn.focus({ preventScroll: true }); } catch (err) {}
     }
@@ -612,7 +701,10 @@
     window.addEventListener('pageshow', function (e) { if (e.persisted) setFull(ownState()); });
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
-      if (sel && (full || fig.contains(document.activeElement))) select(null);
+      if (!panel.hidden && (full || fig.contains(document.activeElement))) {
+        if (panel.contains(document.activeElement)) gear.focus();
+        setPanel(false);
+      } else if (sel && (full || fig.contains(document.activeElement))) select(null);
       else if (full) closeFull();
     });
 
@@ -624,6 +716,7 @@
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
       if (!userView) easeView(true);
+      fitPanel();
       draw();
     }
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(stage);
@@ -642,8 +735,15 @@
       easeView(true);
       draw();
     }
+    // 讓圖重新排：減少動態效果時直接算到穩定（settle 只在 alpha 夠大時才會跑）
+    function kick(a) {
+      if (!reduceMotion) { reheat(a); return; }
+      alpha = Math.max(alpha, a);
+      settle();
+    }
 
-    build(tagToggle ? tagToggle.checked : false);
+    syncInputs();
+    build();
     setInfo(null);
     resize();
     // 先在背景跑幾步，避免一開始節點擠成一團

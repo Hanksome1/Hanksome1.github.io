@@ -1145,20 +1145,50 @@ details.thm[open] > summary::after, details.proof[open] > summary::after { conte
 /* 頁面上的圖：觸控拖曳交給瀏覽器捲動頁面，只接收點擊；全螢幕時才自己處理所有手勢 */
 .netlist-stage canvas { position: absolute; inset: 0; display: block; touch-action: manipulation; cursor: grab; }
 .netlist-stage canvas.is-grabbing { cursor: grabbing; }
-.netlist-tools { position: absolute; top: 12px; right: 12px; z-index: 2; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.nl-search, .nl-check, .nl-zoom, .nl-expand {
+.netlist-tools { position: absolute; top: 12px; right: 12px; z-index: 4; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.nl-search, .nl-gear, .nl-zoom, .nl-expand {
   border: 1px solid var(--line-2); border-radius: 3px; background: var(--surface);
   font: 500 12px var(--font-mono); color: var(--ink-2);
 }
 .nl-search { width: 168px; padding: 6px 10px; color: var(--ink); }
 .nl-search::placeholder { color: var(--ink-3); }
-.nl-check { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; cursor: pointer; }
-.nl-check input { margin: 0; accent-color: var(--accent); }
 .nl-zoom { display: inline-flex; overflow: hidden; }
 .nl-zoom button { padding: 5px 10px; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
 .nl-zoom button + button { border-left: 1px solid var(--line); }
-.nl-expand { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; cursor: pointer; }
-.nl-zoom button:hover, .nl-check:hover, .nl-expand:hover { color: var(--accent); }
+.nl-gear, .nl-expand { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; cursor: pointer; }
+.nl-gear.is-on { border-color: var(--ink-3); color: var(--ink); }
+.nl-zoom button:hover, .nl-gear:hover, .nl-expand:hover { color: var(--accent); }
+
+/* 設定面板：掛在工具列底下，靠右 */
+.nl-panel {
+  position: absolute; top: calc(100% + 8px); right: 0; width: min(256px, calc(100vw - 48px));
+  overflow-y: auto; overscroll-behavior: contain; padding: 4px 0;
+  border: 1px solid var(--line-2); border-radius: 4px; background: var(--surface); box-shadow: var(--shadow);
+  font: 500 12px var(--font-mono); color: var(--ink-2);
+}
+.nl-panel[hidden] { display: none; }
+.nl-panel details + details { border-top: 1px solid var(--line); }
+.nl-panel summary {
+  display: flex; justify-content: space-between; padding: 8px 12px; cursor: pointer; list-style: none;
+  font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);
+}
+.nl-panel summary::-webkit-details-marker { display: none; }
+.nl-panel summary::after { content: "+"; }
+.nl-panel details[open] > summary::after { content: "−"; }
+.nl-panel summary:hover { color: var(--ink); }
+.nl-panel details[open] { padding-bottom: 6px; }
+.nl-row { display: grid; grid-template-columns: minmax(0, 1fr) 112px; align-items: center; gap: 10px; min-height: 28px; padding: 0 12px; cursor: pointer; }
+.nl-row > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.nl-row input { margin: 0; accent-color: var(--accent); cursor: pointer; }
+.nl-row input[type="checkbox"] { justify-self: end; }
+.nl-row input[type="range"] { width: 100%; height: 16px; }
+.nl-row:hover > span { color: var(--ink); }
+.nl-reset {
+  display: block; width: calc(100% - 24px); margin: 6px 12px 8px; padding: 6px 0;
+  border: 1px solid var(--line-2); border-radius: 3px; background: none;
+  font: inherit; color: var(--ink-3); cursor: pointer;
+}
+.nl-reset:hover { color: var(--accent); border-color: currentColor; }
 .nl-i { display: block; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: square; }
 .nl-i-close, .nl-expand-text { display: none; }
 .netlist-info {
@@ -1218,17 +1248,18 @@ html.nl-lock, html.nl-lock body { overflow: hidden; }
 .netlist.is-full .nl-i-close { display: block; }
 .netlist.is-full .netlist-card { bottom: max(10px, env(safe-area-inset-bottom)); }
 
-/* 觸控裝置：頁面上只留 Tags 和 Expand；全螢幕用雙指縮放取代 +/−；按鈕放大成好按的大小 */
+/* 觸控裝置：頁面上只留設定和 Expand；全螢幕用雙指縮放取代 +/−；按鈕放大成好按的大小 */
 @media (hover: none) and (pointer: coarse) {
   .netlist:not(.is-full) .nl-search, .netlist:not(.is-full) .nl-zoom, .netlist.is-full [data-graph-zoom] { display: none; }
   .netlist:not(.is-full) .nl-expand-text { display: inline; }
   .netlist .nl-zoom [data-graph-fit] { border-left: 0; }
-  .nl-search, .nl-check, .nl-zoom button, .nl-expand { min-height: 38px; }
+  .nl-search, .nl-gear, .nl-zoom button, .nl-expand { min-height: 38px; }
   .nl-expand { padding: 0 12px; }
-  .netlist.is-full .nl-expand { width: 38px; justify-content: center; padding: 0; }
+  .nl-gear, .netlist.is-full .nl-expand { width: 38px; justify-content: center; padding: 0; }
   .nl-zoom button { padding: 0 12px; }
-  .nl-check { padding: 0 12px; }
-  .nl-check input { width: 16px; height: 16px; }
+  .nl-row { min-height: 40px; }
+  .nl-row input[type="checkbox"] { width: 18px; height: 18px; }
+  .nl-row input[type="range"] { height: 28px; }
   /* iOS 在字級小於 16px 的輸入框聚焦時會自動放大頁面 */
   .nl-search { font-size: 16px; padding: 6px 10px; }
 }
