@@ -41,7 +41,7 @@ now:
 
 # 瀏覽統計：Google Analytics 4 的評估 ID（G- 開頭），留空就不載入
 analytics:
-  google: ''
+  google: G-KH6J45ZFL6
 
 home:
   projects_count: 4   # 首頁顯示幾個專案（front-matter 有 featured: true 的優先）
