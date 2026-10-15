@@ -124,15 +124,15 @@ create_ccopt_flexible_htree -name hTree \
                             -sink_grid {4 4} \
                             -sink_grid_sink_area {30 30} \
                             -sink_grid_box {0 0 430 430} \
-                            -trunk_cell CKND16BWP16P90LVT \
-                            -final_cell CKND8BWP16P90LVT \
+                            -trunk_cell <CLK_INV_X16> \
+                            -final_cell <CLK_INV_X8> \
                             -pin clk
 
 synthesize_ccopt_flexible_htrees
 ccopt_design
 ```
 
-`-sink_grid` 是 H-tree 最底層有幾列、幾行 root，`-sink_grid_sink_area` 是每個 root 的寬和長，`-sink_grid_box` 是整個 H-tree 的範圍，`-trunk_cell` 和 `-final_cell` 指定 trunk 與最後一級用的 cell。`synthesize_ccopt_flexible_htrees` 把 H-tree 長出來；如果 H-tree 和 placement blockage 重疊，flexible H-tree 會自動刪掉衝突的 root，不需要手動設定 blockage。最後一定要再跑一次 `ccopt_design`，把還沒接上的 clock pin 接起來。
+`-sink_grid` 是 H-tree 最底層有幾列、幾行 root，`-sink_grid_sink_area` 是每個 root 的寬和長，`-sink_grid_box` 是整個 H-tree 的範圍，`-trunk_cell` 和 `-final_cell` 指定 trunk 與最後一級用的 cell，這裡分別是驅動力 16 和 8 的 clock inverter。`synthesize_ccopt_flexible_htrees` 把 H-tree 長出來；如果 H-tree 和 placement blockage 重疊，flexible H-tree 會自動刪掉衝突的 root，不需要手動設定 blockage。最後一定要再跑一次 `ccopt_design`，把還沒接上的 clock pin 接起來。
 
 ### Skew group
 
@@ -258,7 +258,7 @@ $$
 
 ### IR drop 欄位不能直接比
 
-IR drop 欄的數字分成兩群：大約 0.70 V（baseline、iSpatial、H-tree 等）和 0.85–0.88 V（SDP 的各個版本、skew group、Genus + SDP）。從 clock tree debugger 的 corner 名稱（`ffgnp_0p880v`、`ssgnp_0p720v`）看，這個製程的供電在 0.72 V 到 0.88 V 之間；如果 0.70 V 真的是掉了的電壓，電路根本不會動，但這些版本都通過了 post-simulation。所以這一欄應該不是電壓降本身，比較可能是某個節點的電壓，兩群數字也許來自不同的分析條件。報告沒有交代這一欄的定義，所以我不拿它來比較；只有三種 CTS 才有的 IR increase 欄位，意思比較明確。
+IR drop 欄的數字分成兩群：大約 0.70 V（baseline、iSpatial、H-tree 等）和 0.85–0.88 V（SDP 的各個版本、skew group、Genus + SDP）。從 clock tree debugger 裡 FF、SS 兩個 corner 的電壓（0.88 V、0.72 V）看，這個製程的供電在 0.72 V 到 0.88 V 之間；如果 0.70 V 真的是掉了的電壓，電路根本不會動，但這些版本都通過了 post-simulation。所以這一欄應該不是電壓降本身，比較可能是某個節點的電壓，兩群數字也許來自不同的分析條件。報告沒有交代這一欄的定義，所以我不拿它來比較；只有三種 CTS 才有的 IR increase 欄位，意思比較明確。
 
 ## 分工
 

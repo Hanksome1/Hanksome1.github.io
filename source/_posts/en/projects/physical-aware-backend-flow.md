@@ -124,15 +124,15 @@ create_ccopt_flexible_htree -name hTree \
                             -sink_grid {4 4} \
                             -sink_grid_sink_area {30 30} \
                             -sink_grid_box {0 0 430 430} \
-                            -trunk_cell CKND16BWP16P90LVT \
-                            -final_cell CKND8BWP16P90LVT \
+                            -trunk_cell <CLK_INV_X16> \
+                            -final_cell <CLK_INV_X8> \
                             -pin clk
 
 synthesize_ccopt_flexible_htrees
 ccopt_design
 ```
 
-`-sink_grid` sets how many rows and columns of roots the bottom level of the H-tree has, `-sink_grid_sink_area` is the width and length of each root, `-sink_grid_box` is the extent of the whole H-tree, and `-trunk_cell` and `-final_cell` choose the cells used for the trunk and the final stage. `synthesize_ccopt_flexible_htrees` grows the H-tree; if it overlaps a placement blockage, the flexible H-tree automatically deletes the conflicting roots, with no manual blockage setup needed. A final `ccopt_design` run is mandatory to connect any clock pins still left unattached.
+`-sink_grid` sets how many rows and columns of roots the bottom level of the H-tree has, `-sink_grid_sink_area` is the width and length of each root, `-sink_grid_box` is the extent of the whole H-tree, and `-trunk_cell` and `-final_cell` choose the cells used for the trunk and the final stage — here, clock inverters with drive strengths 16 and 8. `synthesize_ccopt_flexible_htrees` grows the H-tree; if it overlaps a placement blockage, the flexible H-tree automatically deletes the conflicting roots, with no manual blockage setup needed. A final `ccopt_design` run is mandatory to connect any clock pins still left unattached.
 
 ### Skew group
 
@@ -258,7 +258,7 @@ Also, the power of Genus + SDP and Genus + H-tree (196.12 and 195.54 mW) is clos
 
 ### The IR drop column can't be compared directly
 
-The IR drop numbers fall into two clusters: about 0.70 V (baseline, iSpatial, H-tree, and others) and 0.85–0.88 V (every SDP version, the skew group, Genus + SDP). Judging by the corner names in the clock tree debugger (`ffgnp_0p880v`, `ssgnp_0p720v`), the supply in this process is between 0.72 V and 0.88 V; if 0.70 V had really been lost, the circuit wouldn't work at all, yet every one of these versions passed post-simulation. So this column can't be the voltage drop itself — more likely it is the voltage at some node, and the two clusters may come from different analysis conditions. The report doesn't define the column, so I don't use it for comparison; the IR increase column, which only the three CTS runs have, has a clearer meaning.
+The IR drop numbers fall into two clusters: about 0.70 V (baseline, iSpatial, H-tree, and others) and 0.85–0.88 V (every SDP version, the skew group, Genus + SDP). Judging by the voltages of the FF and SS corners in the clock tree debugger (0.88 V and 0.72 V), the supply in this process is between 0.72 V and 0.88 V; if 0.70 V had really been lost, the circuit wouldn't work at all, yet every one of these versions passed post-simulation. So this column can't be the voltage drop itself — more likely it is the voltage at some node, and the two clusters may come from different analysis conditions. The report doesn't define the column, so I don't use it for comparison; the IR increase column, which only the three CTS runs have, has a clearer meaning.
 
 ## Division of work
 
