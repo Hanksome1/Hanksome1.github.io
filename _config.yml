@@ -88,6 +88,19 @@ tag_map:
 ## https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta
 meta_generator: true
 
+# Sitemap（給搜尋引擎）與 RSS（給訂閱的讀者）：hexo-generator-sitemap、hexo-generator-feed
+## 不想被搜尋引擎收錄的頁面，在 front-matter 加 sitemap: false（例如 404）
+sitemap:
+  path: sitemap.xml
+## RSS 只收中文版文章，摘要取 front-matter 的 summary，見 themes/tapeout/scripts/feed.js
+## 只放摘要不放全文：數學式和互動圖在閱讀器裡顯示不出來，全文也會讓 atom.xml 超過 1 MB
+feed:
+  type: atom
+  path: atom.xml
+  limit: 20
+  content: false
+  icon: /favicon.svg
+
 # Date / Time format
 ## Hexo uses Moment.js to parse and display date
 ## You can customize the date format as defined in

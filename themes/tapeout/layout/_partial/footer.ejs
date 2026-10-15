@@ -23,6 +23,9 @@
           <li><a href="<%- url_for(localized_path('/blog/')) %>">Writing</a></li>
           <li><a href="<%- url_for(localized_path('/notes/')) %>">Notes</a></li>
           <li><a href="<%- url_for(localized_path('/archives/')) %>">Archive</a></li>
+          <% var feedPath = config.feed && config.feed.enable !== false && [].concat(config.feed.path)[0]; if (feedPath) { %>
+            <li><a href="<%- url_for(feedPath) %>">RSS</a></li>
+          <% } %>
         </ul>
       </div>
       <div class="footer-colophon">
