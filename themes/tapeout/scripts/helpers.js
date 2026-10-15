@@ -89,7 +89,7 @@ hexo.extend.helper.register('floorplan', function (seed, labels, opts = {}) {
   const H = opts.h || 300;
   const key = String(seed || 'chip');
   const rnd = mulberry32(hash(key));
-  const id = 'fp' + hash(key).toString(36);
+  const id = 'fp' + hash(`${key}@${W}x${H}`).toString(36); // 繞線的遮罩跟尺寸有關，同一頁的不同尺寸不能共用 id
   const names = Array.isArray(labels) ? labels.map(String) : [];
 
   const ring = 16;
@@ -118,17 +118,40 @@ hexo.extend.helper.register('floorplan', function (seed, labels, opts = {}) {
     }
   })(core, 0);
 
-  // 面積大的區塊優先拿到標籤，成為 macro
+  // 面積大的區塊成為 macro；單字最長的標籤放進最寬的 macro
   const byArea = leaves.map((l, i) => ({ l, i })).sort((a, b) => b.l.w * b.l.h - a.l.w * a.l.h);
   byArea.forEach((item, rank) => {
     if (rank < names.length) {
       item.l.kind = 'macro';
-      item.l.label = names[rank];
     } else {
       const p = rnd();
       item.l.kind = p < 0.5 ? 'std' : p < 0.78 ? 'sram' : 'keepout';
     }
   });
+  const macros = leaves.filter(l => l.kind === 'macro').sort((a, b) => b.w - a.w);
+  const longest = s => Math.max(...s.split(/\s+/).map(w => w.length));
+  const placed = names.slice(0, macros.length);
+  const nets = []; // nets[n] 是放第 n 個標籤的 macro
+  placed.map((s, n) => n).sort((a, b) => longest(placed[b]) - longest(placed[a])).forEach((n, k) => {
+    macros[k].label = placed[n];
+    nets[n] = macros[k];
+  });
+
+  // 所有標籤用同一個字級：從最大字級往下找，直到每個標籤在空白處換行後都放得進自己的區塊
+  const CH = 0.64; // IBM Plex Mono 字寬 0.6em，加上 letter-spacing 0.04em
+  const wrap = (s, max) => s.split(/\s+/).reduce((lines, w) => {
+    const last = lines.length - 1;
+    if (last >= 0 && lines[last].length + 1 + w.length <= max) lines[last] += ' ' + w;
+    else lines.push(w);
+    return lines;
+  }, []);
+  const linesOf = (l, fs) => wrap(l.label, Math.floor((l.w - 16) / (fs * CH)));
+  const fits = (l, fs) => {
+    const lines = linesOf(l, fs);
+    return lines.every(s => s.length * fs * CH <= l.w - 16) && 16 + fs * (1 + (lines.length - 1) * 1.2) <= l.h;
+  };
+  let fs = W > 800 ? 19 : 15;
+  while (fs > 9 && !macros.every(l => fits(l, fs))) fs -= 0.5;
 
   const out = [];
   out.push(`<svg class="floorplan" viewBox="0 0 ${W} ${H}" role="img" aria-label="Floorplan illustration" preserveAspectRatio="xMidYMid ${opts.fit === 'meet' ? 'meet' : 'slice'}">`);
@@ -136,6 +159,9 @@ hexo.extend.helper.register('floorplan', function (seed, labels, opts = {}) {
   out.push(`<pattern id="${id}-rows" width="8" height="5" patternUnits="userSpaceOnUse"><path d="M0 .5H8" class="fp-pat"/></pattern>`);
   out.push(`<pattern id="${id}-grid" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0 .5H7M.5 0V7" class="fp-pat"/></pattern>`);
   out.push(`<pattern id="${id}-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M.5 0V6" class="fp-pat"/></pattern>`);
+  out.push(`<mask id="${id}-wires" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#fff"/>`);
+  macros.forEach(l => out.push(`<rect x="${r1(l.x)}" y="${r1(l.y)}" width="${r1(l.w)}" height="${r1(l.h)}"/>`));
+  out.push('</mask>');
   out.push('</defs>');
 
   out.push(`<rect class="fp-die" x=".5" y=".5" width="${W - 1}" height="${H - 1}"/>`);
@@ -152,15 +178,27 @@ hexo.extend.helper.register('floorplan', function (seed, labels, opts = {}) {
   out.push(`<path class="fp-pad" d="${pads.join('')}"/>`);
   out.push(`<rect class="fp-core" x="${core.x - 5}" y="${core.y - 5}" width="${core.w + 10}" height="${core.h + 10}"/>`);
 
-  // 繞線：連接相鄰區塊中心的曼哈頓路徑
+  // 繞線：照標籤順序（資料流）用曼哈頓路徑串起 macro；遮罩挖掉 macro 內部，線只出現在區塊之間，不會壓到標籤
+  // 線離開起點 macro、進入終點 macro 的地方各放一個 pin
+  const exit = (r, pts) => {
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+      if (x1 < r.x || x1 > r.x + r.w || y1 < r.y || y1 > r.y + r.h) {
+        return x0 === x1 ? [x0, y1 > y0 ? r.y + r.h : r.y] : [x1 > x0 ? r.x + r.w : r.x, y0];
+      }
+    }
+  };
   const wires = [];
-  for (let i = 1; i < leaves.length; i++) {
-    if (rnd() < 0.55) continue;
-    const a = leaves[i - 1];
-    const b = leaves[i];
+  const pins = [];
+  for (let i = 1; i < nets.length; i++) {
+    const a = nets[i - 1];
+    const b = nets[i];
     const ax = r1(a.x + a.w / 2), ay = r1(a.y + a.h / 2);
     const bx = r1(b.x + b.w / 2), by = r1(b.y + b.h / 2);
-    wires.push(`M${ax} ${ay}H${bx}V${by}`);
+    const across = Math.abs(bx - ax) >= Math.abs(by - ay);
+    const pts = [[ax, ay], across ? [bx, ay] : [ax, by], [bx, by]];
+    wires.push(`M${ax} ${ay}${across ? `H${bx}V${by}` : `V${by}H${bx}`}`);
+    pins.push(exit(a, pts), exit(b, pts.slice().reverse()));
   }
 
   leaves.forEach((l, i) => {
@@ -168,13 +206,16 @@ hexo.extend.helper.register('floorplan', function (seed, labels, opts = {}) {
     out.push(`<g class="fp-blk fp-${l.kind}" style="--i:${i}">`);
     out.push(`<rect x="${r1(l.x)}" y="${r1(l.y)}" width="${r1(l.w)}" height="${r1(l.h)}"${fill ? ` fill="${fill}"` : ''}/>`);
     if (l.label) {
-      const fs = Math.max(9, Math.min(W > 800 ? 19 : 15, l.w / (l.label.length * 0.75 + 1)));
-      out.push(`<text x="${r1(l.x + 8)}" y="${r1(l.y + 8 + fs)}" font-size="${r1(fs)}">${escapeHTML(l.label)}</text>`);
+      const lines = linesOf(l, fs).map((s, k) => `<tspan x="${r1(l.x + 8)}" y="${r1(l.y + 8 + fs * (1 + k * 1.2))}">${escapeHTML(s)}</tspan>`);
+      out.push(`<text font-size="${fs}">${lines.join('')}</text>`);
     }
     out.push('</g>');
   });
 
-  if (wires.length) out.push(`<path class="fp-wire" pathLength="1" d="${wires.join('')}"/>`);
+  if (wires.length) {
+    out.push(`<path class="fp-wire" pathLength="1" mask="url(#${id}-wires)" d="${wires.join('')}"/>`);
+    out.push(`<path class="fp-pin" d="${pins.map(([x, y]) => `M${r1(x - 2)} ${r1(y - 2)}h4v4h-4z`).join('')}"/>`);
+  }
   out.push('</svg>');
   return out.join('');
 });

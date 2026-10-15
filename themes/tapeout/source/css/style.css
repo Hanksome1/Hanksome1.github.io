@@ -799,6 +799,7 @@ code, pre, kbd { font-family: var(--font-mono); }
 .fp-pat { fill: none; stroke: var(--fp-ink); stroke-width: 0.7; opacity: 0.38; }
 .fp-blk text { fill: var(--fp-ink); font-family: var(--font-mono); font-weight: 600; letter-spacing: 0.04em; }
 .fp-wire { fill: none; stroke: var(--accent); stroke-width: 1.4; opacity: 0.85; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.fp-pin { fill: var(--accent); }
 .fp-mark { fill: var(--ink-3); font: 500 9px var(--font-mono); letter-spacing: 0.12em; }
 .chip-card:hover .fp-macro rect, .datasheet:hover .fp-macro rect { fill: var(--accent-soft); stroke: var(--accent); }
 .chip-card:hover .fp-wire { animation: fp-draw 1.1s var(--ease); }
