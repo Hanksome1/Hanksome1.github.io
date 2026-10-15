@@ -100,14 +100,16 @@ function wikilink(embed, inner) {
   const name = hashAt > -1 ? target.slice(0, hashAt) : target;
   const heading = hashAt > -1 ? target.slice(hashAt + 1).replace(/^\^/, '').trim() : '';
 
-  // 圖片 / 附件嵌入：![[diagram.png|400]]、![[diagram.png|圖說]]
+  // 圖片 / 附件嵌入：![[diagram.png|400]]、![[diagram.png|400x300]]、![[diagram.png|圖說]]、![[diagram.png|圖說|400]]
+  // 跟 Obsidian 一樣，最後一段是數字（或 寬x高）才當成尺寸，前面的是 alt
   if (embed && IMAGE_EXT.test(name)) {
     const src = assetUrl(name);
-    const size = label.match(/^(\d+)(?:x(\d+))?$/);
-    if (size) {
-      return `<img src="${src}" alt="${escapeHTML(fileTitle(name))}" width="${size[1]}"${size[2] ? ` height="${size[2]}"` : ''} loading="lazy">`;
-    }
-    return `![${label.replace(/[[\]]/g, '')}](${src})`;
+    const size = parts.length > 1 && parts[parts.length - 1].trim().match(/^(\d+)(?:x(\d+))?$/);
+    if (!size) return `![${label.replace(/[[\]]/g, '')}](${src})`;
+    const alt = parts.slice(1, -1).join('|').trim();
+    const img = `<img src="${src}" alt="${escapeHTML(alt || fileTitle(name))}" width="${size[1]}"${size[2] ? ` height="${size[2]}"` : ''} loading="lazy">`;
+    // 有寫 alt 時跟 ![[diagram.png|圖說]] 一樣加上圖說（hexo-renderer-marked 的 figcaption 格式）
+    return alt ? `<figure>${img}<figcaption aria-hidden="true">${escapeHTML(alt)}</figcaption></figure>` : img;
   }
   if (embed && /\.\w{2,4}$/.test(name) && !/\.md$/i.test(name)) {
     return `<a class="wikilink" href="${assetUrl(name)}">${escapeHTML(label || name)}</a>`;

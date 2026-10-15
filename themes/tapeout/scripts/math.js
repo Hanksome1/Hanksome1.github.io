@@ -136,7 +136,9 @@ function extract(src, items) {
       continue;
     } else if (c === '$') {
       if (src[i + 1] === '$') {
-        const end = findClose(src, i + 2, '$$', true);
+        // 一行開頭的 $$ 是區塊數學式，跟 Obsidian 一樣可以跨空行；段落中間的 $$ 遇到空行就放棄
+        const block = /^[ \t>]*$/.test(src.slice(src.lastIndexOf('\n', i - 1) + 1, i));
+        const end = findClose(src, i + 2, '$$', !block);
         if (end > -1) {
           take(end + 2, { tex: stripQuotePrefix(src, i, src.slice(i + 2, end)), display: true });
           continue;
