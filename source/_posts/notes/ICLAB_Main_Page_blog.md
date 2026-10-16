@@ -2,7 +2,7 @@
 # 由 tools/sync-vault.js 從 Obsidian vault 產生，請到 vault 修改原始筆記
 title: ICLAB 積體電路設計實驗：筆記總覽
 date: '2025-09-28'
-updated: '2026-10-16 00:26:42'
+updated: '2026-10-16 15:44:46'
 tags:
   - ICLAB
   - MOC
@@ -11,30 +11,26 @@ permalink: notes/iclab/
 synced: obsidian
 ---
 
-ICLAB 是清大電機系的 EE4292 積體電路設計實驗（IC Design Laboratory），黃朝宗老師開課，我修的是 2025 年秋季那一學期。一個學期從寫 Verilog 開始，經過 lint、合成、LEC，一路做到 APR，期末再用整套 flow 完成一個自己的設計。
-
-這些是我修課時寫給自己看的筆記，整理之後放上來。
+ICLAB 是清大電機系的 EE4292 積體電路設計實驗（IC Design Laboratory) 。這堂課會從寫 Verilog 開始，經過 lint、合成、LEC，一路做到 APR，期末再用整套 flow 完成一個自己的設計。
 
 ## 課程進度
 
-| 週 | 課程主題 | Lab |
-| --- | --- | --- |
-| 1 | 課程介紹、cell-based design flow | 工作站環境、SpyGlass |
-| 2 | Verilog | Verilog simulator |
-| 3 | Testbench、function 與 task | Testbench 的 debug 與撰寫（加上 CPU 介紹） |
-| 4 | 合成、FSM | Verdi 除錯平台、FSM 練習 |
-| 5 | RTL coding guidelines | RTL 模擬與除錯 |
-| 6 | Synthesis (I)：Design Compiler | Design Compiler、coding for synthesis (I) |
-| 7 | – | Line-based 影像處理 |
-| 8 | Synthesis (II)：為合成做最佳化 | Coding for synthesis (II) |
-| 9 | Logic equivalence checking | LEC |
-| 10 | LEC 實務 | LEC 實務 |
-| 11 | APR (I)：physical design flow | Innovus：floorplan |
-| 12 | APR (II)：Cadence Innovus | Innovus：power plan、placement、CTS、routing |
-| 13 | Design examples | Innovus：CTS、routing、驗證、power analysis |
-| 14–17 | 期末專題 | 專題諮詢與報告 |
-
-作業：HW1 到 HW4 分別在第 3、5、6、8 週繳交，HW5 從第 10 週開始；期末專題第 13 週交 proposal，第 15 週報告前端設計，第 17 週報告最終成果。
+| 週     | 課程主題                          | Lab                                      |
+| ----- | ----------------------------- | ---------------------------------------- |
+| 1     | 課程介紹、cell-based design flow   | 工作站環境、SpyGlass                           |
+| 2     | Verilog                       | Verilog simulator                        |
+| 3     | Testbench、function 與 task     | Testbench 的 debug 與撰寫（加上 CPU 介紹）         |
+| 4     | 合成、FSM                        | Verdi 除錯平台、FSM 練習                        |
+| 5     | RTL coding guidelines         | RTL 模擬與除錯                                |
+| 6     | Synthesis (I)：Design Compiler | Design Compiler、coding for synthesis (I) |
+| 7     | –                             | Line-based 影像處理                          |
+| 8     | Synthesis (II)：為合成做最佳化        | Coding for synthesis (II)                |
+| 9     | Logic equivalence checking    | LEC                                      |
+| 10    | LEC 實務                        | LEC 實務                                   |
+| 11    | APR (I)：physical design flow  | Innovus：floorplan                        |
+| 12    | APR (II)：Cadence Innovus      | Innovus：power plan、placement、CTS、routing |
+| 13    | Design examples               | Innovus：CTS、routing、驗證、power analysis    |
+| 14–17 | 期末專題                          | 專題諮詢與報告                                  |
 
 ## 筆記
 
@@ -83,7 +79,7 @@ ICLAB 是清大電機系的 EE4292 積體電路設計實驗（IC Design Laborato
 - [[3D Gaussian Splatting 硬體加速器]]
 - [[ICLAB_FINAL_PROJECT_GoldenFormat_blog|Golden pattern 的格式]]
 
-## 我自己記住的幾條原則
+## Design Principle
 
 - 合成工具的最佳化不會跨過 module 的邊界，組合邏輯要在哪裡切開要想清楚。
 - Module 的 output 盡量直接來自 flip-flop。

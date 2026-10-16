@@ -2,7 +2,7 @@
 # 由 tools/sync-vault.js 從 Obsidian vault 產生，請到 vault 修改原始筆記
 title: Heisenberg Equation
 date: '2026-10-09'
-updated: '2026-10-12 15:36:53'
+updated: '2026-10-16 14:39:58'
 tags:
   - QM
 permalink: notes/heisenberg-equation/

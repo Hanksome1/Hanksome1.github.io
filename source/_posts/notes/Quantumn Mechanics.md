@@ -2,7 +2,7 @@
 # 由 tools/sync-vault.js 從 Obsidian vault 產生，請到 vault 修改原始筆記
 title: Quantumn Mechanics
 date: '2026-09-12'
-updated: '2026-10-09 17:07:44'
+updated: '2026-10-16 14:40:20'
 tags:
   - QM
 aliases:
@@ -29,6 +29,7 @@ synced: obsidian
 
 ### Introduction Heisenberg Matrix Mechanics
 - [[Heisenberg Equation]]
+- QM in Energy Basis
 
 
 ---
