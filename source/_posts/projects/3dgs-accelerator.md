@@ -13,7 +13,6 @@ stack: [Verilog, Python]
 tools: [SpyGlass, Conformal LEC, Innovus]
 tags: [Accelerator, Verilog, 3D Gaussian Splatting, APR]
 floorplan: [ROT / COV3D, PROJECTION, SORT, RENDER, SRAM]
-cover: /images/3dgs-accelerator/apr-layout.jpg
 metrics:
   - { label: Throughput, value: 367.8 FPS, note: "128×128 · 64 Gaussians" }
   - { label: Power, value: 2.63 mW, note: "post-layout · post-sim waveform" }
@@ -256,10 +255,6 @@ Core utilization 是合成面積與 APR 面積的比值。
 $$
 \text{Core utilization} = \frac{\text{Area}_\text{SYN}}{\text{Area}_\text{APR}} = \frac{180{,}072.922}{240{,}128.460} \approx 75\%
 $$
-
-![APR 完成後的 layout](/images/3dgs-accelerator/apr-layout.jpg)
-
-![Layout 的 IR drop 分析](/images/3dgs-accelerator/ir-drop.jpg)
 
 功耗分析比較了三種情況，分別是 layout 前、layout 後配 pre-sim 波形，以及 layout 後配 post-sim 波形。
 

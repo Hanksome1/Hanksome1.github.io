@@ -13,7 +13,6 @@ stack: [Tcl, N16 FinFET]
 tools: [Genus, Innovus, Design Compiler]
 tags: [APR, Physical Design, Clock Tree Synthesis, Systolic Array]
 floorplan: [iSPATIAL SYN, SDP GRID 8×4, H-TREE, SKEW GROUP, SRAM I/O]
-cover: /images/physical-aware-backend-flow/sdp-route.jpg
 metrics:
   - { label: Fmax, value: 1710 MHz, note: "SDP grid · baseline 1640 MHz (+4.3%)" }
   - { label: Power, value: 145.19 mW, note: "CTS skew group · baseline 154.46 mW (−6.0%)" }
@@ -41,7 +40,7 @@ metrics:
 
 ![課程提供的 sa_macro：8×4 的 systolic array（左）與其中一個 PE（右）。weight 從左邊的 Weight FIFO 進入，activation 從上方的 Activation FIFO 進入](/images/physical-aware-backend-flow/systolic-array-pe.png)
 
-`sa_macro` 的核心是 8×4 的 systolic array：每一列（Cout #0–#7）由一個 Weight FIFO 餵 weight，每一行由 Activation FIFO 餵資料。每個 PE 裡有三組 register：傳給下一個 PE 的 data register `d_ff`、weight register `w_ff`，以及存累加結果的 `accu`；register 之間是乘法器和累加用的加法器。陣列旁邊是 SRAM macro（後面 layout 圖上方標著 12x45 的方塊）。
+`sa_macro` 的核心是 8×4 的 systolic array：每一列（Cout #0–#7）由一個 Weight FIFO 餵 weight，每一行由 Activation FIFO 餵資料。每個 PE 裡有三組 register：傳給下一個 PE 的 data register `d_ff`、weight register `w_ff`，以及存累加結果的 `accu`；register 之間是乘法器和累加用的加法器。陣列旁邊是 SRAM macro，擺在 core 的上方。
 
 ## Genus iSpatial：合成時就把 cell 擺好
 
@@ -73,8 +72,6 @@ DC 腳本裡的 library 與 design intent 全部保留，這樣兩邊的差別�
 ### 交給 Innovus
 
 因為 placement 與寄生參數已經和後端一致，結果用 `write_design -innovus` 匯出成 Innovus 可以直接讀的一整包。APR 時，Genus 的 placement DEF 先用 `init_def_file` 註冊，`init_design` 時再以 `defIn` 讀入，cell 就停在 iSpatial 擺好的位置。原本的 `floorPlan` 指令註解掉，APR 直接往下做 routing 與最佳化，省掉重新 placement 的工夫。
-
-![iSpatial 的結果剛讀進 Innovus：APR 的 placement 腳本一行都還沒跑，cell 已經擺好了](/images/physical-aware-backend-flow/ispatial-placement.png)
 
 Genus 的 iSpatial flow 也能套用 SDP 約束，不過要等 mapping 完成之後才行。
 
@@ -109,8 +106,6 @@ systolic_array_u0/cin${c}/ch_out[${i}].pix_out[${j}].genblk1.uPE/d_ff_reg[7:0]
 **1. 整個格子往上移。** 最初的 SDP 擺放裡，經過 systolic array 的最差 timing path 太長：格子在 core 裡擺得太低，data register 離它們的 timing-critical 端點太遠，拉長了主要的路徑。我們把整個 SDP 結構往上移，讓陣列靠近 SRAM，最差路徑變短，STA 在所有版本裡最高的頻率下也沒有 violation。原點往下移的兩個版本（Ver 1-1、Ver 1-2）則是反方向的對照。
 
 **2. Accumulator 不約束。** 只約束 data／weight register，accumulator 放著不管。這樣被約束的 register 行列之間留有空間，Innovus 可以把 accumulator 和 MAC 的組合邏輯放進去。保留這份 placement 與 routing 的自由，optimizer 才收得了 timing，不會像全部約束的版本一樣塞住。
-
-![左：最佳版本（Ver 0-1）的 SDP 約束；右：route 完的結果，上色的是被 SDP 約束的 PE](/images/physical-aware-backend-flow/sdp-layout.jpg)
 
 ## Clock tree：H-tree 與 skew group
 
@@ -174,7 +169,7 @@ set_ccopt_property target_insertion_delay 0.0035 -skew_group sa_array
 | Ver 1-2（再往下移） | 1600 | 159.99 | 3,344,891 | 0.843 |
 | hori v0（轉 90°） | fail | – | – | – |
 
-能跑完的版本都通過了 sign-off 驗證。失敗的版本也列出來，因為正是它們幫我們找到正確的 SDP 策略。Ver 0-1 只綁 data 與 weight register、pitch 比較緊，產生上面那張乾淨規則的格子；sign-off STA 在 1710 MHz 沒有 violation，post-layout simulation 也通過。往下移的兩個版本都掉到 1600 MHz，反過來印證了「靠近 SRAM」的判斷。
+能跑完的版本都通過了 sign-off 驗證。失敗的版本也列出來，因為正是它們幫我們找到正確的 SDP 策略。Ver 0-1 只綁 data 與 weight register、pitch 比較緊，產生乾淨規則的格子；sign-off STA 在 1710 MHz 沒有 violation，post-layout simulation 也通過。往下移的兩個版本都掉到 1600 MHz，反過來印證了「靠近 SRAM」的判斷。
 
 ### C. Clock tree
 

@@ -13,7 +13,6 @@ stack: [Tcl, N16 FinFET]
 tools: [Genus, Innovus, Design Compiler]
 tags: [APR, Physical Design, Clock Tree Synthesis, Systolic Array]
 floorplan: [iSPATIAL SYN, SDP GRID 8×4, H-TREE, SKEW GROUP, SRAM I/O]
-cover: /images/physical-aware-backend-flow/sdp-route.jpg
 metrics:
   - { label: Fmax, value: 1710 MHz, note: "SDP grid · baseline 1640 MHz (+4.3%)" }
   - { label: Power, value: 145.19 mW, note: "CTS skew group · baseline 154.46 mW (−6.0%)" }
@@ -41,7 +40,7 @@ Each technique was compared against the DC / Innovus baseline, and then we combi
 
 ![The course-provided sa_macro: an 8×4 systolic array (left) and one of its PEs (right). Weights enter from the Weight FIFOs on the left, activations from the Activation FIFOs on top](/images/physical-aware-backend-flow/systolic-array-pe.png)
 
-The core of `sa_macro` is an 8×4 systolic array: each row (Cout #0–#7) is fed weights by a Weight FIFO, and each column is fed data by an Activation FIFO. Each PE holds three sets of registers: the data register `d_ff` and the weight register `w_ff`, which pass values on to the next PE, and `accu`, which holds the running sum; between the registers sit a multiplier and an accumulating adder. Next to the array are the SRAM macros (the blocks labeled 12x45 along the top of the layout pictures below).
+The core of `sa_macro` is an 8×4 systolic array: each row (Cout #0–#7) is fed weights by a Weight FIFO, and each column is fed data by an Activation FIFO. Each PE holds three sets of registers: the data register `d_ff` and the weight register `w_ff`, which pass values on to the next PE, and `accu`, which holds the running sum; between the registers sit a multiplier and an accumulating adder. Next to the array are the SRAM macros, placed along the top of the core.
 
 ## Genus iSpatial: placing cells during synthesis
 
@@ -73,8 +72,6 @@ The second version enables iSpatial physical-aware synthesis:
 ### Handing off to Innovus
 
 Because placement and parasitics are now consistent with the back end, the result is exported with `write_design -innovus` as a single Innovus-ready package. At APR, Genus's placement DEF is registered with `init_def_file` and read in with `defIn` during `init_design`, so the cells stay exactly where iSpatial put them. The original `floorPlan` command is commented out, and APR goes straight on to routing and optimization, skipping the placement rework.
-
-![The iSpatial result just after loading into Innovus: not one line of the APR placement scripts has run, and the cells are already placed](/images/physical-aware-backend-flow/ispatial-placement.png)
 
 Genus's iSpatial flow can apply SDP constraints too, but only after mapping is finished.
 
@@ -109,8 +106,6 @@ So we wrote a Tcl script (`gen_sa_macro_sdp_v2.tcl`) that produces the whole `.s
 **1. Move the whole grid up.** In the initial SDP placement, the worst timing path through the systolic array was too long: the grid sat low in the core, the data registers ended up far from their timing-critical endpoints, and that stretched the dominant path. We shifted the entire SDP structure upward so the array sits closer to the SRAM, which shortened the worst path and let STA pass with no violation at the highest frequency of any version. The two versions with the origin moved down (Ver 1-1, Ver 1-2) test the opposite direction.
 
 **2. Leave the accumulator unconstrained.** Only the data / weight registers are constrained; the accumulator is left free. That leaves whitespace between the constrained register rows and columns, so Innovus has room to place the accumulator and the MAC's combinational logic there. Keeping that placement and routing freedom is what lets the optimizer close timing instead of jamming up the way the fully constrained version did.
-
-![Left: the SDP constraints of the best version (Ver 0-1); right: the routed result, with the SDP-constrained PEs colored](/images/physical-aware-backend-flow/sdp-layout.jpg)
 
 ## Clock tree: H-tree and skew group
 
@@ -174,7 +169,7 @@ Four experiments: A compares synthesis methods; B looks at how SDP placement aff
 | Ver 1-2 (moved further down) | 1600 | 159.99 | 3,344,891 | 0.843 |
 | hori v0 (rotated 90°) | fail | – | – | – |
 
-Every version that completed passed sign-off verification. The failed versions are listed too, because they are exactly what led us to the right SDP strategy. Ver 0-1 binds only the data and weight registers at a tighter pitch and produces the clean, regular grid shown above; its sign-off STA reaches 1710 MHz with no violation, and post-layout simulation passes. Both moved-down versions fall to 1600 MHz, which confirms the "closer to the SRAM" decision from the other side.
+Every version that completed passed sign-off verification. The failed versions are listed too, because they are exactly what led us to the right SDP strategy. Ver 0-1 binds only the data and weight registers at a tighter pitch and produces a clean, regular grid; its sign-off STA reaches 1710 MHz with no violation, and post-layout simulation passes. Both moved-down versions fall to 1600 MHz, which confirms the "closer to the SRAM" decision from the other side.
 
 ### C. Clock tree
 
