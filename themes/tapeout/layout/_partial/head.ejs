@@ -1,7 +1,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <%
-  var titleText = page.title && page.layout !== 'index' ? page.title + ' — ' + (theme.profile.name || config.author) : config.title;
+  var isHome = is_home() || page.layout === 'index';
+  var titleText = page.title && !isHome ? page.title + ' — ' + (theme.profile.name || config.author) : config.title;
+  if (isHome) titleText = localize(theme.home && theme.home.title) || config.title;
   if (is_archive()) titleText = 'Archive — ' + config.title;
   if (is_tag()) titleText = '#' + page.tag + ' — ' + config.title;
   if (is_category()) titleText = page.category + ' — ' + config.title;
@@ -9,6 +11,25 @@
 %>
 <title><%= titleText %></title>
 <%- open_graph({ title: titleText, description: desc }) %>
+<% if (isHome) {
+  // 首頁的結構化資料：讓搜尋引擎把中英文名字、學校和這個網站連在一起
+  var prof = theme.profile;
+  var person = {
+    '@type': 'Person',
+    '@id': config.url + '/#person',
+    name: prof.name_zh || prof.name,
+    alternateName: prof.name_zh ? prof.name : undefined,
+    url: config.url + '/',
+    email: prof.email ? 'mailto:' + prof.email : undefined,
+    jobTitle: localize(prof.role) || undefined,
+    affiliation: prof.affiliation ? { '@type': 'CollegeOrUniversity', name: localize(prof.affiliation) } : undefined
+  };
+  var ld = { '@context': 'https://schema.org', '@graph': [
+    { '@type': 'WebSite', name: titleText, url: full_url_for(page.path), inLanguage: lang_of(page), author: { '@id': person['@id'] } },
+    person
+  ] };
+%><script type="application/ld+json"><%- JSON.stringify(ld).replace(/</g, '\\u003c') %></script>
+<% } %>
 <%
   var schemes = scheme_list();
   var schemeBg = {};

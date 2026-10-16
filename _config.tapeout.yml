@@ -44,6 +44,10 @@ analytics:
   google: G-KH6J45ZFL6
 
 home:
+  # 首頁的 <title>，也就是 Google 搜尋結果的標題；放進別人會拿來搜尋你的字（中文名、學校、領域）
+  title:
+    zh-TW: 吳承翰 Hank Wu — 清大電機・數位 IC 設計部落格
+    en: Hank Wu (吳承翰) — Digital IC Design Notes
   projects_count: 4   # 首頁顯示幾個專案（front-matter 有 featured: true 的優先）
   posts_count: 5      # 首頁顯示幾篇文章
 

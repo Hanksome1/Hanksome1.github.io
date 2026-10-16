@@ -15,6 +15,7 @@ profile:
   status: ''
 
 home:
+  title: ''
   projects_count: 4
   posts_count: 5
 
