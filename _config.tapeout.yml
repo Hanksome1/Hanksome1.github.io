@@ -74,6 +74,7 @@ notes:
   #   summary  總覽筆記沒有 summary 時，卡片用這段
   courses:
     - { hub: /notes/vlsi/, tag: VLSI, name: 積體電路設計導論, code: EE3230, term: 2024 Fall }
+    - { hub: /notes/aic/, tag: AIC, name: 電子學（二）, code: EE2260, term: 2024 Fall }
     - { hub: /notes/iclab/, tag: ICLAB, name: ICLAB 積體電路設計實驗, code: EE4292, term: 2025 Fall }
     - hub: /notes/quantumn-mechanics/
       tag: QM
