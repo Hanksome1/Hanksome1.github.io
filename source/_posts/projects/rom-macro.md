@@ -13,7 +13,6 @@ stack: [Full-custom, SPICE, 0.18 µm CMOS]
 tools: [Virtuoso, Calibre, HSPICE]
 tags: [Memory, Full-custom, Layout, Sense Amplifier]
 floorplan: [ROM ARRAY, X-DECODER, MUX / SA, CTRL / DFF]
-cover: /images/rom-macro/layout-cover.png
 metrics:
   - { label: Area, value: "7,818 µm²", note: "36.31 × 215.33 µm · DRC / LVS clean" }
   - { label: Access time, value: 1.56 ns, note: "post-sim · TT 25 °C · 4-case avg (worst 3.02 ns)" }
