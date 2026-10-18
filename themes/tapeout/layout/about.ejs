@@ -6,6 +6,7 @@
   var rows = Math.max(left.length, right.length);
   var total = left.length + right.length;
   var history = page.timeline || [];
+  var awards = page.awards || [];
 %>
 <section class="page-head wrap" data-section="ABOUT">
   <p class="kicker">§04 — Pin description<%- partial('_partial/lang-switch') %></p>
@@ -30,7 +31,7 @@
         <% right.forEach(function (s, i) { %><li><span class="pin-no"><%= total - i %></span><span class="pin-label"><%= s %></span></li><% }) %>
       </ul>
     </div>
-    <figcaption>Fig. 1 — Pin configuration (top view)</figcaption>
+    <figcaption>Fig. 1 — Pin configuration (top view)<% if (pin.legend) { %><span class="pinout-legend">Pins 1–<%= left.length %>: <%= pin.legend[0] %> · <%= left.length + 1 %>–<%= total %>: <%= pin.legend[1] %></span><% } %></figcaption>
   </figure>
   <% } %>
 </section>
@@ -52,6 +53,30 @@
         <span role="cell" class="rev-desc">
           <strong><%= h.title %></strong><% if (h.org) { %> <span class="rev-org">@ <%= h.org %></span><% } %>
           <% if (h.note) { %><span class="rev-note"><%= h.note %></span><% } %>
+        </span>
+      </div>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
+<% if (awards.length) { %>
+<section class="section wrap" data-section="AWARDS">
+  <header class="section-head">
+    <p class="kicker">§06 — Qualification results</p>
+    <h2 class="section-title">Awards</h2>
+  </header>
+  <div class="rev-table" role="table">
+    <div class="rev-row rev-head" role="row">
+      <span role="columnheader">No.</span><span role="columnheader">Date</span><span role="columnheader">Description</span>
+    </div>
+    <% awards.forEach(function (a, i) { %>
+      <div class="rev-row reveal" role="row">
+        <span role="cell" class="rev-no"><%= String(i + 1).padStart(2, '0') %></span>
+        <span role="cell" class="rev-date"><%= a.date %></span>
+        <span role="cell" class="rev-desc">
+          <strong><%= a.title %></strong>
+          <% if (a.note || a.url) { %><span class="rev-note"><%= a.note %><% if (a.url) { %> <a class="rev-link" href="<%- url_for(a.url) %>"><%= a.label %> →</a><% } %></span><% } %>
         </span>
       </div>
     <% }) %>

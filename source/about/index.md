@@ -3,6 +3,7 @@ title: About
 layout: about
 pinout:
   part: EE-MS-NTHU
+  legend: [hardware design, software & EDA]
   left: [Verilog, Testbench, Machine Learning, FPGA, Fixed-point, Embedded System, Full-custom layout]
   right: [Python, PyTorch, C / C++, Vivado, Virtuoso, Calibre, HSPICE]
 timeline:
@@ -26,6 +27,26 @@ timeline:
     title: B.S. in Electrical Engineering
     org: National Tsing Hua University
     note: GPA 4.15 / 4.3，系排 16 / 142；邏輯設計與邏設實驗、計算機結構 A+
+awards:
+  - date: "2026"
+    title: 全班最高分
+    note: 清大 EE4292 積體電路設計實驗（ICLAB）期末專題，25 組中第 1 名（114 學年度第二學期）
+    url: /projects/3dgs-accelerator/
+    label: 專案頁
+  - date: "2025"
+    title: 第 3 名
+    note: 第 19 屆國際機器視覺應用會議（MVA 2025）小型物體追蹤挑戰賽 SMOT4SB
+    url: /projects/smot4sb-bird-tracking/
+    label: 專案頁
+  - date: "2025"
+    title: 第 2 名
+    note: 清大電機系實作專題成果展海報解說競賽（113 學年度第二學期）
+  - date: "2024"
+    title: 書卷獎
+    note: 國立清華大學（113 學年度第一學期）
+  - date: 2023 — 2025
+    title: 專業課程學習榮譽證明
+    note: 清大電機系（112、113 學年度，修課數量與成績前 10%）
 ---
 嗨，我是 **吳承翰**（Hank Wu），目前在清華大學電機工程學系攻讀碩士，指導教授是黃朝宗老師。
 
@@ -34,13 +55,3 @@ timeline:
 另一部分時間花在演算法本身，像是 MVA 2025 的小鳥追蹤挑戰賽和手機的多幀超解析。演算法和硬體兩邊都做過，讓我在設計硬體時比較清楚哪些地方可以省、哪些不能動。
 
 這個網站是我的工作日誌：放我做過的專案，也記錄學習過程中的筆記。如果你對我的專案有興趣，或有合作機會，歡迎 [寫信給我](mailto:wu20040814@gmail.com)，也可以看我的 [履歷（PDF）](/files/Hank-Wu-CV.pdf)。
-
-### 獲獎
-
-- **全班最高分**，清大 EE4292 積體電路設計實驗（ICLAB）期末專題，25 組中第 1 名（114 學年度第二學期，[專案頁](/projects/3dgs-accelerator/)）
-- **第 3 名**，第 19 屆國際機器視覺應用會議（MVA 2025）小型物體追蹤挑戰賽 SMOT4SB（[專案頁](/projects/smot4sb-bird-tracking/)）
-- **第 2 名**，清大電機系實作專題成果展海報解說競賽（113 學年度第二學期）
-- **書卷獎**，國立清華大學（113 學年度第一學期）
-- **專業課程學習榮譽證明**，清大電機系（112、113 學年度，修課數量與成績前 10%）
-
-> 右邊是我的「腳位圖」——左側是硬體設計相關技能，右側是軟體與 EDA 工具。

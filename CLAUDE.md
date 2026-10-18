@@ -17,7 +17,7 @@
 
 首頁的文字來自 `_config.tapeout.yml`：要分語言的欄位（`profile` 的文字欄位、`now` 的 `value`）寫成 `{ zh-TW: …, en: … }`，主題用 `localize()` 依頁面語言取值；改其中一種語言時，另一種一起改。
 
-About 的 `pinout`、`timeline` 的 `period` 兩邊相同，`timeline` 的 `note` 與內文要翻譯；這一頁不在 `i18n.js` 的檢查範圍內，改中文版時記得同步改英文版。
+About 的 `pinout`、`timeline` 的 `period`、`awards` 的 `date` 兩邊相同，`timeline` 的 `note`、`awards` 的 `title` / `note` / `label` 與內文要翻譯，`awards` 的 `url` 連到對應語言的專案頁；這一頁不在 `i18n.js` 的檢查範圍內，改中文版時記得同步改英文版。
 
 ### Front-matter
 

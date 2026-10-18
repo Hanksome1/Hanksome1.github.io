@@ -1314,7 +1314,7 @@ details.note > summary + * { margin-top: 8px; }
 .about-body { font-size: 18px; }
 .pinout { position: sticky; top: calc(var(--header-h) + 32px); margin: 0; }
 .pinout-chip { display: grid; grid-template-columns: minmax(0, 1fr) clamp(84px, 9vw, 120px) minmax(0, 1fr); }
-.pins { list-style: none; margin: 0; padding: 22px 0; display: grid; grid-template-rows: repeat(var(--rows), 36px); }
+.pins { list-style: none; margin: 0; padding: 22px 0; display: grid; grid-template-rows: repeat(var(--rows), 48px); }
 .pins li { display: flex; align-items: center; gap: 8px; font: 500 12.5px var(--font-mono); color: var(--ink-2); cursor: default; }
 .pins-left li { justify-content: flex-end; }
 .pins-left li::after, .pins-right li::before {
@@ -1339,6 +1339,7 @@ details.note > summary + * { margin-top: 8px; }
 .pinout-name { writing-mode: vertical-rl; transform: rotate(180deg); font-weight: 600; font-size: clamp(16px, 1.6vw, 20px); letter-spacing: 0.02em; white-space: nowrap; }
 .pinout-part { writing-mode: vertical-rl; transform: rotate(180deg); font: 500 10px var(--font-mono); letter-spacing: 0.14em; color: var(--ink-3); }
 .pinout figcaption { margin-top: 14px; text-align: center; font: 500 11px var(--font-mono); color: var(--ink-3); letter-spacing: 0.04em; }
+.pinout-legend { display: block; margin-top: 6px; }
 
 .rev-table { margin-top: 36px; border-top: 2px solid var(--ink); }
 .rev-row { display: grid; grid-template-columns: 72px 180px minmax(0, 1fr); gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
@@ -1348,6 +1349,8 @@ details.note > summary + * { margin-top: 8px; }
 .rev-desc strong { font-size: 18px; font-weight: 600; }
 .rev-org { color: var(--ink-2); }
 .rev-note { display: block; margin-top: 4px; font-size: 15px; color: var(--ink-3); }
+.rev-link { color: var(--ink-2); white-space: nowrap; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 3px; transition: color 0.2s; }
+.rev-link:hover { color: var(--accent); }
 
 /* ---------- 14. Reveal ---------- */
 .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
@@ -1376,6 +1379,7 @@ details.note > summary + * { margin-top: 8px; }
   .conn-grid { grid-template-columns: minmax(0, 1fr); }
   .netlist-legend { display: none; }
   .pinout { position: static; max-width: 520px; }
+  .pins { grid-template-rows: repeat(var(--rows), 36px); }
   .chip-card.is-featured .chip-link { flex-direction: column; }
   .chip-card.is-featured .chip-art { min-height: 0; aspect-ratio: 16 / 10; border-right: 0; border-bottom: 1px solid var(--line); border-radius: 2px 2px 0 0; }
   .log-row { grid-template-columns: 96px 44px minmax(0, 1fr) 20px; }
