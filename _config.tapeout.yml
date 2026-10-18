@@ -73,10 +73,11 @@ notes:
   #   name  卡片上的課名（預設用總覽的標題）  code、term  課號、學期
   #   summary  總覽筆記沒有 summary 時，卡片用這段
   courses:
-    - { hub: /notes/electronics/, tag: Electronics, name: 電子學（一）, term: 2024 Spring }
+    - { hub: /notes/iclab/, tag: ICLAB, name: ICLAB 積體電路設計實驗, code: EE4292, term: 2025 Fall }
     - { hub: /notes/vlsi/, tag: VLSI, name: 積體電路設計導論, code: EE3230, term: 2024 Fall }
     - { hub: /notes/aic/, tag: AIC, name: 電子學（二）, code: EE2260, term: 2024 Fall }
-    - { hub: /notes/iclab/, tag: ICLAB, name: ICLAB 積體電路設計實驗, code: EE4292, term: 2025 Fall }
+    - { hub: /notes/electronics/, tag: Electronics, name: 電子學（一）, term: 2024 Spring }
+    - { hub: /notes/computer-architecture/, tag: Computer Architecture, name: 計算機結構, code: CS4100, term: 2025 Spring }
     - hub: /notes/quantumn-mechanics/
       tag: QM
       name: 量子力學
