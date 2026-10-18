@@ -3,7 +3,7 @@
 // 從所有文章 render 後的 HTML 擷取站內連結，建立「知識圖譜」：
 // 節點 = 專案 / 文章 / 筆記 / 尚未撰寫的 [[連結]]，邊 = 站內連結。
 
-const { url_for, stripHTML, unescapeHTML } = require('hexo-util');
+const { url_for, stripHTML, escapeHTML, unescapeHTML } = require('hexo-util');
 
 const kindOf = post => hexo.extend.helper.get('post_kind').call(hexo, post);
 const langOf = post => hexo.extend.helper.get('lang_of')(post);
@@ -31,11 +31,101 @@ function hrefKey(href) {
   return keyOf(href);
 }
 
+// ── 連結附近的文字 ──────────────────────────────────────────
+// KaTeX 輸出同時有 MathML（含 TeX 原始碼）和畫面上的字形，直接 stripHTML 會兩份都留下。
+// 改用 MathML 轉成一行純文字：a/b、x²、xᵢ、√2、X̂；表格（align、cases、矩陣）每列以 ; 分隔。
+
+const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: ' ' };
+const decodeEntities = s => s.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (all, e) => {
+  if (e[0] !== '#') return ENTITIES[e] || all;
+  return String.fromCodePoint(/x/i.test(e[1]) ? parseInt(e.slice(2), 16) : +e.slice(1));
+});
+
+const SUP = Object.fromEntries([...'0123456789+-−=()ni'].map((c, i) => [c, '⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁻⁼⁽⁾ⁿⁱ'[i]]));
+const SUB = Object.fromEntries([...'0123456789+-−=()aehijklmnoprstuvx'].map((c, i) => [c, '₀₁₂₃₄₅₆₇₈₉₊₋₋₌₍₎ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓ'[i]]));
+// \hat \tilde \bar \dot \ddot \vec \overline → 組合用附加符號
+const ACCENTS = { '^': '̂', '~': '̃', 'ˉ': '̄', '‾': '̅', '˙': '̇', '¨': '̈', '⃗': '⃗' };
+
+// 多個字的分子、根號內容加括號：(a+b)/c
+const group = s => (/^[\p{L}\p{M}\p{N}.]*$/u.test(s) ? s : `(${s})`);
+// 上下標：能用 Unicode 上下標字元就用，否則寫成 ^N、_(n=0)
+function script(s, map, mark) {
+  if (/^[′″‴]+$/.test(s)) return s;
+  const chars = [...s];
+  if (chars.length && chars.every(c => map[c])) return chars.map(c => map[c]).join('');
+  return mark + (chars.length === 1 ? s : `(${s})`);
+}
+
+function mathTree(xml) {
+  const root = { tag: '', attrs: '', kids: [] };
+  const stack = [root];
+  const re = /<(\/?)([\w-]+)([^>]*?)(\/?)>|([^<]+)/g;
+  let m;
+  while ((m = re.exec(xml))) {
+    const top = stack[stack.length - 1];
+    if (m[5]) top.kids.push(decodeEntities(m[5]));
+    else if (m[1]) { if (stack.length > 1) stack.pop(); }
+    else {
+      const el = { tag: m[2], attrs: m[3], kids: [] };
+      top.kids.push(el);
+      if (!m[4]) stack.push(el);
+    }
+  }
+  return root;
+}
+
+function linear(n) {
+  if (typeof n === 'string') return n.replace(/[​⁡-⁤]/g, '');
+  if (n.tag === 'annotation' || n.tag === 'mphantom') return '';
+  if (n.tag === 'mspace') return ' ';
+  const k = n.kids.map(linear);
+  switch (n.tag) {
+    case 'mfrac':
+      // \binom 是線寬 0 的 mfrac，外層括號另外有
+      return /linethickness="0/.test(n.attrs) ? `${k[0]} ${k[1]}` : `${group(k[0])}/${group(k[1])}`;
+    case 'msqrt': return '√' + group(k.join(''));
+    case 'mroot': return script(k[1], SUP, '') + '√' + group(k[0]);
+    case 'msup': return k[0] + script(k[1], SUP, '^');
+    case 'msub': case 'munder': return k[0] + script(k[1], SUB, '_');
+    case 'msubsup': case 'munderover': return k[0] + script(k[1], SUB, '_') + script(k[2], SUP, '^');
+    case 'mover':
+      if (/accent="true"/.test(n.attrs) && ACCENTS[k[1]]) return k[0] + ACCENTS[k[1]];
+      return k[0] + script(k[1], SUP, '^');
+    case 'mtd': return k.join('').trim();
+    case 'mtr': case 'mlabeledtr': return k.filter(Boolean).join(' ');
+    case 'mtable': return k.filter(Boolean).join('; ');
+    default: return k.join('');
+  }
+}
+
+// 把 html 裡每個 <span class="katex">…</span> 換成 MathML 的純文字；被切掉一半的式子整段捨棄
+function flattenMath(html) {
+  let out = '';
+  let pos = 0;
+  let at;
+  while ((at = html.indexOf('<span class="katex">', pos)) > -1) {
+    const tags = /<(\/?)span\b[^>]*>/g;
+    tags.lastIndex = at;
+    let depth = 0;
+    let t;
+    while ((t = tags.exec(html))) if (!(depth += t[1] ? -1 : 1)) break;
+    if (!t) return out + html.slice(pos, at);
+    const mathml = /<math[\s\S]*?<\/math>/.exec(html.slice(at, tags.lastIndex));
+    let text = mathml ? escapeHTML(linear(mathTree(mathml[0])).trim()) : '';
+    // 區塊式子前後是別的段落，補空白才不會跟前後文字黏在一起
+    if (mathml && /^<math[^>]*display="block"/.test(mathml[0])) text = ` ${text} `;
+    out += html.slice(pos, at) + text;
+    pos = tags.lastIndex;
+  }
+  return out + html.slice(pos);
+}
+
 function contextAround(html, idx) {
   const start = Math.max(html.lastIndexOf('<p>', idx), html.lastIndexOf('<li', idx), html.lastIndexOf('<td', idx), 0);
   const ends = ['</p>', '</li>', '</td>'].map(t => html.indexOf(t, idx)).filter(i => i > -1);
   const end = ends.length ? Math.min.apply(null, ends) : idx + 400;
-  const clean = s => stripHTML(s).replace(/\s+/g, ' ');
+  // 樣板輸出時會再 escape 一次，這裡要還原成純文字
+  const clean = s => decodeEntities(stripHTML(flattenMath(s))).replace(/\s+/g, ' ');
   let before = clean(html.slice(start, idx)).trimStart();
   let after = clean(html.slice(idx, end)).trimEnd();
   if (before.length > 60) before = '…' + before.slice(-60);
