@@ -2,7 +2,7 @@
 # 由 tools/sync-vault.js 從 Obsidian vault 產生，請到 vault 修改原始筆記
 title: 積體電路設計導論：筆記總覽
 date: '2024-07-08'
-updated: '2026-10-16 01:12:06'
+updated: '2026-10-17 21:09:42'
 tags:
   - VLSI
   - MOC
@@ -11,9 +11,7 @@ permalink: notes/vlsi/
 synced: obsidian
 ---
 
-積體電路設計導論（Introduction to Integrated Circuit Design）是清大電機系的 EE3230，張孟凡老師開課，我修的是 2024 年秋季那一學期。這門課從電晶體開始往上蓋：先看 MOS 本身的特性，再用它組出反相器、邏輯閘、latch 和 flip-flop，最後是記憶體和整顆晶片。跟 ICLAB 寫 RTL 交給工具合成不同，這門課走的是 full-custom 的路，每顆電晶體的尺寸都要自己決定。
-
-這些是我修課時寫給自己看的筆記，整理之後放上來。
+積體電路設計導論是清大電機系的 EE3230（Introduction to Integrated Circuit Design），由張孟凡老師授課。這堂課從 MOS 元件開始，依序做出反相器、邏輯閘、latch 與 flip-flop，最後是記憶體和整顆晶片。和 ICLAB 寫 RTL 交給工具合成不同，這裡走的是 full-custom 的流程，每顆電晶體的尺寸都要自己決定。
 
 ## 課程內容
 
@@ -56,9 +54,9 @@ synced: obsidian
 
 - [ROM macro 全客製化設計](/projects/rom-macro/)：0.18 µm 製程上的 128 × 16 bit contact ROM，自己畫 schematic、拉 layout、過 DRC / LVS，再做 post-layout 模擬。
 
-## 整門課反覆出現的幾個觀念
+## 重點
 
-- **NMOS 傳 strong 0、PMOS 傳 strong 1。** Static CMOS 為什麼用 PMOS 做 pull-up、pass-transistor logic 為什麼要 level restorer 或 transmission gate，都是從這一點來的。
-- **延遲就是 RC。** 反相器是 $0.69 R_{eq} C_L$，MOS 的等效電阻跟 W/L 成反比，導線延遲跟長度的平方成正比。要變快，就是想辦法讓 R 或 C 變小。
-- **很多電路是在比力氣。** Level restorer 裡 pass transistor 要贏過回授的 PMOS，SRAM 讀取時 PD 要贏過 PG、寫入時 PG 要贏過 PU，reduced load flip-flop 的輸入 TG 要贏過回授反相器。這些電路的尺寸不是越大越好，重點是兩顆電晶體之間的相對強弱。
-- **存在電容上的東西都會漏。** Dynamic logic、DRAM、two-phase flip-flop 的 non-overlap 期間，值都只存在寄生電容上，所以會有最低操作頻率，或需要 refresh。
+- NMOS 傳 strong 0，PMOS 傳 strong 1，所以 static CMOS 用 PMOS 上拉、NMOS 下拉；pass-transistor logic 也因此需要 level restorer 或 transmission gate。
+- 延遲大致就是 RC：反相器是 $0.69 R_{eq} C_L$，MOS 的等效電阻和 W/L 成反比，導線延遲和長度的平方成正比。
+- 很多電路要看兩顆電晶體的相對強弱，例如 level restorer、SRAM 的讀寫、reduced load flip-flop，尺寸不是越大越好。
+- 只存在電容上的值會漏電流失，所以 dynamic logic 有最低操作頻率，DRAM 要 refresh。

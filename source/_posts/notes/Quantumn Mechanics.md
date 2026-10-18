@@ -2,7 +2,7 @@
 # 由 tools/sync-vault.js 從 Obsidian vault 產生，請到 vault 修改原始筆記
 title: Quantumn Mechanics
 date: '2026-09-12'
-updated: '2026-10-16 14:40:20'
+updated: '2026-10-17 17:17:14'
 tags:
   - QM
 aliases:
@@ -11,7 +11,7 @@ permalink: notes/quantumn-mechanics/
 synced: obsidian
 ---
 
-![[Quantum Mechanics.svg]]
+[[Quantum Mechanics.svg]]
 # Course Note 
 ##### Quantum Mechanic Basic & Background 
 - [[QM introduction]] : Introduction of quantum mechanic
@@ -30,6 +30,9 @@ synced: obsidian
 ### Introduction Heisenberg Matrix Mechanics
 - [[Heisenberg Equation]]
 - QM in Energy Basis
+
+> [!bug] Quantum Postulate Number2 Is Wrong???
+> QP number 2 Explanation : 在有限維的前提下面，QP number2其實會是錯誤的
 
 
 ---
