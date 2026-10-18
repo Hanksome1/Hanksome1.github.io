@@ -22,7 +22,7 @@ metrics:
 
 ## Overview
 
-這是大四下修的 EE5254 Advanced Digital Design Flow 的期末專題。題目很單純：**RTL 一行都不改**，只改後端流程，看同一顆設計可以推到多快、多省電。
+這是大四下修的 EE5254 Advanced Digital Design Flow 的期末專題。在這次的project裡面，我們不改rtl設計只改後端流程，看同一顆設計可以推到多快、多省電。
 
 設計是課程作業用的 `sa_macro`，一顆帶 SRAM 的 systolic array macro，製程是 N16（16 nm FinFET）。原本的流程是常見的組合：Synopsys Design Compiler（DC）合成，netlist 交給 Cadence Innovus 做 APR（auto place & route）。製程縮小之後，線的延遲早就超過電晶體本身的 gate delay [3]，而這個流程在合成階段完全看不到線。它有三個弱點，我們各用一招對付：
 

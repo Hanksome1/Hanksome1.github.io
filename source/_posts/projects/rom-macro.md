@@ -22,7 +22,7 @@ metrics:
 
 ## Overview
 
-這是大三上「積體電路設計導論」的期末專題：從電晶體層級開始，自己畫 schematic、自己拉 layout，做出一顆 **128 × 16 bit 的 ROM macro**。跟寫 RTL 再交給合成工具不同，這次每一顆電晶體的尺寸、每一條線怎麼走，都要自己決定。
+這是大三上「積體電路設計導論」的期末專題，我們從電晶體層級開始，自己畫 schematic、自己拉 layout，做出一顆 **128 × 16 bit 的 ROM macro**。跟寫 RTL 再交給合成工具不同，這次每一顆電晶體的尺寸、每一條線怎麼走，都要自己決定。
 
 規格要求 access time 在五個 process corner 下都小於 5 ns，最後用 access time、功耗與面積算出 figure of merit，越小越好：
 
