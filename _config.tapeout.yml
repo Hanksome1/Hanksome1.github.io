@@ -73,15 +73,15 @@ notes:
   #   name  卡片上的課名（預設用總覽的標題）  code、term  課號、學期
   #   summary  總覽筆記沒有 summary 時，卡片用這段
   courses:
-    - { hub: /notes/iclab/, tag: ICLAB, name: ICLAB 積體電路設計實驗, code: EE4292, term: 2025 Fall }
-    - { hub: /notes/vlsi/, tag: VLSI, name: 積體電路設計導論, code: EE3230, term: 2024 Fall }
-    - { hub: /notes/aic/, tag: AIC, name: 電子學（二）, code: EE2260, term: 2024 Fall }
-    - { hub: /notes/electronics/, tag: Electronics, name: 電子學（一）, term: 2024 Spring }
-    - { hub: /notes/computer-architecture/, tag: Computer Architecture, name: 計算機結構, code: CS4100, term: 2025 Spring }
+    - { hub: /notes/iclab/, tag: ICLAB, name: ICLAB 積體電路設計實驗, code: EE4292, term: 114 學年度上學期 }
+    - { hub: /notes/vlsi/, tag: VLSI, name: 積體電路設計導論, code: EE3230, term: 113 學年度上學期 }
+    - { hub: /notes/aic/, tag: AIC, name: 電子學（二）, code: EE2260, term: 113 學年度上學期 }
+    - { hub: /notes/electronics/, tag: Electronics, name: 電子學（一）, term: 112 學年度下學期 }
+    - { hub: /notes/computer-architecture/, tag: Computer Architecture, name: 計算機結構, code: CS4100, term: 113 學年度下學期 }
     - hub: /notes/quantumn-mechanics/
       tag: QM
       name: 量子力學
-      term: 2026 Fall
+      term: 115 學年度上學期
       summary: 物理所量子力學的課堂筆記：bra-ket 與 Hilbert space 的數學、量子假設、一維位能井與散射，到 Heisenberg 的矩陣力學。
 
 # LaTeX 數學式（伺服器端 KaTeX）。macros 是全站共用的巨集，等同 LaTeX 導言區的 \newcommand，
