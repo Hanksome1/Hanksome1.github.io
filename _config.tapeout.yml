@@ -28,6 +28,10 @@ nav:
   - { label: Notes, path: /notes/ }
   - { label: About, path: /about/ }
 
+# 頁尾「主題程式碼以 MIT 授權」連到的授權全文
+license:
+  url: https://github.com/Hanksome1/Hanksome1.github.io/blob/main/themes/tapeout/LICENSE
+
 social:
   - { label: Email, url: mailto:wu20040814@gmail.com }
   - { label: CV, url: /files/Hank-Wu-CV.pdf }

@@ -38,7 +38,9 @@
             <% }) %>
           </div>
         <% } %>
-        <p class="mono">© <%= new Date().getFullYear() %> <%= theme.profile.name %></p>
+        <p class="mono">© <%= new Date().getFullYear() %> <%= theme.profile.name %> · <%= __('rights_reserved') %></p>
+        <% var mit = theme.license && theme.license.url ? '<a href="' + theme.license.url + '" rel="noopener license">MIT</a>' : 'MIT'; %>
+        <p class="mono"><%- __('theme_license', mit) %></p>
       </div>
     </div>
   </div>

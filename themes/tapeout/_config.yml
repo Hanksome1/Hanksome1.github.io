@@ -31,6 +31,10 @@ math:
 
 statusbar: true
 
+# 頁尾「主題程式碼以 MIT 授權」的連結；留空就只顯示文字
+license:
+  url: ''
+
 # 配色：schemes 是陣列，請寫在 _config.tapeout.yml，例如 schemes: [datasheet, phosphor]
 # 沒寫就只有 tapeout。
 

@@ -14,6 +14,8 @@ prev_next: Previous / next post
 filter_by_tag: Filter by tag
 filter_more: More
 filter_less: Less
+rights_reserved: All rights reserved
+theme_license: Theme code released under the %s License
 no_backlinks: Nothing links here yet, but this page links out — its neighbors are on the right.
 graph:
   global: Graph of all notes and posts, %d nodes

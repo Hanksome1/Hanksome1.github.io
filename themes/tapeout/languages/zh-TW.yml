@@ -14,6 +14,8 @@ prev_next: 上一篇 / 下一篇
 filter_by_tag: 依標籤篩選
 filter_more: 更多
 filter_less: 收合
+rights_reserved: 文章與專案內容保留所有權利
+theme_license: 主題程式碼以 %s 授權釋出
 no_backlinks: 還沒有其他頁面連到這裡，但這一頁連出去了 —— 右邊是它的鄰居。
 graph:
   global: 全站筆記與文章的關聯圖，共 %d 個節點

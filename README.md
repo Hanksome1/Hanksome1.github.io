@@ -141,3 +141,10 @@ npm run server      # 預覽沒問題就 commit + push
 3. 把 `_config.yml` 的 `url` 改成 `https://<帳號>.github.io`
 
 之後每次 push 都會自動透過 [`.github/workflows/pages.yml`](.github/workflows/pages.yml) 建置與部署。
+
+## 授權
+
+- **主題程式碼**（[`themes/tapeout/`](themes/tapeout/)）：[MIT License](themes/tapeout/LICENSE)，可以自由使用、修改與散布，但要保留著作權聲明。
+- **其餘內容**（文章、筆記、專案頁、About、圖片、履歷等附件、網站設定與 `tools/`）：© 2026 吳承翰，保留所有權利，未經同意不得轉載或改作。
+
+兩部分的範圍見根目錄的 [`LICENSE`](LICENSE)。頁尾的授權說明文字在 `themes/tapeout/languages/` 的 `rights_reserved` 與 `theme_license`，MIT 連結的網址是 `_config.tapeout.yml` 的 `license.url`。
