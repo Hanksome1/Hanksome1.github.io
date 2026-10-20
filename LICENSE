@@ -1,43 +1,32 @@
-這個 repository 依內容分成兩種授權。
 This repository is licensed in two parts.
 
-────────────────────────────────────────────────────────────────────────
+------------------------------------------------------------------------
 
-1. 主題程式碼 / Theme code — MIT License
-
-   themes/tapeout/ 底下的所有檔案（版型、樣式、腳本、語系檔與設定檔）
-   以 MIT License 釋出，全文見 themes/tapeout/LICENSE。
+1. Theme code: MIT License
 
    Everything under themes/tapeout/ (layouts, styles, scripts, language
    files and configuration) is released under the MIT License. See
    themes/tapeout/LICENSE for the full text.
 
-2. 其餘內容 / Everything else — All rights reserved
+2. Everything else: All rights reserved
 
-   Copyright (c) 2026 Hank Wu (吳承翰). All rights reserved.
+   Copyright (c) 2026 Hank Wu. All rights reserved.
 
-   除了 themes/tapeout/ 以外的檔案，包括 source/ 底下的文章、筆記、
-   專案頁、About 頁、圖片、履歷與其他附件，以及網站設定與 tools/ 底下
-   的腳本，著作權皆屬吳承翰所有。未經書面同意，不得重製、改作、散布
-   或公開傳輸；依著作權法合理使用的範圍（例如附上出處的簡短引用）
-   不在此限。
+   All files outside themes/tapeout/ are the copyrighted work of Hank Wu.
+   This includes the posts, notes, project pages, About page, images, CV
+   and other attachments under source/, as well as the site configuration
+   and the scripts under tools/. You may not reproduce, adapt, distribute
+   or publicly transmit them without written permission, except as
+   permitted by applicable copyright law (for example, a short quotation
+   with attribution).
 
-   All files outside themes/tapeout/, including the posts, notes,
-   project pages, About page, images, CV and other attachments under
-   source/, as well as the site configuration and the scripts under
-   tools/, are the copyrighted work of Hank Wu. You may not reproduce,
-   adapt, distribute or publicly transmit them without written
-   permission, except as allowed by fair use (for example, a short
-   quotation with attribution).
+   Permission requests: wu20040814@gmail.com
 
-   授權洽詢 / Permission requests: wu20040814@gmail.com
+------------------------------------------------------------------------
 
-────────────────────────────────────────────────────────────────────────
-
-第三方元件依各自的授權條款使用，不受上述條款影響：
 Third-party components keep their own licenses and are not covered above:
 
-- Hexo 與 npm 套件 / Hexo and npm packages — see each package's license
-- IBM Plex, Instrument Serif, Noto Sans TC — SIL Open Font License 1.1,
+- Hexo and other npm packages: see each package's license
+- IBM Plex, Instrument Serif, Noto Sans TC: SIL Open Font License 1.1,
   loaded from Google Fonts
-- KaTeX, WaveDrom — MIT License
+- KaTeX, WaveDrom: MIT License
