@@ -241,9 +241,22 @@ hexo.extend.helper.register('floorplan', function (seed, labels, opts = {}) {
     pins.push(exit(a, pts), exit(b, pts.slice().reverse()));
   }
 
+  // 外部訊號的入口：資料流第一個 macro 正上方最近的那根頂邊 pad，從 pad 底下直直往下接到 macro 頂端
+  // 預設隱藏，只有 /tapeout/ 會把板子上的走線接進來（js 從 data-x 找到這根 pad）
+  const head = nets[0];
+  let entry = null;
+  if (head) {
+    const cx = head.x + head.w / 2;
+    let best = Infinity;
+    for (let x = ring + 6; x < W - ring - 6; x += 18) {
+      const c = x + pad / 4;
+      if (Math.abs(c - cx) < best) { best = Math.abs(c - cx); entry = { x: r1(c), y: r1(head.y) }; }
+    }
+  }
+
   leaves.forEach((l, i) => {
     const fill = l.kind === 'std' ? `url(#${id}-rows)` : l.kind === 'sram' ? `url(#${id}-grid)` : l.kind === 'keepout' ? `url(#${id}-hatch)` : '';
-    out.push(`<g class="fp-blk fp-${l.kind}" style="--i:${i}">`);
+    out.push(`<g class="fp-blk fp-${l.kind}${l === head ? ' fp-entry' : ''}" style="--i:${i}">`);
     out.push(`<rect x="${r1(l.x)}" y="${r1(l.y)}" width="${r1(l.w)}" height="${r1(l.h)}"${fill ? ` fill="${fill}"` : ''}/>`);
     if (l.label) {
       const lines = linesOf(l, fs).map((s, k) => `<tspan x="${r1(l.x + 8)}" y="${r1(l.y + 8 + fs * (1 + k * 1.2))}">${escapeHTML(s)}</tspan>`);
@@ -255,6 +268,11 @@ hexo.extend.helper.register('floorplan', function (seed, labels, opts = {}) {
   if (wires.length) {
     out.push(`<path class="fp-wire" pathLength="1" mask="url(#${id}-wires)" d="${wires.join('')}"/>`);
     out.push(`<path class="fp-pin" d="${pins.map(([x, y]) => `M${r1(x - 2)} ${r1(y - 2)}h4v4h-4z`).join('')}"/>`);
+  }
+  if (entry) {
+    out.push(`<path class="fp-in" pathLength="1" mask="url(#${id}-wires)" data-x="${entry.x}" d="M${entry.x} 14V${entry.y}"/>`);
+    out.push(`<path class="fp-in-pad" d="M${r1(entry.x - 3)} 4h6v10h-6z"/>`);
+    out.push(`<path class="fp-in-pin" d="M${r1(entry.x - 2)} ${r1(entry.y - 2)}h4v4h-4z"/>`);
   }
   out.push('</svg>');
   return out.join('');

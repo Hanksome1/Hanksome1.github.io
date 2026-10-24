@@ -1,6 +1,7 @@
 /* /tapeout/ 的開場：捲動頁面時，晶片依序經過 floorplan → placement → CTS → routing → tapeout。
    舞台用 position: sticky 釘在畫面上，捲過 .to-track 的距離換算成 0–1 的進度 p，每一段再換算成自己的局部進度 t，
-   所以往回捲動畫也會倒著播。最後四個 macro 從封裝底部的接腳拉線（.to-bus），沿著左邊往下接到 §01–§04 的標題。 */
+   所以往回捲動畫也會倒著播。最後四個 macro 從封裝底部的接腳拉線（.to-bus），沿著左邊往下接到 §01–§04 的標題；
+   §01 那條再繼續往下分岔，接進每張專案卡，把卡片裡的 netlist 畫出來。 */
 (function () {
   'use strict';
 
@@ -9,6 +10,7 @@
   var cfg = JSON.parse(root.querySelector('script[type="application/json"]').textContent || '{}');
   var track = root.querySelector('.to-track');
   var stage = root.querySelector('.to-stage');
+  var copy = root.querySelector('.to-copy');
   var svg = root.querySelector('[data-to-chip]');
   var bus = root.querySelector('[data-to-bus]');
   var consoleEl = root.querySelector('.to-console');
@@ -514,18 +516,45 @@
   });
 
   // ---- bus：從亮起來的四根接腳往下，沿左邊的匯流排接到 §01–§04 的 kicker ----
+  // §01 那條不停在 kicker：主幹繼續往下，在每一排專案卡上方分岔，插進卡片上排的一根接腳，
+  // 接上卡片 floorplan 頂邊的入口 pad，再把卡片裡的 netlist 照資料流畫出來（板子走線 → 封裝接腳 → die）
   var wires = BUS_ORDER.map(function (key, j) {
     var sec = document.getElementById('sec-' + key);
     if (!sec) return null;
     return {
+      key: key,
       sec: sec,
       kicker: sec.querySelector('.kicker'),
       lead: busLeads[key],
       j: j,
       e: el('path', { class: 'to-bus-wire' }, bus),
+      kick: key === 'projects' ? el('path', { class: 'to-bus-wire' }, bus) : null,
       dot: el('circle', { r: 3, class: 'to-bus-dot', opacity: 0 }, bus)
     };
   }).filter(Boolean);
+  var projSec = document.getElementById('sec-projects');
+  var cards = projSec ? [].map.call(projSec.querySelectorAll('.chip-card'), function (card) {
+    var fp = card.querySelector('.chip-art svg.floorplan');
+    var stub = fp && fp.querySelector('.fp-in');
+    return {
+      card: card,
+      link: card.querySelector('.chip-link'),
+      art: card.querySelector('.chip-art'),
+      fp: stub ? fp : null,
+      stub: stub,
+      x: stub ? parseFloat(stub.getAttribute('data-x')) : 0,
+      net: stub && fp.querySelector('.fp-wire'),
+      e: el('path', { class: 'to-bus-wire' }, bus),
+      pin: el('rect', { class: 'to-bus-pin', width: 6, height: 7, opacity: 0 }, bus),
+      via: el('circle', { r: 2.5, class: 'to-bus-dot', opacity: 0 }, bus)
+    };
+  }) : [];
+  var rowEls = []; // 每一排卡片上方的那段橫向走線，和它在主幹上的 via
+  function rowEl(i) {
+    return rowEls[i] || (rowEls[i] = { e: el('path', { class: 'to-bus-wire' }, bus), via: el('circle', { r: 2.5, class: 'to-bus-dot', opacity: 0 }, bus) });
+  }
+  var kickVia = cards.length ? el('circle', { r: 2.5, class: 'to-bus-dot', opacity: 0 }, bus) : null;
+  var FANOUT = 3; // 分岔之後的走線（含進到卡片裡）每捲 1 px 走 3 px，橫跨整排卡片才不會拖太久
   var busSize = '';
   // 折線在 y = head 的地方截斷
   function truncate(pts, head) {
@@ -538,6 +567,61 @@
     }
     return out;
   }
+  // 折線從起點量起只畫 len 長
+  function cut(pts, len) {
+    var out = [pts[0]];
+    for (var i = 1; i < pts.length && len > 0; i++) {
+      var a = pts[i - 1], b = pts[i];
+      var d = Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
+      var f = Math.min(1, len / (d || 1));
+      out.push([lerp(a[0], b[0], f), lerp(a[1], b[1], f)]);
+      len -= d;
+    }
+    return out;
+  }
+  function polyline(pts) {
+    return pts.length > 1 ? 'M' + pts.map(function (pt) { return r1(pt[0]) + ' ' + r1(pt[1]); }).join('L') : '';
+  }
+  function setStyle(e, k, v) {
+    var key = '_tos_' + k;
+    if (e[key] === v) return;
+    e[key] = v;
+    e.style[k] = v;
+  }
+  // 卡片在畫面上的位置；有 floorplan 的話入口就是那根 pad（用 svg 的 CTM 換算，不管 meet / slice 怎麼裁切）
+  // 封裝接腳（.chip-link::before：left 22px 起，每 16px 一根 6px 寬）跟 die 上的 pad 不同格，
+  // 走線先對準最近的那根接腳，進到封裝裡再橫移到 pad，像 bond wire
+  function measureCard(c) {
+    var lr = c.link.getBoundingClientRect(), ar = c.art.getBoundingClientRect();
+    var m = { top: lr.top, cardTop: c.card.getBoundingClientRect().top, artH: ar.height };
+    var ctm = c.fp && c.fp.getScreenCTM();
+    if (ctm) {
+      var sd = c.stub.getAttribute('d').match(/[\d.]+/g);
+      m.pad = ctm.a * c.x + ctm.e;
+      m.die = ctm.f;
+      m.padTop = ctm.f + 4 * ctm.d;
+      m.stubLen = Math.max(1, (parseFloat(sd[2]) - parseFloat(sd[1])) * ctm.d);
+    } else {
+      m.pad = ar.left + ar.width * 0.25;
+      m.die = m.padTop = ar.top;
+      m.stubLen = 0;
+    }
+    var x0 = lr.left + c.link.clientLeft + 22 + 3;
+    var n = Math.floor((c.link.clientWidth - 44 - 6) / 16);
+    m.pin = x0 + 16 * clamp(Math.round((m.pad - x0) / 16), 0, n);
+    if (!ctm) m.pad = m.pin;
+    return m;
+  }
+  function renderCard(c, a, m) {
+    var wired = a >= 0;
+    var stubK = m.stubLen ? clamp01(a / m.stubLen) : wired ? 1 : 0;
+    var netK = clamp01((a - m.stubLen) / (m.artH * 1.5));
+    c.card.classList.toggle('is-wired', wired);
+    c.card.classList.toggle('is-fed', wired && stubK >= 1);
+    c.card.classList.toggle('is-routed', wired && stubK >= 1 && netK >= 1);
+    if (c.stub) setStyle(c.stub, 'strokeDashoffset', String(r1((1 - stubK) * 1000) / 1000));
+    if (c.net) setStyle(c.net, 'strokeDashoffset', String(r1((1 - netK) * 1000) / 1000));
+  }
   function renderBus(k, rects) {
     var rr = rects.root;
     var size = Math.round(rr.width) + 'x' + Math.round(rr.height);
@@ -548,25 +632,82 @@
       bus.setAttribute('viewBox', '0 0 ' + Math.round(rr.width) + ' ' + Math.round(rr.height));
     }
     var trackBottom = rects.track.bottom - rr.top;
+    // 窄螢幕晶片疊在文字上面：接腳下來馬上轉進左邊的 gutter，不穿過文字
+    var leadBottom = Math.max.apply(null, rects.leads.map(function (lr) { return lr.bottom; }));
+    var stacked = rects.copy.top >= leadBottom - 1;
+    var copyTop = rects.copy.top - rr.top;
     wires.forEach(function (w, i) {
       var lr = rects.leads[i], kr = rects.kickers[i];
       var contentLeft = kr.left - rr.left;
       var g = clamp((contentLeft - 6) / 4, 3, 8);
       var lx = lr.left + lr.width / 2 - rr.left, ly = lr.bottom - rr.top;
-      var jog = trackBottom + 30 + 14 * w.j;
+      var jog = stacked ? ly + Math.min(10, (copyTop - ly) / 5) * (w.j + 1) : trackBottom + 30 + 14 * w.j;
       var bx = contentLeft - g * (4 - w.j);
       var ky = kr.top + kr.height / 2 - rr.top;
-      var pts = [[lx, ly], [lx, jog], [bx, jog], [bx, ky], [contentLeft, ky]];
       var reach = Math.max(ly, window.innerHeight * 0.92 - rr.top);
       var head = k >= 1 && reduceMotion ? Infinity : ly + (reach - ly) * k;
-      var shownPts = k > 0 ? truncate(pts, head) : [];
-      set(w.e, 'd', shownPts.length > 1 ? 'M' + shownPts.map(function (pt) { return r1(pt[0]) + ' ' + r1(pt[1]); }).join('L') : '');
       var done = head >= ky;
+      var pts = [[lx, ly], [lx, jog], [bx, jog], [bx, ky], [contentLeft, ky]];
+      if (w.kick) {
+        var fan = renderFanout(rects.cards, bx, head, rr, done);
+        if (fan > ky) {
+          // 主幹接到最後一排的分岔點，kicker 改成 T 字分出去的一小段
+          pts = [[lx, ly], [lx, jog], [bx, jog], [bx, fan]];
+          set(w.kick, 'd', done ? line(bx, ky, contentLeft, ky) : '');
+          set(kickVia, 'cx', r1(bx));
+          set(kickVia, 'cy', r1(ky));
+          set(kickVia, 'opacity', done ? 1 : 0);
+        }
+      }
+      set(w.e, 'd', k > 0 ? polyline(truncate(pts, head)) : '');
       set(w.dot, 'cx', r1(contentLeft));
       set(w.dot, 'cy', r1(ky));
       set(w.dot, 'opacity', done ? 1 : 0);
       w.sec.classList.toggle('is-wired', done);
     });
+  }
+  // 專案卡依位置分排；每排在卡片上方從主幹分岔出一條橫線，再往下插進每張卡的入口。回傳最後一個分岔點的 y（沒有卡片就回傳 -Infinity）
+  function renderFanout(ms, bx, head, rr, on) {
+    var rows = [];
+    cards.forEach(function (c, i) {
+      var m = ms[i];
+      var row = rows.filter(function (r) { return Math.abs(r.top - m.cardTop) < 40; })[0];
+      if (!row) rows.push(row = { top: m.cardTop, items: [] });
+      row.top = Math.min(row.top, m.cardTop);
+      row.items.push({ c: c, m: m });
+    });
+    rows.sort(function (a, b) { return a.top - b.top; });
+    var last = -Infinity;
+    rows.forEach(function (row, ri) {
+      var y = row.top - 12 - rr.top;
+      last = y;
+      row.items.sort(function (a, b) { return a.m.pin - b.m.pin; });
+      var far = row.items[row.items.length - 1].m.pin - rr.left;
+      var d = on ? (head - y) * FANOUT : -Infinity;
+      var re = rowEl(ri);
+      set(re.e, 'd', d > 0 ? polyline(cut([[bx, y], [far, y]], d)) : '');
+      set(re.via, 'cx', r1(bx));
+      set(re.via, 'cy', r1(y));
+      set(re.via, 'opacity', d > 0 && ri < rows.length - 1 ? 1 : 0);
+      row.items.forEach(function (it, ii) {
+        var c = it.c, m = it.m;
+        var px = m.pin - rr.left, pad = m.pad - rr.left, padTop = m.padTop - rr.top;
+        var jogY = (m.die + m.padTop) / 2 - rr.top;
+        var a0 = px - bx, drop = (jogY - y) + Math.abs(pad - px) + (padTop - jogY);
+        var dd = d - a0;
+        set(c.e, 'd', dd > 0 ? polyline(cut([[px, y], [px, jogY], [pad, jogY], [pad, padTop]], dd)) : '');
+        set(c.via, 'cx', r1(px));
+        set(c.via, 'cy', r1(y));
+        set(c.via, 'opacity', dd > 0 && ii < row.items.length - 1 ? 1 : 0);
+        var pinY = m.top - 8 - rr.top; // 卡片上排接腳（.chip-link::before）的頂端
+        set(c.pin, 'x', r1(px - 3));
+        set(c.pin, 'y', r1(pinY));
+        set(c.pin, 'opacity', dd >= pinY - y ? 1 : 0);
+        renderCard(c, dd - drop, m);
+      });
+    });
+    for (var i = rows.length; i < rowEls.length; i++) { set(rowEls[i].e, 'd', ''); set(rowEls[i].via, 'opacity', 0); }
+    return last;
   }
 
   // ---- main loop ----
@@ -581,8 +722,10 @@
     var rects = {
       root: root.getBoundingClientRect(),
       track: track.getBoundingClientRect(),
+      copy: copy.getBoundingClientRect(),
       leads: wires.map(function (w) { return w.lead.getBoundingClientRect(); }),
-      kickers: wires.map(function (w) { return w.kicker.getBoundingClientRect(); })
+      kickers: wires.map(function (w) { return w.kicker.getBoundingClientRect(); }),
+      cards: cards.map(measureCard)
     };
     var p = 1;
     if (!reduceMotion) {
@@ -612,5 +755,7 @@
   window.addEventListener('scroll', request, { passive: true });
   window.addEventListener('resize', function () { measureHeader(); request(); });
   if ('ResizeObserver' in window) new ResizeObserver(request).observe(root);
+  // 卡片的 .reveal 是 transform 動畫，停下來的時候不會觸發 scroll，要自己再對一次走線位置
+  cards.forEach(function (c) { c.card.addEventListener('transitionend', request); });
   frame();
 })();
