@@ -68,6 +68,27 @@ waveform:
     - { name: ready,      wave: "1.....0.1.....1......0.1.......1" }
     - { name: "data[31:0]", wave: "x...=.x.=..x..=.x...=..x..=...x.", data: [C0FFEE, CAFEF00D, 5EED, FEEDBEEF, ACCE55] }
 
+# /tapeout/ 的 APR 開場動畫（測試中，還沒有放上導覽列）。往下捲動依序演出下面這幾段；
+# cts: false 會拿掉 CTS 這一段。caption 是每段底下的一行說明
+tapeout_intro:
+  cts: true
+  stages:
+    floorplan:
+      zh-TW: 先決定晶片的大小和 IO 的位置，擺好四個 macro，再鋪上電源網路。
+      en: First fix the die size and the IO ring, drop in four macros, then lay down the power grid.
+    placement:
+      zh-TW: 幾百個標準元件先粗略散開（global placement），再一個個對齊到 row 上（legalization）。
+      en: A few hundred standard cells spread out roughly (global placement), then snap onto the rows (legalization).
+    cts:
+      zh-TW: 從中心長出一棵 H-tree，讓時脈幾乎同時抵達每一個暫存器。
+      en: An H-tree grows from the center so the clock reaches every register at almost the same time.
+    routing:
+      zh-TW: 一層一層繞線：M1、M3 走水平，M2、M4 走垂直，越上層越粗、越長。
+      en: Routing goes up one layer at a time. M1 and M3 run horizontally, M2 and M4 vertically, and higher layers are wider and longer.
+    tapeout:
+      zh-TW: 通過 DRC 之後縮小、封裝；四個 macro 各自接到一根接腳，往下連到這個網站的四個區塊。
+      en: After DRC comes back clean, the die shrinks into its package. Each macro gets a pin that wires down to one section of this site.
+
 # Obsidian 筆記：用 Obsidian 打開 source/ 資料夾當 vault，
 # 放在 source/_posts/<dir>/ 的筆記會出現在 /notes/ 與知識圖譜裡。
 notes:

@@ -10,6 +10,7 @@
   var desc = page.summary || page.description || config.description;
 %>
 <title><%= titleText %></title>
+<% if (page.noindex) { %><meta name="robots" content="noindex"><% } %>
 <%- open_graph({ title: titleText, description: desc }) %>
 <% if (isHome) {
   // 首頁的結構化資料：讓搜尋引擎把中英文名字、學校和這個網站連在一起

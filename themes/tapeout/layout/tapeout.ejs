@@ -1,0 +1,56 @@
+<%
+  // /tapeout/：首頁的試作版本。hero 換成一段跟著捲動演出的 APR 流程（js/tapeout.js），下面接首頁的 §01–§04
+  var p = theme.profile;
+  var intro = theme.tapeout_intro || {};
+  var captions = intro.stages || {};
+  var stages = [
+    { key: 'floorplan', name: 'Floorplan' },
+    { key: 'placement', name: 'Placement' },
+    { key: 'cts', name: 'CTS' },
+    { key: 'routing', name: 'Routing' },
+    { key: 'tapeout', name: 'Tapeout' }
+  ].filter(function (s) { return s.key !== 'cts' || intro.cts !== false; });
+%>
+<div class="to-root" data-tapeout>
+  <script type="application/json"><%- JSON.stringify({ seed: 'tapeout', stages: stages.map(function (s) { return s.key; }) }) %></script>
+  <section class="to-track" data-section="TAPEOUT">
+    <div class="to-stage wrap">
+      <div class="to-copy">
+        <p class="kicker">§00 — Place &amp; Route</p>
+        <h1 class="to-name">
+          <span class="to-name-en"><%= p.name %></span>
+          <% if (p.name_zh) { %><span class="to-name-zh"><%= p.name_zh %></span><% } %>
+        </h1>
+        <p class="to-tagline"><%- emphasize(localize(p.tagline)) %></p>
+        <ol class="to-steps" style="--to-steps: <%= stages.length %>">
+          <% stages.forEach(function (s, i) { %>
+            <li class="to-step" data-step="<%= s.key %>">
+              <button type="button"><span class="to-step-num"><%= pad(i + 1) %></span><span class="to-step-name"><%= s.name %></span><i class="to-step-bar" aria-hidden="true"></i></button>
+            </li>
+          <% }) %>
+        </ol>
+        <div class="to-captions">
+          <% stages.forEach(function (s, i) { %>
+            <p class="to-caption<%= i === 0 ? ' is-on' : '' %>" data-caption="<%= s.key %>"><%= localize(captions[s.key]) %></p>
+          <% }) %>
+        </div>
+        <pre class="to-console" aria-hidden="true"></pre>
+        <a class="to-skip" href="#sec-projects">Skip intro <span aria-hidden="true">↓</span></a>
+      </div>
+      <div class="to-chipcol">
+        <dl class="to-metrics">
+          <div><dt>Util</dt><dd data-metric="util">—</dd></div>
+          <div><dt>Wirelength</dt><dd data-metric="wire">—</dd></div>
+          <div><dt>WNS</dt><dd data-metric="wns">—</dd></div>
+          <div><dt>DRC</dt><dd data-metric="drc">—</dd></div>
+        </dl>
+        <svg class="to-chip" data-to-chip viewBox="0 0 1000 1000" role="img" aria-label="A chip being placed and routed, then packaged"></svg>
+        <ul class="to-layers" aria-hidden="true">
+          <% [1, 2, 3, 4].forEach(function (n) { %><li data-layer="<%= n %>"><i></i>M<%= n %></li><% }) %>
+        </ul>
+      </div>
+    </div>
+  </section>
+  <%- partial('_partial/home-sections', { anchors: true }) %>
+  <svg class="to-bus" data-to-bus aria-hidden="true"></svg>
+</div>
