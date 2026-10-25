@@ -10,7 +10,6 @@
   var cfg = JSON.parse(root.querySelector('script[type="application/json"]').textContent || '{}');
   var track = root.querySelector('.to-track');
   var stage = root.querySelector('.to-stage');
-  var copy = root.querySelector('.to-copy');
   var svg = root.querySelector('[data-to-chip]');
   var bus = root.querySelector('[data-to-bus]');
   var consoleEl = root.querySelector('.to-console');
@@ -100,7 +99,7 @@
   }
 
   // ---- stages ----
-  var WEIGHTS = { floorplan: 1, placement: 1.4, cts: 0.8, routing: 1.4, tapeout: 1.3 };
+  var WEIGHTS = { floorplan: 1.8, placement: 1.4, cts: 0.8, routing: 1.4, tapeout: 1.3 }; // floorplan 包含從整片晶圓鑽進來那一段
   var HOLD = 0.3; // 演完之後停留一下才放開舞台
   var keys = (cfg.stages || ['floorplan', 'placement', 'cts', 'routing', 'tapeout']).filter(function (k) { return WEIGHTS[k]; });
   var total = keys.reduce(function (s, k) { return s + WEIGHTS[k]; }, HOLD);
@@ -111,6 +110,47 @@
   }, 0);
   function localT(k, p) { return spans[k] ? clamp01((p - spans[k].start) / spans[k].len) : (p > 0 ? 1 : 0); }
 
+  // ---- camera ----
+  // 鏡頭是一個正方形的取景框（中心 x, y、邊長 w，單位跟 viewBox 一樣，1 = 1 µm），整個放進 .to-frame 那一格（contain），
+  // 所以晶片永遠整顆看得到；.to-frame 外面（文字底下）照樣畫，晶圓會一路鋪到舞台邊。
+  // 每一格 [stage, t, x, y, w] 是那一段演到 t 的時候鏡頭的位置，中間平滑插值
+  var WAFER_R = 3200; // 晶圓半徑，中心就是這顆 die 的中心
+  var PKG_SHOT = [500, 345, 800]; // tapeout 之後框住封裝
+  // 一開始看到整片晶圓，往下捲才鑽進正中間那顆
+  var SHOTS = [
+    ['floorplan', 0.06, 500, 500, WAFER_R * 2 + 300], ['floorplan', 0.42, 500, 500, 1000],
+    ['routing', 0, 500, 500, 1000], ['routing', 0.5, 500, 500, 950], ['routing', 1, 500, 500, 1000],
+    ['tapeout', 0.25, 500, 500, 1000], ['tapeout', 0.7].concat(PKG_SHOT)
+  ];
+  var shots = SHOTS.filter(function (s) { return spans[s[0]]; }).map(function (s) {
+    return { p: spans[s[0]].start + spans[s[0]].len * s[1], x: s[2], y: s[3], w: s[4] };
+  });
+  function camera(p) {
+    var i = 0;
+    while (i < shots.length - 1 && shots[i + 1].p <= p) i++;
+    var a = shots[i], b = shots[Math.min(i + 1, shots.length - 1)];
+    var k = b.p > a.p ? ease(clamp01((p - a.p) / (b.p - a.p))) : 0;
+    // 邊長用對數插值，拉近拉遠的速度才會一致
+    return { x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), w: Math.exp(lerp(Math.log(a.w), Math.log(b.w), k)) };
+  }
+  var frameEl = root.querySelector('.to-frame');
+  var view = { W: 1, H: 1, fx: 0.5, fy: 0.5, fw: 1, fh: 1 };
+  // 舞台和 .to-frame 的大小、位置
+  function measureView() {
+    var sr = svg.getBoundingClientRect(), fr = frameEl.getBoundingClientRect();
+    view.W = sr.width || 1;
+    view.H = sr.height || 1;
+    if (fr.width < 20 || fr.height < 20) fr = sr;
+    view.fx = fr.left - sr.left + fr.width / 2;
+    view.fy = fr.top - sr.top + fr.height / 2;
+    view.fw = fr.width;
+    view.fh = fr.height;
+  }
+  function viewBox(c) {
+    var u = Math.max(c.w / view.fw, c.w / view.fh); // 每個 px 幾 µm
+    return { x: c.x - view.fx * u, y: c.y - view.fy * u, w: view.W * u, h: view.H * u, u: u };
+  }
+
   // ---- build the chip ----
   var defs = el('defs', {}, svg);
   var pat = el('pattern', { id: 'to-sram', width: 12, height: 12, patternUnits: 'userSpaceOnUse' }, defs);
@@ -118,6 +158,7 @@
   var grad = el('linearGradient', { id: 'to-scan', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
   el('stop', { offset: 0, class: 'to-scan-0' }, grad);
   el('stop', { offset: 1, class: 'to-scan-1' }, grad);
+  var gWafer = el('g', { class: 'to-wafer' }, svg); // 晶圓等晶片長出來之後才填
 
   // 封裝在 die 底下，最後才淡入
   var S = 0.46, FY = 330; // tapeout 後 die 的縮放比例與中心
@@ -312,8 +353,58 @@
   var scanGlow = el('rect', { x: DIE.x, y: DIE.y, width: DIE.w, height: 70, fill: 'url(#to-scan)', opacity: 0 }, die);
   var scanLine = el('rect', { x: DIE.x, y: DIE.y, width: DIE.w, height: 3, class: 'to-scan-line', opacity: 0 }, die);
 
-  var hint = el('text', { x: 500, y: 505, class: 'to-hint', 'text-anchor': 'middle' }, die);
-  hint.textContent = small ? 'scroll ↓' : 'scroll ↓ to place & route';
+  var hint = root.querySelector('.to-hint');
+
+  // ---- 做完的樣子 ----
+  // 把剛剛排好的 cell、繞好的線各併成一條 path，當成整顆晶片做完的圖章，蓋在晶圓上每一格
+  (function () {
+    var stamp = el('g', { id: 'to-die-done' }, defs);
+    el('rect', { x: DIE.x, y: DIE.y, width: DIE.w, height: DIE.h, class: 'to-die-bg' }, stamp);
+    el('path', { d: rowsD, class: 'to-rows' }, stamp);
+    el('path', { d: cells.map(function (c) { return 'M' + r1(c.x) + ' ' + c.y + 'h' + c.w + 'v' + c.h + 'h-' + c.w + 'Z'; }).join(''), class: 'to-cell to-tone-2' }, stamp);
+    MACROS.forEach(function (m) {
+      el('rect', { x: m.x, y: m.y, width: m.w, height: m.h, class: 'to-macro-bg' }, stamp);
+      el('rect', { x: m.x + 10, y: m.y + 44, width: m.w - 20, height: m.h - 54, class: 'to-macro-array' }, stamp);
+      el('rect', { x: m.x, y: m.y, width: m.w, height: m.h, class: 'to-macro-edge' }, stamp);
+    });
+    LAYERS.forEach(function (L) {
+      var g = el('g', { class: 'to-metal to-m' + L.n }, stamp);
+      el('path', { d: L.wires.map(function (w) { return w.e.getAttribute('d'); }).join(''), class: 'to-wire', fill: 'none', 'stroke-width': L.width }, g);
+    });
+    el('rect', { x: DIE.x, y: DIE.y, width: DIE.w, height: DIE.h, class: 'to-wafer-edge' }, stamp);
+  })();
+
+  // ---- wafer ----
+  // 整顆落在晶圓裡的才蓋完整的圖章，被邊緣切到的只畫外框；正中間那顆留空，就是接下來要做的這顆
+  var waferSlot, waferSaw = [];
+  (function () {
+    var clip = el('clipPath', { id: 'to-wafer-clip' }, defs);
+    el('circle', { cx: 500, cy: 500, r: WAFER_R }, clip);
+    el('circle', { cx: 500, cy: 500, r: WAFER_R, class: 'to-wafer-disc' }, gWafer);
+    el('circle', { cx: 500, cy: 500 + WAFER_R, r: 70, class: 'to-wafer-notch' }, gWafer);
+    var partial = el('g', { 'clip-path': 'url(#to-wafer-clip)' }, gWafer);
+    for (var i = -4; i <= 4; i++) {
+      for (var j = -4; j <= 4; j++) {
+        if (!i && !j) continue;
+        var x0 = DIE.x + i * 1000, y0 = DIE.y + j * 1000, x1 = x0 + DIE.w, y1 = y0 + DIE.h;
+        var inside = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].filter(function (c) { return Math.hypot(c[0] - 500, c[1] - 500) < WAFER_R - 40; }).length;
+        if (inside === 4) el('use', { href: '#to-die-done', x: i * 1000, y: j * 1000, class: 'to-wafer-die' }, gWafer);
+        else if (inside) el('rect', { x: x0, y: y0, width: DIE.w, height: DIE.h, class: 'to-wafer-part' }, partial);
+      }
+    }
+    // 正中間這顆：一開始用 accent 框起來，鑽進去的時候淡掉
+    waferSlot = el('g', { class: 'to-wafer-slot' }, gWafer);
+    el('rect', { x: DIE.x, y: DIE.y, width: DIE.w, height: DIE.h }, waferSlot);
+    var tag = el('text', { x: 500, y: 540, 'text-anchor': 'middle' }, waferSlot);
+    tag.textContent = 'HW-26';
+    // 切割道：tapeout 的時候沿著 die 之間的走道切開
+    for (var k = -3; k <= 4; k++) {
+      var h = Math.sqrt(Math.max(0, WAFER_R * WAFER_R - Math.pow(k * 1000 - 500, 2)));
+      if (!h) continue;
+      waferSaw.push(el('path', { d: line(k * 1000, 500 - h, k * 1000, 500 + h), class: 'to-saw to-draw', pathLength: 1 }, gWafer));
+      waferSaw.push(el('path', { d: line(500 - h, k * 1000, 500 + h, k * 1000), class: 'to-saw to-draw', pathLength: 1 }, gWafer));
+    }
+  })();
 
   // 打線：die 邊上的 pad（縮小之後的位置）接到封裝的接腳
   var gBonds = el('g', { class: 'to-bonds' }, svg);
@@ -351,7 +442,7 @@
   // ---- per-stage renderers（只吃局部進度 t，所以可以任意跳）----
   var R = {
     floorplan: function (t) {
-      set(hint, 'opacity', r1(1 - seg(t, 0, 0.2)));
+      setStyle(hint, 'opacity', String(r1(1 - seg(t, 0, 0.12))));
       set(ghost, 'opacity', r1(1 - seg(t, 0.2, 0.35)));
       draw(dieEdge, ease(seg(t, 0, 0.3)));
       set(dieBg, 'opacity', r1(seg(t, 0.05, 0.3)));
@@ -364,6 +455,7 @@
         var cx = m.x + m.w / 2, cy = m.y + m.h / 2, s = r1(lerp(0.9, 1, k) * 100) / 100;
         set(m.e, 'transform', 'translate(' + r1(cx * (1 - s)) + ' ' + r1(cy * (1 - s)) + ') scale(' + s + ')');
       });
+      set(waferSlot, 'opacity', r1(1 - seg(t, 0.2, 0.36)));
       ring.forEach(function (e) { draw(e, ease(seg(t, 0.62, 0.82))); });
       stripes.forEach(function (e, i) { var a = 0.72 + 0.16 * i / stripes.length; draw(e, ease(seg(t, a, a + 0.12))); });
     },
@@ -406,6 +498,9 @@
         m.e.classList.toggle('is-lit', lit);
         m.labels.forEach(function (e) { set(e, 'opacity', r1(1 - seg(t, 0.3, 0.4))); });
       });
+      // 沿切割道切開，旁邊的 die 跟著退場
+      waferSaw.forEach(function (e, i) { var a = 0.2 + 0.08 * (i % 2); draw(e, ease(seg(t, a, a + 0.1))); });
+      set(gWafer, 'opacity', r1(1 - seg(t, 0.32, 0.48)));
       var k = ease(seg(t, 0.3, 0.62));
       var s = lerp(1, S, k), cy = lerp(500, FY, k);
       set(die, 'transform', k ? 'translate(' + r1(500 - 500 * s) + ' ' + r1(cy - 500 * s) + ') scale(' + (Math.round(s * 1000) / 1000) + ')' : '');
@@ -435,13 +530,14 @@
     LOG[k].forEach(function (l) { log.push({ at: spans[k].start + spans[k].len * l[0], cmd: l[1], text: l[2] }); });
   });
   var shown = -1;
+  var LOG_LINES = small ? 3 : 4; // 上面還有 whoami，終端機只捲最後幾行
   function renderConsole(p) {
     var n = 0;
     while (n < log.length && log[n].at <= p) n++;
     if (n === shown) return;
     shown = n;
     var html = '';
-    log.slice(Math.max(0, n - 5), n).forEach(function (l, i, arr) {
+    log.slice(Math.max(0, n - LOG_LINES), n).forEach(function (l, i, arr) {
       var txt = l.text.replace(/&/g, '&amp;').replace(/</g, '&lt;');
       html += '<span class="to-line">' + (l.cmd ? '<span class="to-prompt">innovus&gt;</span> ' + txt : '<span class="to-out">' + txt + '</span>') +
         (i === arr.length - 1 ? '<span class="to-cursor"></span>' : '') + '</span>';
@@ -477,25 +573,29 @@
     else setMetric('drc', '—');
   }
 
-  // ---- stepper / captions / layer legend ----
-  var steps = keys.map(function (k) { return root.querySelector('[data-step="' + k + '"]'); });
-  var captions = keys.map(function (k) { return root.querySelector('[data-caption="' + k + '"]'); });
+  // ---- status / layer legend ----
+  // 左上角只說現在做到哪一段：還沒開始是 Ready，tapeout 寫完 GDS 之後是 Taped out
+  var names = cfg.names || {};
+  var status = root.querySelector('.to-status');
+  var statusN = root.querySelector('[data-status-n]');
+  var statusName = root.querySelector('[data-status-name]');
   var layerEls = Array.prototype.slice.call(root.querySelectorAll('[data-layer]'));
-  var activeStep = -1;
+  var statusKey = '';
   function renderChrome(p) {
-    var active = 0;
-    keys.forEach(function (k, i) {
-      var t = localT(k, p);
-      if (p >= spans[k].start) active = i;
-      var li = steps[i];
-      if (!li) return;
-      li.style.setProperty('--t', t.toFixed(3));
-      li.classList.toggle('is-done', t >= 1);
-    });
-    if (active !== activeStep) {
-      activeStep = active;
-      steps.forEach(function (li, i) { if (li) li.classList.toggle('is-active', i === active); });
-      captions.forEach(function (c, i) { if (c) c.classList.toggle('is-on', i === active); });
+    var active = -1;
+    keys.forEach(function (k, i) { if (p > spans[k].start) active = i; });
+    var done = localT('tapeout', p) >= 0.7;
+    var state = active < 0 ? 'idle' : done ? 'done' : 'run';
+    var key = state + active;
+    if (key !== statusKey) {
+      statusKey = key;
+      status.setAttribute('data-state', state);
+      statusN.textContent = pad(done ? keys.length : active + 1) + '/' + pad(keys.length);
+      statusName.textContent = state === 'idle' ? 'Ready' : done ? 'Taped out' : names[keys[active]] || keys[active];
+      // 換段的時候重播一次淡入
+      statusName.classList.remove('is-new');
+      void statusName.offsetWidth;
+      statusName.classList.add('is-new');
     }
     var tr = localT('routing', p);
     LAYERS.forEach(function (L, i) {
@@ -504,16 +604,20 @@
       li.classList.toggle('is-on', tr > 0 && (L.t || 0) > 0);
       li.classList.toggle('is-cur', tr > 0 && tr < 1 && (L.t || 0) > 0 && (L.t || 0) < 1);
     });
+    root.classList.toggle('is-routing', tr > 0 && tr < 1);
+    root.classList.toggle('is-done', localT('tapeout', p) >= 0.8);
   }
-  steps.forEach(function (li, i) {
-    if (!li) return;
-    li.querySelector('button').addEventListener('click', function () {
-      var k = keys[i];
-      var range = track.offsetHeight - stage.offsetHeight;
-      var top = track.getBoundingClientRect().top + window.pageYOffset - headerH();
-      window.scrollTo({ top: top + range * (spans[k].start + spans[k].len * 0.96), behavior: reduceMotion ? 'auto' : 'smooth' });
-    });
-  });
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+  // ---- camera → viewBox ----
+  var vbKey = '';
+  function renderCamera(p) {
+    var vb = viewBox(camera(p));
+    var key = [vb.x, vb.y, vb.w, vb.h].map(r1).join(' ');
+    if (key === vbKey) return;
+    vbKey = key;
+    svg.setAttribute('viewBox', key);
+  }
 
   // ---- bus：從亮起來的四根接腳往下，沿左邊的匯流排接到 §01–§04 的 kicker ----
   // §01 那條不停在 kicker：主幹繼續往下，在每一排專案卡上方分岔，插進卡片上排的一根接腳，
@@ -632,16 +736,12 @@
       bus.setAttribute('viewBox', '0 0 ' + Math.round(rr.width) + ' ' + Math.round(rr.height));
     }
     var trackBottom = rects.track.bottom - rr.top;
-    // 窄螢幕晶片疊在文字上面：接腳下來馬上轉進左邊的 gutter，不穿過文字
-    var leadBottom = Math.max.apply(null, rects.leads.map(function (lr) { return lr.bottom; }));
-    var stacked = rects.copy.top >= leadBottom - 1;
-    var copyTop = rects.copy.top - rr.top;
     wires.forEach(function (w, i) {
       var lr = rects.leads[i], kr = rects.kickers[i];
       var contentLeft = kr.left - rr.left;
       var g = clamp((contentLeft - 6) / 4, 3, 8);
       var lx = lr.left + lr.width / 2 - rr.left, ly = lr.bottom - rr.top;
-      var jog = stacked ? ly + Math.min(10, (copyTop - ly) / 5) * (w.j + 1) : trackBottom + 30 + 14 * w.j;
+      var jog = trackBottom + 30 + 14 * w.j;
       var bx = contentLeft - g * (4 - w.j);
       var ky = kr.top + kr.height / 2 - rr.top;
       var reach = Math.max(ly, window.innerHeight * 0.92 - rr.top);
@@ -716,13 +816,13 @@
   function headerH() { return hh; }
   function measureHeader() { hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 64; }
   measureHeader();
+  measureView();
 
   function frame() {
     // 先讀版面，再一次寫回
     var rects = {
       root: root.getBoundingClientRect(),
       track: track.getBoundingClientRect(),
-      copy: copy.getBoundingClientRect(),
       leads: wires.map(function (w) { return w.lead.getBoundingClientRect(); }),
       kickers: wires.map(function (w) { return w.kicker.getBoundingClientRect(); }),
       cards: cards.map(measureCard)
@@ -738,6 +838,7 @@
       last[k] = t;
       R[k](t);
     });
+    renderCamera(p);
     renderConsole(p);
     renderMetrics(p);
     renderChrome(p);
@@ -753,8 +854,9 @@
 
   root.classList.add(reduceMotion ? 'is-static' : 'is-live');
   window.addEventListener('scroll', request, { passive: true });
-  window.addEventListener('resize', function () { measureHeader(); request(); });
-  if ('ResizeObserver' in window) new ResizeObserver(request).observe(root);
+  window.addEventListener('resize', function () { measureHeader(); measureView(); vbKey = ''; request(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { measureView(); vbKey = ''; request(); });
+  if ('ResizeObserver' in window) new ResizeObserver(function () { measureView(); vbKey = ''; request(); }).observe(root);
   // 卡片的 .reveal 是 transform 動畫，停下來的時候不會觸發 scroll，要自己再對一次走線位置
   cards.forEach(function (c) { c.card.addEventListener('transitionend', request); });
   frame();
