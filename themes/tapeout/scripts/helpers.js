@@ -242,7 +242,7 @@ hexo.extend.helper.register('floorplan', function (seed, labels, opts = {}) {
   }
 
   // 外部訊號的入口：資料流第一個 macro 正上方最近的那根頂邊 pad，從 pad 底下直直往下接到 macro 頂端
-  // 預設隱藏，只有 /tapeout/ 會把板子上的走線接進來（js 從 data-x 找到這根 pad）
+  // 預設隱藏，只有首頁的開場會把板子上的走線接進來（js 從 data-x 找到這根 pad）
   const head = nets[0];
   let entry = null;
   if (head) {

@@ -68,7 +68,7 @@ waveform:
     - { name: ready,      wave: "1.....0.1.....1......0.1.......1" }
     - { name: "data[31:0]", wave: "x...=.x.=..x..=.x...=..x..=...x.", data: [C0FFEE, CAFEF00D, 5EED, FEEDBEEF, ACCE55] }
 
-# /tapeout/ 的 APR 開場動畫（測試中，還沒有放上導覽列）。往下捲動依序演出 floorplan → … → tapeout；
+# 首頁的 APR 開場動畫。往下捲動依序演出 floorplan → … → tapeout；
 # cts: false 會拿掉 CTS 這一段。whoami 是終端機開頭 `$ whoami` 底下的幾行：第一行接在名字後面，之後一行一行往下，盡量短。
 # advisor、highlights 放在左欄名字底下的個人資料，highlights 每條一句、三到四條（螢幕矮的時候會收掉）
 tapeout_intro:

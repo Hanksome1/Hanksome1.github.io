@@ -15,8 +15,7 @@
   <%- partial('_partial/footer') %>
   <% if (theme.statusbar) { %><%- partial('_partial/statusbar') %><% } %>
   <%- js('js/main') %>
-  <% if (home || page.layout === 'tapeout') { %><%- js('js/waveform') %><% } %>
-  <% if (page.layout === 'tapeout') { %><%- js('js/tapeout') %><% } %>
+  <% if (home) { %><%- js('js/waveform') %><%- js('js/tapeout') %><% } %>
   <%- js('js/graph') %>
   <% if (page.content && page.content.indexOf('type="WaveDrom"') > -1) { %>
   <script src="<%- theme.wavedrom.skin %>"></script>

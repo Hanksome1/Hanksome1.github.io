@@ -808,7 +808,7 @@ code, pre, kbd { font-family: var(--font-mono); }
 .chip-card:hover .fp-macro rect, .datasheet:hover .fp-macro rect { fill: var(--accent-soft); stroke: var(--accent); }
 .chip-card:hover .fp-wire { animation: fp-draw 1.1s var(--ease); }
 @keyframes fp-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-/* 外部訊號的入口 pad 和接到第一個 macro 的那段線：只有 /tapeout/ 會接線進來 */
+/* 外部訊號的入口 pad 和接到第一個 macro 的那段線：只有首頁的開場會接線進來 */
 .fp-in, .fp-in-pad, .fp-in-pin { display: none; }
 
 /* ---------- 08. Log rows ---------- */
@@ -1354,7 +1354,7 @@ details.note > summary + * { margin-top: 8px; }
 .rev-link { color: var(--ink-2); white-space: nowrap; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 3px; transition: color 0.2s; }
 .rev-link:hover { color: var(--accent); }
 
-/* ---------- 13c. Tapeout intro (/tapeout/) ----------
+/* ---------- 13c. Tapeout intro (home) ----------
    js/tapeout.js 加上 .is-live 之後 .to-track 才會拉長、舞台才會釘住；沒有 JS 或 reduced-motion（.is-static）就是一般的區塊。
    金屬層的顏色從現有的色票取，換配色、切深色模式都會跟著變。 */
 .to-root {
