@@ -1,6 +1,7 @@
 <%
-  // /tapeout/：首頁的試作版本。hero 換成一段跟著捲動演出的 APR 流程（js/tapeout.js），下面接首頁的 §01–§04
-  // 一開始看到整片晶圓，往下捲鑽進正中間那顆 die；晶片永遠整顆看得到，裝在 .to-frame 這一格裡，左邊一欄放名字、個人資料和終端機
+  // /tapeout/：首頁的試作版本。hero 換成一段跟著捲動演出的流程（js/tapeout.js），下面接首頁的 §01–§04
+  // 一開始是首頁那一屏（.to-hero），往下捲收進左邊一欄（名字、個人資料、終端機）；晶棒一年一圈長出來，切下一片晶圓，
+  // 再鑽進正中間那顆 die 做 APR。晶片永遠整顆看得到，裝在 .to-frame 這一格裡
   var p = theme.profile;
   var intro = theme.tapeout_intro || {};
   var stages = [
@@ -13,6 +14,8 @@
   var whoami = (intro.whoami || []).map(function (l) { return localize(l); });
   var highlights = (intro.highlights || []).map(function (l) { return localize(l); });
   var advisor = localize(intro.advisor);
+  var chip = intro.chip || 'HW26-A0';
+  var ingot = (intro.ingot || []).map(function (y) { return { year: String(y.year), title: localize(y.title), note: localize(y.note) }; });
   var social = theme.social || [];
   var email = social.filter(function (s) { return /^mailto:/.test(s.url); })[0];
   var cv = social.filter(function (s) { return s.label === 'CV'; })[0];
@@ -26,6 +29,8 @@
 <div class="to-root" data-tapeout>
   <script type="application/json"><%- JSON.stringify({
     seed: 'tapeout',
+    chip: chip,
+    ingot: ingot,
     stages: stages.map(function (s) { return s.key; }),
     names: stages.reduce(function (o, s) { o[s.key] = s.name; return o; }, {})
   }) %></script>
@@ -35,7 +40,6 @@
         <svg class="to-chip" data-to-chip viewBox="0 0 1000 1000" role="img" aria-label="A chip being placed and routed, then packaged"></svg>
       </div>
       <div class="to-frame" aria-hidden="true"></div>
-      <p class="to-hint" aria-hidden="true">Scroll to place &amp; route <span>↓</span></p>
 
       <p class="to-status" data-state="idle"><i class="to-status-dot" aria-hidden="true"></i><span class="to-status-n" data-status-n>00/<%= pad(stages.length) %></span><span class="to-status-name" data-status-name>Ready</span></p>
       <div class="to-readout">
@@ -51,7 +55,7 @@
       </div>
 
       <div class="to-id">
-        <p class="to-id-k">HW-26 · Designer</p>
+        <p class="to-id-k"><%= chip %> · Designer</p>
         <h1 class="to-id-name"><%= p.name %><% if (p.name_zh) { %><span class="to-id-zh"><%= p.name_zh %></span><% } %></h1>
         <p class="to-id-tag"><%- emphasize(localize(p.tagline)) %></p>
         <dl class="to-id-spec">
@@ -66,7 +70,7 @@
       </div>
 
       <div class="to-term">
-        <p class="to-term-bar" aria-hidden="true"><i></i><i></i><i></i><span>hank@nthu: ~/hw26</span></p>
+        <p class="to-term-bar" aria-hidden="true"><i></i><i></i><i></i><span>hank@nthu: ~/<%= chip.toLowerCase().replace(/[^a-z0-9]/g, '') %></span></p>
         <div class="to-term-body">
           <p class="to-line" aria-hidden="true"><span class="to-prompt">$</span> whoami</p>
           <p class="to-line to-whoami"><%= p.name %><% if (p.name_zh) { %> <span><%= p.name_zh %></span><% } %><% if (whoami[0]) { %> <span class="to-out">· <%= whoami[0] %></span><% } %></p>
@@ -75,6 +79,20 @@
         </div>
       </div>
       <a class="to-skip" href="#sec-projects">Skip intro <span aria-hidden="true">↓</span></a>
+
+      <% /* 開場那一屏，跟首頁的 hero 一樣；內容左邊一欄都有，所以對輔助科技藏起來 */ %>
+      <div class="to-hero" aria-hidden="true">
+        <div class="hero-top"><p class="kicker">§00 — Overview</p><% if (p.status) { %><p class="status-pill"><i></i><%= localize(p.status) %></p><% } %></div>
+        <p class="hero-name"><span class="hero-line"><%= p.name %></span><% if (p.name_zh) { %><span class="hero-zh"><%= p.name_zh %></span><% } %></p>
+        <p class="hero-tagline"><%- emphasize(localize(p.tagline)) %></p>
+        <%- partial('_partial/waveform') %>
+        <dl class="spec-strip">
+          <div><dt>Role</dt><dd><%= localize(p.role) %></dd></div>
+          <div><dt>Affiliation</dt><dd><%= localize(p.affiliation) %></dd></div>
+          <div><dt>Focus</dt><dd><%= localize(p.focus) %></dd></div>
+          <div><dt>Based in</dt><dd><%= localize(p.location) %></dd></div>
+        </dl>
+      </div>
     </div>
   </section>
   <%- partial('_partial/home-sections', { anchors: true }) %>

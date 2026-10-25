@@ -82,6 +82,25 @@ tapeout_intro:
     - { zh-TW: MVA 2025 SMOT4SB 小鳥追蹤挑戰賽第 3 名, en: "3rd place, MVA 2025 SMOT4SB bird-tracking challenge" }
     - { zh-TW: 從 Python golden model、RTL 一路做到 APR, en: From a Python golden model through RTL to APR }
     - { zh-TW: 邏輯設計課程助教, en: "Teaching assistant, Logic Design" }
+  # 晶片的料號，用在左上角、終端機路徑、晶圓的刻號和封裝上；A0 是第一版矽（first silicon）
+  chip: HW26-A0
+  # 晶棒上一年一圈：year 會刻在環上，title / note 寫在旁邊
+  ingot:
+    - year: 2022
+      title: { zh-TW: B.S. EE · 清華大學電機系, en: B.S. EE · NTHU Electrical Engineering }
+      note: { zh-TW: 種晶：從邏輯設計開始, en: "Seed: starting from logic design" }
+    - year: 2023
+      title: { zh-TW: NN-8051 · 8051 上的神經網路, en: NN-8051 · A neural network on an 8051 }
+      note: { zh-TW: 微處理機系統期末專題, en: "Final project, Microprocessor Systems" }
+    - year: 2024
+      title: { zh-TW: MNIST-FPGA · ROM-128x16 · 書卷獎, en: MNIST-FPGA · ROM-128x16 · Academic Excellence Award }
+      note: { zh-TW: MRAM 近記憶體運算專題（65 nm）, en: MRAM near-memory computing project (65 nm) }
+    - year: 2025
+      title: { zh-TW: SMOT4SB · MVA 2025 第 3 名, en: "SMOT4SB · 3rd place, MVA 2025" }
+      note: { zh-TW: 邏輯設計助教, en: "Teaching assistant, Logic Design" }
+    - year: 2026
+      title: { zh-TW: ICLAB 3DGS 加速器 · 25 組第 1, en: ICLAB 3DGS accelerator · 1st of 25 teams }
+      note: { zh-TW: M.S. · 黃朝宗老師實驗室, en: "M.S. · Prof. Chao-Tsung Huang's lab" }
 
 # Obsidian 筆記：用 Obsidian 打開 source/ 資料夾當 vault，
 # 放在 source/_posts/<dir>/ 的筆記會出現在 /notes/ 與知識圖譜裡。

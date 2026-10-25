@@ -1366,7 +1366,7 @@ details.note > summary + * { margin-top: 8px; }
   --to-clk: color-mix(in srgb, var(--accent) 50%, var(--ok)); /* 跟 M2（綠）、M3（accent）都分得開 */
   --to-pad-y: clamp(16px, 3.4vh, 40px);
 }
-.to-root.is-live .to-track { height: 460svh; }
+.to-root.is-live .to-track { height: 620svh; }
 /* 舞台佔滿整個畫面寬，晶圓和晶片鋪在最底下（.to-canvas）；左邊一欄放狀態、名字和終端機，右邊 .to-frame 那一格就是晶片要整顆放進去的地方 */
 .to-stage {
   --to-x: max(var(--gutter), calc((100% - var(--wrap)) / 2));
@@ -1391,12 +1391,25 @@ details.note > summary + * { margin-top: 8px; }
 .to-stage > :not(.to-canvas) { position: relative; z-index: 1; min-width: 0; margin: 0; }
 .to-stage > .to-frame { grid-area: frame; min-height: 0; margin-top: 56px; pointer-events: none; }
 
-.to-stage > .to-hint {
-  grid-area: frame; justify-self: center; align-self: end; margin-bottom: 6px;
-  font: 500 11px var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); pointer-events: none;
+/* 開場：先是首頁那一屏，往下捲才收進左邊一欄（js/tapeout.js 的 heroFold）。只有 .is-live 才有，沒有 JS 就是一般的左欄 */
+.to-hero { display: none; }
+.to-root.is-live .to-stage > .to-hero {
+  position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column;
+  padding: clamp(20px, 4.5vh, 56px) var(--to-x) 0;
+  background: color-mix(in srgb, var(--bg) calc(var(--to-hero-bg, 1) * 100%), transparent);
 }
-.to-hint span { display: inline-block; animation: to-bob 1.6s ease-in-out infinite; }
-@keyframes to-bob { 50% { transform: translateY(3px); } }
+.to-stage > .to-hero > * { animation: none; transform-origin: 0 0; will-change: transform, opacity; }
+.to-hero .hero-name { margin-top: clamp(12px, 2.4vh, 32px); font-size: min(12.5vw, 19vh, 176px); }
+.to-hero .hero-tagline { margin-top: clamp(10px, 2vh, 24px); font-size: max(22px, min(3.4vw, 5.4vh, 48px)); }
+.to-hero .wave { margin-top: clamp(18px, 3.6vh, 48px); }
+.to-hero .spec-strip { margin-top: clamp(14px, 2.6vh, 28px); }
+/* 波形視窗淡掉之後留下的外框，一路變形成終端機 */
+.to-stage > .to-hero-frame {
+  position: absolute; top: 0; left: 0; z-index: 4; display: flex; gap: 6px; padding: 10px 12px;
+  border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); box-shadow: var(--shadow);
+  pointer-events: none; opacity: 0;
+}
+.to-hero-frame i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--line-2); }
 
 .to-status {
   grid-area: status; justify-self: start; align-self: start;
@@ -1557,15 +1570,67 @@ details.note > summary + * { margin-top: 8px; }
 .to-pkg-label { font: 500 16px var(--font-mono); letter-spacing: 0.14em; fill: var(--ink-2); }
 .to-bond { stroke: var(--ink-3); stroke-width: 1.2; }
 .to-bond-accent { stroke: var(--accent); stroke-width: 2.4; }
-/* Wafer 版的晶圓；縮得很小的時候線還是要看得到，用 non-scaling-stroke */
-.to-wafer-disc { fill: color-mix(in srgb, var(--ink) 4%, var(--bg)); stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+/* 晶圓：縮得很小的時候線還是要看得到，用 non-scaling-stroke */
+.to-wafer-disc { fill: url(#to-si); stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.to-si-0 { stop-color: color-mix(in srgb, var(--ink) 9%, var(--bg)); }
+.to-si-1 { stop-color: color-mix(in srgb, var(--ink) 3%, var(--bg)); }
+.to-wafer-excl { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
 .to-wafer-notch { fill: var(--bg); stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.to-wafer-die { opacity: 0.5; }
-.to-wafer-edge, .to-wafer-part { fill: none; stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.to-wafer-part { fill: color-mix(in srgb, var(--ink) 3%, transparent); }
-.to-wafer-slot rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.to-wafer-slot text { font: 600 150px var(--font-mono); letter-spacing: 0.04em; fill: var(--accent); }
+.to-wafer-die { fill: color-mix(in srgb, var(--ink) 6%, transparent); stroke: color-mix(in srgb, var(--ink) 14%, transparent); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.to-wafer-sil { fill: color-mix(in srgb, var(--ink) 5%, transparent); }
+.to-wafer-part { fill: color-mix(in srgb, var(--ink) 2.5%, transparent); stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.to-wafer-edge { fill: none; stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.to-wafer-detail, .to-wafer-sheen { pointer-events: none; }
+/* 薄膜的干涉色：淺色底用 multiply 才看得到 */
+.to-wafer-sheen { mix-blend-mode: multiply; }
+.to-sh-0, .to-sh-5 { stop-color: #000; stop-opacity: 0; }
+.to-sh-1 { stop-color: #49d6ff; stop-opacity: 0.09; }
+.to-sh-2 { stop-color: #a77bff; stop-opacity: 0.14; }
+.to-sh-3 { stop-color: #ff7ab6; stop-opacity: 0.1; }
+.to-sh-4 { stop-color: #ffd36a; stop-opacity: 0.07; }
+.to-wafer-laser { font: 500 96px var(--font-mono); letter-spacing: 0.32em; fill: var(--ink-3); }
+.to-slot-fill { fill: color-mix(in srgb, var(--accent) 7%, transparent); }
+.to-slot-bracket { fill: none; stroke: var(--accent); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.to-slot-cross { fill: none; stroke: var(--accent); stroke-width: 1; stroke-dasharray: 2 6; stroke-opacity: 0.55; vector-effect: non-scaling-stroke; }
+.to-slot-label { font: 600 118px var(--font-mono); letter-spacing: 0.1em; fill: var(--accent); }
 .to-saw { stroke: var(--accent); stroke-width: 3; stroke-opacity: 0.7; }
+.to-wafer-rim { fill: color-mix(in srgb, var(--ink) 22%, var(--bg)); stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+
+/* 晶棒：側面是橫向的漸層，頂面斜斜一道反光（淺色底反光是亮的，深色底見下面） */
+.to-ig-0 { stop-color: color-mix(in srgb, var(--ink) 10%, var(--bg)); }
+.to-ig-1 { stop-color: color-mix(in srgb, var(--ink) 30%, var(--bg)); }
+.to-ig-2 { stop-color: color-mix(in srgb, var(--ink) 44%, var(--bg)); }
+.to-ig-3 { stop-color: color-mix(in srgb, var(--ink) 16%, var(--bg)); }
+.to-ig-4 { stop-color: color-mix(in srgb, var(--ink) 7%, var(--bg)); }
+.to-tp-0 { stop-color: color-mix(in srgb, var(--ink) 9%, var(--bg)); }
+.to-tp-1, .to-tp-3 { stop-color: color-mix(in srgb, var(--ink) 15%, var(--bg)); }
+.to-tp-2 { stop-color: color-mix(in srgb, #fff 70%, var(--bg)); }
+.to-tp-4 { stop-color: color-mix(in srgb, var(--ink) 11%, var(--bg)); }
+.to-ingot-body { fill: url(#to-ingot); stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.to-ingot-top { fill: url(#to-ingot-top); stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.to-ingot-front { fill: none; stroke: var(--accent); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.to-ingot-seed { fill: color-mix(in srgb, var(--ink) 40%, var(--bg)); stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.to-ingot-cable { stroke: var(--line-2); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.to-ingot-chuck { fill: var(--surface); stroke: var(--line-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.to-ingot-ring { fill: none; stroke: var(--accent); stroke-opacity: 0.55; stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.to-ingot-lead { stroke: var(--accent); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.to-ingot-cut { stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.to-ingot-year { font: 600 250px var(--font-mono); letter-spacing: 0.04em; fill: var(--accent); }
+.to-ingot-text { font: 500 205px var(--font-sans); fill: var(--ink); }
+.to-ingot-sub { font: 400 175px var(--font-sans); fill: var(--ink-3); }
+.to-ingot-small { font: 500 170px var(--font-mono); fill: var(--ink-3); }
+:root[data-theme="dark"] .to-wafer-sheen { mix-blend-mode: screen; }
+:root[data-theme="dark"] .to-tp-0 { stop-color: color-mix(in srgb, var(--ink) 22%, var(--bg)); }
+:root[data-theme="dark"] .to-tp-1, :root[data-theme="dark"] .to-tp-3 { stop-color: color-mix(in srgb, var(--ink) 36%, var(--bg)); }
+:root[data-theme="dark"] .to-tp-2 { stop-color: color-mix(in srgb, var(--ink) 62%, var(--bg)); }
+:root[data-theme="dark"] .to-tp-4 { stop-color: color-mix(in srgb, var(--ink) 24%, var(--bg)); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .to-wafer-sheen { mix-blend-mode: screen; }
+  :root:not([data-theme="light"]) .to-tp-0 { stop-color: color-mix(in srgb, var(--ink) 22%, var(--bg)); }
+  :root:not([data-theme="light"]) .to-tp-1, :root:not([data-theme="light"]) .to-tp-3 { stop-color: color-mix(in srgb, var(--ink) 36%, var(--bg)); }
+  :root:not([data-theme="light"]) .to-tp-2 { stop-color: color-mix(in srgb, var(--ink) 62%, var(--bg)); }
+  :root:not([data-theme="light"]) .to-tp-4 { stop-color: color-mix(in srgb, var(--ink) 24%, var(--bg)); }
+}
 
 /* 接腳拉到 §01–§04 的線 */
 .to-bus { position: absolute; top: 0; left: 0; z-index: 2; overflow: visible; pointer-events: none; }
@@ -1585,7 +1650,7 @@ details.note > summary + * { margin-top: 8px; }
 .to-root .chip-card.is-fed .fp-entry rect { fill: var(--accent-soft); stroke: var(--accent); }
 
 @media (max-width: 900px) {
-  .to-root.is-live .to-track { height: 320svh; }
+  .to-root.is-live .to-track { height: 430svh; }
   /* 窄螢幕疊成一欄：狀態 → 名字 → 晶片 → 數據 → 終端機 */
   .to-stage {
     grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto auto; row-gap: 10px;
