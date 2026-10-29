@@ -1,0 +1,625 @@
+/* Ideogram 4 vs SD 3.5 Large，第二版：兩座塔（layout: dit-tower）
+   每一層 transformer block 是一塊長方體板子，SD 3.5 每層兩根細柱（文字、圖片各一組權重），Ideogram 4 每層一整塊寬板。
+   舞台用 position: sticky 釘住，捲過 .tw-track 的距離換成 0–1 的進度 p，再分給各段（BEATS）自己的局部進度 t，
+   所以往回捲也會倒著播。鏡頭是世界座標裡的一個取景框（中心 x, y、寬 w），在 SHOTS 之間平滑移動。
+   板子的寬度照 hidden size 畫（4608 → 300），第 1 層拆開時每一塊的面積照參數量畫。
+   規格出自 ideogram-oss/ideogram4 與 Stability-AI/sd3.5 的參考程式碼。 */
+(function () {
+  'use strict';
+
+  var root = document.querySelector('[data-tw]');
+  if (!root) return;
+  var track = root.querySelector('.tw-track');
+  var stage = root.querySelector('.tw-stage');
+  var svg = root.querySelector('[data-tw-world]');
+  var panel = root.querySelector('.tw-panel');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var NS = 'http://www.w3.org/2000/svg';
+
+  // ---- helpers ----
+  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function seg(t, a, b) { return clamp01((t - a) / (b - a)); }
+  function ease(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  function lerp(a, b, k) { return a + (b - a) * k; }
+  function r1(n) { return Math.round(n * 10) / 10; }
+  function el(name, attrs, parent, text) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  // 值沒變就不寫回 DOM
+  function set(e, k, v) {
+    var key = '_tw_' + k;
+    if (e[key] === v) return;
+    e[key] = v;
+    e.setAttribute(k, v);
+  }
+  function show(e, o) { set(e, 'opacity', r1(o * 100) / 100); }
+  function T(g, x, y, s, cls, anchor, size) {
+    return el('text', { x: x, y: y, class: cls || null, 'text-anchor': anchor || null, style: size ? 'font-size:' + size + 'px' : null }, g, s);
+  }
+  // pathLength = 1 的線：k = 0 看不到，k = 1 整條畫完
+  function wire(g, d, cls) { return el('path', { d: d, class: cls, pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1 }, g); }
+  function draw(e, k) { set(e, 'stroke-dashoffset', r1((1 - k) * 1000) / 1000); set(e, 'opacity', k > 0 ? 1 : 0); }
+
+  // ---- 斜投影：(x, y, z) → (x + z·KX, y − z·KY)，看得到正面、頂面和右側面 ----
+  var KX = 0.55, KY = 0.38;
+  function Box(parent, cls) {
+    var g = el('g', { class: 'tw-box ' + (cls || '') }, parent);
+    var tp = el('path', { class: 'tp' }, g), sd = el('path', { class: 'sd' }, g), f = el('path', { class: 'f' }, g);
+    return {
+      g: g,
+      set: function (x, y, w, h, dz) {
+        x = r1(x); y = r1(y); w = r1(w); h = r1(Math.max(0.4, h));
+        var dx = r1(dz * KX), dy = r1(dz * KY);
+        set(f, 'd', 'M' + x + ' ' + y + 'h' + w + 'v' + h + 'h' + (-w) + 'Z');
+        set(tp, 'd', 'M' + x + ' ' + y + 'l' + dx + ' ' + (-dy) + 'h' + w + 'l' + (-dx) + ' ' + dy + 'Z');
+        set(sd, 'd', 'M' + (x + w) + ' ' + y + 'l' + dx + ' ' + (-dy) + 'v' + h + 'l' + (-dx) + ' ' + dy + 'Z');
+      }
+    };
+  }
+
+  // ---- 世界 ----
+  var DZ = 70, PITCH = 20, TH = 14, EX = 260; // 板子深度、層距、厚度；第 1 層拆開時下面的層往下讓出的距離
+  var TOWERS = {
+    sd: { L: 38, cols: [{ x: 0, w: 158 }, { x: 172, w: 158 }], right: 330 },
+    ig: { L: 34, cols: [{ x: 470, w: 300 }], right: 770 }
+  };
+  // 第 1 層拆開之後的每一塊：厚度 ∝ 參數量 ÷ 寬度，所以面積 ∝ 參數量（IG 的 MLP 170M / 300 寬 → 90）
+  var SUB = {
+    sd: [
+      { k: 'ada', h: 35.7, label: 'adaLN 35.5M ×2' },
+      { k: 'norm', h: 3, label: 'LayerNorm' },
+      { k: 'attn', h: 23.8, label: 'Attention 23.7M ×2' },
+      { k: 'norm', h: 3, label: 'LayerNorm' },
+      { k: 'mlp', h: 47.6, label: 'MLP · GELU 47.3M ×2' }
+    ],
+    ig: [
+      { k: 'ada', h: 5, label: 'adaLN 9.4M' },
+      { k: 'norm', h: 3, label: 'RMSNorm' },
+      { k: 'attn', h: 45, label: 'Attention 84.9M' },
+      { k: 'norm', h: 3, label: 'RMSNorm（後）＋（前）', gap: 4 },
+      { k: 'norm', h: 3, label: null },
+      { k: 'mlp', h: 90, label: 'MLP · SwiGLU 170M' },
+      { k: 'norm', h: 3, label: 'RMSNorm（後）', gap: 4 }
+    ]
+  };
+  var SUBGAP = 13;
+
+  var world = el('g', {}, svg);
+  var L = { sd: el('g', { class: 'lane-sd' }, world), ig: el('g', { class: 'lane-ig' }, world) };
+  var LEFT_LABEL = -18, RIGHT_LABEL = 836; // SD 的標籤寫在塔的左邊，IG 的寫在右邊
+
+  // 塔身：從最下面一層往上畫，上面的板子才會蓋住下面板子的頂面
+  var tower = {};
+  ['sd', 'ig'].forEach(function (key) {
+    var tw = TOWERS[key], g = el('g', {}, L[key]), rows = [];
+    for (var i = tw.L - 1; i >= 1; i--) {
+      var row = { i: i, boxes: tw.cols.map(function () { return Box(g); }) };
+      if (key === 'ig') row.rot = T(g, 0, 0, '⟳', 't-l', 'middle', 12);
+      rows.push(row);
+    }
+    // 第 1 層：拆開後的每一塊（由下往上畫），再蓋上整塊的板子
+    var subs = SUB[key].slice().reverse().map(function (s) {
+      return { s: s, boxes: tw.cols.map(function () { return Box(g); }) };
+    }).reverse();
+    var joint = key === 'sd' ? el('rect', { class: 'joint', rx: 4 }, g) : null;
+    var first = { boxes: tw.cols.map(function () { return Box(g); }) };
+    if (key === 'ig') first.rot = T(g, 0, 0, '⟳', 't-l', 'middle', 12);
+    var labels = el('g', {}, L[key]);
+    subs.forEach(function (sb) {
+      if (!sb.s.label) return;
+      sb.label = T(labels, key === 'sd' ? LEFT_LABEL : RIGHT_LABEL, 0, sb.s.label, null, key === 'sd' ? 'end' : 'start', 13);
+      sb.lead = el('path', { class: 'lead' }, labels);
+    });
+    // residual：從這一層的頂端繞過每一塊，在 attention 和 MLP 之後加回來
+    var res = tw.cols.map(function (c) {
+      var rg = el('g', {}, labels);
+      return { g: rg, x: c.x - 7, line: el('path', { class: 'pipe' }, rg), plus: [0, 1].map(function () { return T(rg, 0, 0, '⊕', 't-l', 'middle', 13); }) };
+    });
+    var base = el('g', {}, L[key]);
+    var title = T(base, (tw.cols[0].x + tw.right) / 2, 0, key === 'sd' ? 'SD 3.5 Large' : 'Ideogram 4', 't-l', 'middle', 18);
+    var sub = T(base, (tw.cols[0].x + tw.right) / 2, 0, key === 'sd' ? '38 層 · 文字 W_ctx ｜ 圖片 W_x' : '34 層 · 文字 + 圖片 共用 W', 't-d', 'middle', 13);
+    tower[key] = { tw: tw, rows: rows, subs: subs, first: first, joint: joint, res: res, title: title, sub: sub };
+  });
+
+  // 第 1 層的位置：k = 0 是一塊完整的板子，k = 1 是拆開的樣子
+  function layoutTower(key, k, hot, rotOn) {
+    var t = tower[key], tw = t.tw, dx = DZ * KX, dy = DZ * KY;
+    t.rows.forEach(function (row) {
+      var y = row.i * PITCH + EX * k;
+      row.boxes.forEach(function (b, j) { b.set(tw.cols[j].x, y, tw.cols[j].w, TH, DZ); });
+      if (row.rot) {
+        set(row.rot, 'x', r1(tw.right + dx / 2));
+        set(row.rot, 'y', r1(y + TH / 2 - dy / 2 + 4));
+        show(row.rot, rotOn(row.i));
+      }
+    });
+    var sum = SUB[key].reduce(function (s, x) { return s + x.h; }, 0);
+    var scale = lerp(TH / sum, 1, k), y = 0, dim = hot ? 0.5 : 1;
+    t.subs.forEach(function (sb) {
+      var h = sb.s.h * scale;
+      sb.y = y; sb.h = h;
+      sb.boxes.forEach(function (b, j) {
+        b.set(tw.cols[j].x, y, tw.cols[j].w, h, DZ);
+        b.g.classList.toggle('is-hot', hot === sb.s.k || (hot === 'gate' && (sb.s.k === 'attn' || sb.s.k === 'mlp')));
+        show(b.g, k > 0 ? (hot && hot !== sb.s.k && !(hot === 'gate' && (sb.s.k === 'attn' || sb.s.k === 'mlp')) ? dim : 1) : 0);
+      });
+      var on = hot === sb.s.k || (hot === 'gate' && (sb.s.k === 'attn' || sb.s.k === 'mlp'));
+      if (!sb.label) { y += h + (sb.s.gap != null ? sb.s.gap : SUBGAP) * k; return; }
+      var ly = r1(y + h / 2 + 4);
+      set(sb.label, 'y', ly);
+      sb.label.setAttribute('class', on ? 't-l' : '');
+      show(sb.label, seg(k, 0.6, 1) * (hot && !on ? 0.45 : 1));
+      var x0 = key === 'sd' ? LEFT_LABEL + 6 : RIGHT_LABEL - 6, x1 = key === 'sd' ? tw.cols[0].x - 2 : tw.right + dx * 0.5;
+      set(sb.lead, 'd', 'M' + x0 + ' ' + r1(y + h / 2) + 'H' + r1(x1));
+      show(sb.lead, seg(k, 0.6, 1) * (hot && !on ? 0.45 : 1));
+      y += h + (sb.s.gap != null ? sb.s.gap : SUBGAP) * k;
+    });
+    t.blockH = y;
+    t.first.boxes.forEach(function (b, j) { b.set(tw.cols[j].x, 0, tw.cols[j].w, TH, DZ); show(b.g, 1 - seg(k, 0, 0.25)); });
+    if (t.first.rot) {
+      set(t.first.rot, 'x', r1(tw.right + dx / 2));
+      set(t.first.rot, 'y', r1(TH / 2 - dy / 2 + 4));
+      show(t.first.rot, rotOn(0) * (1 - seg(k, 0, 0.25)));
+    }
+    if (t.joint) {
+      var a = t.subs[2];
+      set(t.joint, 'x', -6); set(t.joint, 'y', r1(a.y - dy - 6));
+      set(t.joint, 'width', r1(tw.right + dx + 12)); set(t.joint, 'height', r1(a.h + dy + 12));
+      show(t.joint, hot === 'attn' ? 1 : 0);
+    }
+    var attn = t.subs.filter(function (s) { return s.s.k === 'attn'; })[0];
+    var mlp = t.subs.filter(function (s) { return s.s.k === 'mlp'; })[0];
+    t.res.forEach(function (r) {
+      var bot = y - SUBGAP * k;
+      set(r.line, 'd', 'M' + r.x + ' -4V' + r1(bot + 6));
+      set(r.plus[0], 'x', r.x); set(r.plus[0], 'y', r1(attn.y + attn.h + 9));
+      set(r.plus[1], 'x', r.x); set(r.plus[1], 'y', r1(mlp.y + mlp.h + 9));
+      show(r.g, hot === 'gate' ? 1 : 0);
+    });
+    var bottom = (tw.L - 1) * PITCH + TH + EX * k;
+    set(t.title, 'y', r1(bottom + 44));
+    set(t.sub, 'y', r1(bottom + 64));
+  }
+
+  // ---- 塔頂上面：prompt、文字 encoder、latent、入口 ----
+  var above = { sd: el('g', {}, L.sd), ig: el('g', {}, L.ig) };
+
+  // Stop 1：prompt 卡片
+  var prompt = (function () {
+    var out = {};
+    // SD：一句英文 + 三個 tokenizer 的 77 格
+    var g = el('g', {}, above.sd);
+    T(g, 0, -978, 'SD 3.5 · 一句英文', 't-l', null, 13);
+    el('rect', { x: -6, y: -966, width: 342, height: 190, rx: 6, class: 'card-l' }, g);
+    T(g, 8, -938, 'A golden retriever riding a', 't-b', null, 15);
+    T(g, 8, -916, "skateboard past a", 't-b', null, 15);
+    T(g, 8, -894, "'SKATE DOG' sign.", 't-b', null, 15);
+    out.sdRows = [['CLIP-L', 19], ['bigG', 19], ['T5', 22]].map(function (r, i) {
+      var y = -870 + i * 26;
+      var lab = T(g, 8, y + 12, '', 't-d', null, 12);
+      var cells = [];
+      for (var k = 0; k < 77; k++) cells.push(el('rect', { x: r1(92 + k * 3.15), y: y, width: 2.4, height: 15, class: 'cell' }, g));
+      return { name: r[0], n: r[1], cells: cells, lab: lab };
+    });
+    out.sd = g;
+    // IG：一份 JSON + token 計量
+    var h = el('g', {}, above.ig);
+    T(h, 470, -978, 'Ideogram 4 · 結構化 JSON', 't-l', null, 13);
+    el('rect', { x: 464, y: -966, width: 342, height: 190, rx: 6, class: 'card-l' }, h);
+    var lines = [
+      '{"high_level_description":',
+      '   "A golden retriever riding…",',
+      ' "style_description": {',
+      '   "medium": "photo", "color_palette":',
+      '     [               ]},',
+      ' "compositional_deconstruction": {',
+      '   "elements": [{"bbox": [250,150,…]},',
+      '     {"type":"text","text":"SKATE DOG"}]}}'
+    ];
+    out.igLines = lines.map(function (s, i) { return T(h, 474, -944 + i * 15.5, s, 't-pre', null, 12.5); });
+    out.swatch = el('g', {}, h);
+    ['#e9a93a', '#8cc8e8', '#c4392d', '#2b2b2b', '#f4efe6'].forEach(function (c, i) {
+      el('rect', { x: 504 + i * 16, y: -891, width: 12, height: 11, rx: 1.5, fill: c, stroke: 'var(--line-2)' }, out.swatch);
+    });
+    el('rect', { x: 476, y: -810, width: 318, height: 8, rx: 2, class: 'f-line' }, h);
+    out.meter = el('rect', { x: 476, y: -810, width: 0, height: 8, rx: 2, class: 'f-l' }, h);
+    el('path', { d: 'M' + r1(476 + 318 * 77 / 2048) + ' -816v20', class: 'lead' }, h);
+    out.count = T(h, 794, -786, '', 't-b', 'end', 12);
+    T(h, 476, -786, '↑ SD 的 77', 't-d', null, 12);
+    out.ig = h;
+    return out;
+  })();
+
+  // Stop 2：文字 encoder
+  var enc = (function () {
+    var out = {};
+    var g = el('g', { class: 'lane-sd' }, above.sd), bottom = -436;
+    var specs = [
+      { name: 'CLIP-L', n: 12, x: 0, w: 40, tap: 10 },
+      { name: 'bigG', n: 32, x: 62, w: 60, tap: 30 },
+      { name: 'T5-XXL', n: 24, x: 144, w: 96, tap: 23 }
+    ];
+    out.sdTowers = specs.map(function (s) {
+      var layers = [];
+      for (var i = s.n - 1; i >= 0; i--) {
+        var b = Box(g);
+        b.set(s.x, bottom - (i + 1) * 8 + 2, s.w, 6, 24);
+        layers[i] = b;
+      }
+      T(g, s.x + s.w / 2, bottom + 16, s.name, 't-d', 'middle', 11);
+      return { s: s, layers: layers };
+    });
+    out.sdOut = el('g', {}, g);
+    var bar = Box(out.sdOut, 'is-hot');
+    bar.set(0, -404, 240, 8, 24);
+    T(out.sdOut, LEFT_LABEL, -396, '154 × 4096', 't-l', 'end', 13);
+    out.sdPipe = wire(g, 'M79 -394V-62', 'pipe');
+    out.pool = el('g', {}, g);
+    el('rect', { x: -196, y: -478, width: 150, height: 26, rx: 4, class: 'card-l' }, out.pool);
+    T(out.pool, -121, -461, 'pooled 768+1280', null, 'middle', 12);
+    out.poolWire = wire(g, 'M0 -470H-46', 'pipe-d');
+    out.sd = g;
+
+    var h = el('g', { class: 'lane-ig' }, above.ig);
+    var taps = [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 35], segH = 288 / 13;
+    out.qwen = [];
+    for (var i = 35; i >= 0; i--) {
+      var b = Box(h);
+      b.set(470, bottom - (i + 1) * 8 + 2, 120, 6, 24);
+      out.qwen[i] = b;
+    }
+    T(h, 530, bottom - 300, 'Qwen3-VL-8B · 36 層（凍結）', 't-d', 'middle', 11);
+    out.taps = taps.map(function (li, j) {
+      var y = bottom - (li + 0.5) * 8 - 1, sy = bottom - (j + 0.5) * segH;
+      var lead = el('path', { d: 'M' + 604 + ' ' + r1(y - 4) + 'C620 ' + r1(y - 4) + ' 614 ' + r1(sy) + ' 630 ' + r1(sy), class: 'lead' }, h);
+      var sq = el('rect', { x: 630, y: r1(bottom - (j + 1) * segH + 1.5), width: 22, height: r1(segH - 3), rx: 1.5, class: 'f-line' }, h);
+      return { li: li, lead: lead, sq: sq };
+    });
+    out.igOut = el('g', {}, h);
+    T(out.igOut, 672, -680, '13 × 4096', null, null, 12);
+    T(out.igOut, 672, -662, '= 53,248 維', 't-b', null, 14);
+    el('rect', { x: 672, y: -620, width: 104, height: 24, rx: 4, class: 'card-l' }, out.igOut);
+    T(out.igOut, 724, -604, 'RMSNorm', null, 'middle', 12);
+    el('rect', { x: 672, y: -584, width: 104, height: 24, rx: 4, class: 'card-l' }, out.igOut);
+    T(out.igOut, 724, -568, 'Linear→4608', null, 'middle', 12);
+    T(out.igOut, RIGHT_LABEL, -396, 'N × 4608', 't-l', null, 13);
+    out.igPipe = wire(h, 'M724 -560V-414H545V-62', 'pipe');
+    out.ig = h;
+    return out;
+  })();
+
+  // Stop 3：latent（純雜訊）→ 2 × 2 打包成 token
+  var lat = (function () {
+    function stack(parent, x, n, label, dims, cx) {
+      var g = el('g', {}, parent), sheets = [];
+      for (var i = n - 1; i >= 0; i--) {
+        var b = Box(g, i % 4 ? '' : 'is-hot');
+        b.set(x, -330 + i * 5, 120, 3, 50);
+        sheets[i] = b;
+      }
+      T(g, x, -372, label, 't-l', null, 13);
+      T(g, x, -356, '純雜訊（VAE 只在最後解碼用）', 't-d', null, 12);
+      var pat = T(g, cx, -128, '2×2 → 4,096 × ' + dims, 't-b', 'middle', 13);
+      var pipe = wire(g, 'M' + cx + ' ' + (-330 + n * 5 + 8) + 'V-140M' + cx + ' -118V-62', 'pipe');
+      return { g: g, sheets: sheets, pat: pat, pipe: pipe };
+    }
+    return {
+      sd: stack(el('g', { class: 'lane-sd' }, above.sd), 190, 16, 'z_t  128² × 16', 64, 250),
+      ig: stack(el('g', { class: 'lane-ig' }, above.ig), 640, 32, 'z_t  128² × 32', 128, 700)
+    };
+  })();
+
+  // Stop 4：入口（embedding）、SD 的位置表、IG 的 text | image 分界
+  var gate = (function () {
+    var out = {};
+    var g = el('g', { class: 'lane-sd' }, above.sd);
+    out.sdIn = [Box(g, 'is-ink'), Box(g, 'is-ink')];
+    out.sdIn[0].set(0, -46, 158, 12, DZ);
+    out.sdIn[1].set(172, -46, 158, 12, DZ);
+    out.pe = Box(g, 'is-hot');
+    out.peLab = T(g, LEFT_LABEL, 0, '+ 2D sin-cos 位置表', 't-l', 'end', 13);
+    out.peLead = el('path', { class: 'lead' }, g);
+    out.sdLab = T(g, LEFT_LABEL, -40, '入口 embed', 't-b', 'end', 13);
+    T(g, LEFT_LABEL, -24, '文字 4096→2432 ｜ 圖片 64→2432', null, 'end', 12);
+    out.sd = g;
+    var h = el('g', { class: 'lane-ig' }, above.ig);
+    out.igIn = Box(h, 'is-ink');
+    out.igIn.set(470, -46, 300, 12, DZ);
+    var split = 470 + 300 * 300 / 4396;
+    el('path', { d: 'M' + r1(split) + ' -46v12', class: 'lead' }, h);
+    el('path', { d: 'M' + r1(split) + ' -46l' + r1(DZ * KX) + ' ' + r1(-DZ * KY), class: 'lead' }, h);
+    T(h, r1(split + DZ * KX - 4), -80, 'text', 't-b', 'end', 12);
+    T(h, r1(split + DZ * KX + 4), -80, 'image →', 't-b', null, 12);
+    out.igLab = T(h, RIGHT_LABEL, -40, '入口 embed', 't-b', 'start', 13);
+    T(h, RIGHT_LABEL, -24, '圖片 128→4608 ｜ 文字 53,248→4608', null, 'start', 12);
+    out.ig = h;
+    return out;
+  })();
+
+  // 第 5 站：調變訊號從哪裡來
+  var mod = (function () {
+    var out = {};
+    var g = el('g', { class: 'lane-sd' }, above.sd);
+    el('rect', { x: -196, y: -112, width: 150, height: 26, rx: 4, class: 'card-l' }, g);
+    T(g, -121, -95, 'c = t + pooled', 't-b', 'middle', 12);
+    out.sdWire = el('path', { class: 'pipe-d' }, g);
+    out.sdPool = wire(g, 'M-121 -452V-112', 'pipe-d');
+    out.sd = g;
+    var h = el('g', { class: 'lane-ig' }, above.ig);
+    el('rect', { x: 846, y: -112, width: 130, height: 26, rx: 4, class: 'card-l' }, h);
+    T(h, 911, -95, 't → 512', 't-b', 'middle', 12);
+    out.igWire = el('path', { class: 'pipe-d' }, h);
+    out.ig = h;
+    return out;
+  })();
+
+  // ---- 段落與鏡頭 ----
+  var BEATS = [['intro', 0.7], ['prompt', 1.1], ['encoder', 1.4], ['latent', 1.1], ['position', 1.1], ['layer', 3.2], ['end', 0.9]];
+  var HOLD = 0.3;
+  var STOPS = ['prompt', 'encoder', 'latent', 'position', 'layer'];
+  var total = BEATS.reduce(function (s, b) { return s + b[1]; }, HOLD), spans = {}, acc = 0;
+  BEATS.forEach(function (b) { spans[b[0]] = { start: acc / total, len: b[1] / total }; acc += b[1]; });
+  function localT(k, p) { return clamp01((p - spans[k].start) / spans[k].len); }
+  function beatAt(p) {
+    var cur = BEATS[0][0];
+    BEATS.forEach(function (b) { if (p >= spans[b[0]].start) cur = b[0]; });
+    return cur;
+  }
+
+  var CX = 405;
+  var SHOTS = [
+    ['intro', 0, CX, 400, 1500], ['intro', 0.2, CX, 400, 1500], ['intro', 0.95, CX, -860, 1350], ['prompt', 1, CX, -850, 1350],
+    ['encoder', 0.35, CX, -570, 1350], ['encoder', 1, CX, -550, 1350],
+    ['latent', 0.35, CX, -260, 1350], ['latent', 1, CX, -240, 1350],
+    ['position', 0.35, CX, -10, 1350], ['position', 1, CX, 10, 1350],
+    ['layer', 0.2, CX, 160, 1380], ['layer', 1, CX, 175, 1380],
+    ['end', 0.7, CX, 430, 2000]
+  ];
+  var shots = SHOTS.map(function (s) { return { p: spans[s[0]].start + spans[s[0]].len * s[1], x: s[2], y: s[3], w: s[4] }; });
+  function camera(p) {
+    var i = 0;
+    while (i < shots.length - 1 && shots[i + 1].p <= p) i++;
+    var a = shots[i], b = shots[Math.min(i + 1, shots.length - 1)];
+    var k = b.p > a.p ? ease(clamp01((p - a.p) / (b.p - a.p))) : 0;
+    return { x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), w: Math.exp(lerp(Math.log(a.w), Math.log(b.w), k)) };
+  }
+
+  // 取景框放進舞台上沒被說明欄蓋住的那一塊（寬螢幕是右邊，窄螢幕是上面）
+  var view = { W: 1, H: 1, fx: 0, fy: 0, fw: 1, fh: 1 };
+  function measure() {
+    var r = stage.getBoundingClientRect(), pr = panel.getBoundingClientRect();
+    view.W = r.width; view.H = r.height;
+    var narrow = view.narrow = window.matchMedia('(max-width: 900px)').matches;
+    if (narrow) { view.fx = 0; view.fy = 0; view.fw = r.width; view.fh = Math.max(120, pr.top - r.top); }
+    else { view.fx = pr.right - r.left; view.fy = 0; view.fw = r.width - view.fx; view.fh = r.height; }
+    set(svg, 'width', r1(view.W)); set(svg, 'height', r1(view.H));
+  }
+  function renderCamera(c) {
+    // 世界寬 c.w 對到取景框寬 fw（太扁的取景框改成以高為準），再把整個 svg 的 viewBox 推算出來
+    // 窄螢幕放大一點：兩側的標籤會被切掉，說明欄裡有同樣的資訊
+    var s = view.fw / (c.w * (view.narrow ? 0.78 : 1));
+    var minH = c.w * 0.62;
+    if (!view.narrow && view.fh / s < minH) s = view.fh / minH;
+    var vx = c.x - (view.fx + view.fw / 2) / s, vy = c.y - (view.fy + view.fh / 2) / s;
+    set(svg, 'viewBox', [r1(vx), r1(vy), r1(view.W / s), r1(view.H / s)].join(' '));
+  }
+
+  // ---- 說明欄 ----
+  var caps = {};
+  [].forEach.call(root.querySelectorAll('[data-cap]'), function (c) { caps[c.getAttribute('data-cap')] = c; });
+  var statusEl = root.querySelector('[data-tw-status]');
+  var factsEl = root.querySelector('[data-tw-facts]');
+  var stopBtns = [].slice.call(root.querySelectorAll('[data-tw-stop]'));
+  var FACTS = {
+    intro: [['層數', '38', '34'], ['寬度', '2432', '4608'], ['DiT 參數', '8.1B', '9.3B']],
+    prompt: [['輸入', '一句話', 'JSON'], ['token 上限', '77 × 3', '2048']],
+    encoder: [['encoder', 'CLIP ×2 + T5', 'Qwen3-VL-8B'], ['輸出', '154 × 4096', 'N × 53,248']],
+    latent: [['latent', '128² × 16', '128² × 32'], ['每個 token', '64 維', '128 維']],
+    position: [['柱子', '2 根', '1 根'], ['位置', '入口加 2D 表', '每層旋轉 q、k']],
+    layer: [['每層參數', '213M', '264M'], ['寬 × 層數', '2432 × 38', '4608 × 34']],
+    'layer-ada': [['adaLN', '71M · 33%', '9.4M · 3.6%'], ['調變來源', 't + pooled', '只有 t']],
+    'layer-norm': [['Norm', 'LayerNorm', 'RMSNorm'], ['調變', 'scale + shift', 'scale']],
+    'layer-attn': [['heads', '38 × 64', '18 × 256'], ['QKV 權重', '2 組', '1 組']],
+    'layer-mlp': [['MLP', 'GELU 9728', 'SwiGLU 12288'], ['參數', '95M', '170M']],
+    'layer-gate': [['gate', '× gate', '× tanh(gate)'], ['下一站', '第 2 層', '第 2 層']],
+    end: [['已走過', '1 / 38 層', '1 / 34 層'], ['下一段', '製作中', '製作中']]
+  };
+  var LAYER_SUBS = ['ada', 'norm', 'attn', 'mlp', 'gate'];
+  function capKey(beat, t) {
+    if (beat !== 'layer') return beat;
+    if (t < 0.2) return 'layer';
+    return 'layer-' + LAYER_SUBS[Math.min(4, Math.floor((t - 0.2) / 0.8 * 5))];
+  }
+  var shownCap = '';
+  function renderPanel(beat, key, p) {
+    if (key !== shownCap) {
+      if (caps[shownCap]) caps[shownCap].classList.remove('is-on');
+      if (caps[key]) caps[key].classList.add('is-on');
+      shownCap = key;
+      var si0 = STOPS.indexOf(beat);
+      statusEl.textContent = si0 >= 0 ? 'Stop ' + ('0' + (si0 + 1)) + ' / 05' : beat === 'end' ? 'Next' : 'Overview';
+      factsEl.innerHTML = '<dt></dt><dd class="sd">SD 3.5</dd><dd class="ig">Ideogram 4</dd>' +
+        (FACTS[key] || []).map(function (f) { return '<dt>' + f[0] + '</dt><dd>' + f[1] + '</dd><dd>' + f[2] + '</dd>'; }).join('');
+    }
+    var si = STOPS.indexOf(beat);
+    stopBtns.forEach(function (b, i) {
+      b.classList.toggle('is-on', i === si);
+      var v = i < si || (beat === 'end') ? 1 : i === si ? localT(beat, p) : 0;
+      b.querySelector('[data-tw-bar]').style.setProperty('--p', r1(v * 100) / 100);
+    });
+    root.classList.toggle('is-end', p > 0.97);
+  }
+
+  // ---- 每一幀 ----
+  function render(p) {
+    var t = {};
+    BEATS.forEach(function (b) { t[b[0]] = localT(b[0], p); });
+    var beat = beatAt(p);
+
+    // Stop 1
+    show(prompt.sd, seg(t.prompt, 0, 0.2) || (t.intro > 0.6 ? 0.35 : 0));
+    show(prompt.ig, seg(t.prompt, 0, 0.2) || (t.intro > 0.6 ? 0.35 : 0));
+    var fill = seg(t.prompt, 0.15, 0.6), pad = seg(t.prompt, 0.6, 0.85);
+    prompt.sdRows.forEach(function (r) {
+      var on = Math.round(r.n * fill), padded = Math.round((77 - r.n) * pad);
+      r.cells.forEach(function (c, k) { set(c, 'class', k < on ? 'cell on' : k >= r.n && k < r.n + padded ? 'cell pad' : 'cell'); });
+      r.lab.textContent = r.name + ' ' + on + '/77';
+    });
+    var lines = Math.floor(seg(t.prompt, 0.1, 0.55) * prompt.igLines.length + 0.999);
+    prompt.igLines.forEach(function (l, i) { show(l, i < lines ? 1 : 0.15); });
+    show(prompt.swatch, lines > 4 ? 1 : 0);
+    var tok = 300 * seg(t.prompt, 0.2, 0.75);
+    set(prompt.meter, 'width', r1(318 * tok / 2048));
+    prompt.count.textContent = '≈ ' + Math.round(tok) + ' / 2048';
+
+    // Stop 2
+    var eOn = seg(t.encoder, 0, 0.15), scan = seg(t.encoder, 0.12, 0.7);
+    show(enc.sd, eOn); show(enc.ig, eOn);
+    enc.sdTowers.forEach(function (tw) {
+      tw.layers.forEach(function (b, i) {
+        var lit = (i + 1) / tw.s.n <= scan + 1e-6;
+        b.g.setAttribute('class', 'tw-box' + (lit && i === tw.s.tap ? ' is-hot' : lit ? '' : ' is-ghost'));
+      });
+    });
+    var tapSet = {};
+    enc.taps.forEach(function (tp) { tapSet[tp.li] = true; });
+    enc.qwen.forEach(function (b, i) {
+      var lit = (i + 1) / 36 <= scan + 1e-6;
+      b.g.setAttribute('class', 'tw-box' + (lit && tapSet[i] ? ' is-hot' : lit ? '' : ' is-ghost'));
+    });
+    enc.taps.forEach(function (tp) {
+      var lit = (tp.li + 1) / 36 <= scan + 1e-6;
+      show(tp.lead, lit ? 1 : 0.15);
+      set(tp.sq, 'class', lit ? 'f-l' : 'f-line');
+    });
+    show(enc.sdOut, seg(t.encoder, 0.7, 0.82));
+    show(enc.igOut, seg(t.encoder, 0.7, 0.82));
+    draw(enc.sdPipe, seg(t.encoder, 0.78, 1));
+    draw(enc.igPipe, seg(t.encoder, 0.78, 1));
+    show(enc.pool, seg(t.encoder, 0.8, 0.92));
+    draw(enc.poolWire, seg(t.encoder, 0.8, 0.92));
+
+    // Stop 3
+    ['sd', 'ig'].forEach(function (k) {
+      var s = lat[k], n = s.sheets.length;
+      show(s.g, seg(t.latent, 0, 0.1));
+      s.sheets.forEach(function (b, i) { show(b.g, seg(t.latent, 0.05 + 0.4 * i / n, 0.1 + 0.4 * i / n)); });
+      show(s.pat, seg(t.latent, 0.5, 0.65));
+      draw(s.pipe, seg(t.latent, 0.6, 0.95));
+    });
+
+    // Stop 4
+    var gIn = seg(t.position, 0, 0.25);
+    show(gate.sd, gIn); show(gate.ig, gIn);
+    var drop = ease(seg(t.position, 0.25, 0.6)), peY = lerp(-130, -52, drop);
+    gate.pe.set(172, peY, 158, 4, DZ);
+    show(gate.pe.g, seg(t.position, 0.2, 0.3));
+    set(gate.peLab, 'y', r1(peY - 6));
+    set(gate.peLead, 'd', 'M' + (LEFT_LABEL + 6) + ' ' + r1(peY) + 'H170');
+    show(gate.peLab, seg(t.position, 0.2, 0.3)); show(gate.peLead, seg(t.position, 0.2, 0.3));
+    var rotT = seg(t.position, 0.45, 0.85);
+    function rotOn(i) { return seg(rotT, i / 34 * 0.7, i / 34 * 0.7 + 0.3); }
+
+    // Stop 5：拆開第 1 層
+    var k = ease(seg(t.layer, 0, 0.18)) * (1 - ease(seg(t.end, 0, 0.45)));
+    var key = capKey(beat, t.layer);
+    var hot = key.indexOf('layer-') === 0 ? key.slice(6) : null;
+    layoutTower('sd', k, hot, function () { return 0; });
+    layoutTower('ig', k, hot, rotOn);
+    var modOn = seg(t.layer, 0.1, 0.2) * (1 - seg(t.end, 0, 0.3));
+    show(mod.sd, modOn); show(mod.ig, modOn);
+    var sdAda = tower.sd.subs[0], igAda = tower.ig.subs[0];
+    set(mod.sdWire, 'd', 'M-46 -99H-8V' + r1(sdAda.y + sdAda.h / 2) + 'H-2');
+    set(mod.igWire, 'd', 'M846 -99H824V' + r1(igAda.y + igAda.h / 2) + 'H' + r1(770 + DZ * KX + 2));
+    mod.sdWire.style.strokeWidth = hot === 'ada' ? 2.4 : '';
+    mod.igWire.style.strokeWidth = hot === 'ada' ? 2.4 : '';
+    draw(mod.sdPool, modOn);
+
+    renderCamera(camera(p));
+    renderPanel(beat, capKey(beat, t.layer), p);
+    autoplay.render(p);
+  }
+
+  function progress() {
+    var r = track.getBoundingClientRect(), range = r.height - stage.offsetHeight;
+    var hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 64;
+    return range > 0 ? clamp01((hh - r.top) / range) : 1;
+  }
+  var ticking = false;
+  function request() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () { ticking = false; render(progress()); });
+  }
+
+  // 停靠站按鈕：捲到那一站的開頭
+  function trackTop() {
+    var hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 64;
+    return track.getBoundingClientRect().top + window.scrollY - hh;
+  }
+  function scrollToP(p, smooth) {
+    window.scrollTo({ top: trackTop() + (track.offsetHeight - stage.offsetHeight) * p, behavior: smooth && !reduceMotion ? 'smooth' : 'auto' });
+  }
+  stopBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var s = spans[b.getAttribute('data-tw-stop')];
+      scrollToP(s.start + s.len * 0.3, true);
+    });
+  });
+
+  // ---- 自動播放：照固定速度把 p 推到 1，用 scrollTo 帶著頁面捲；使用者一碰滾輪、觸控或按鍵就停 ----
+  var autoplay = (function () {
+    var btn = root.querySelector('[data-tw-play]');
+    if (!btn || reduceMotion) { if (btn) btn.hidden = true; return { render: function () {} }; }
+    var label = btn.querySelector('[data-tw-play-label]');
+    var FULL = 36000;
+    var raf = 0, p0 = 0, t0 = 0, setY = 0, shown = '';
+    function range() { return [trackTop(), track.offsetHeight - stage.offsetHeight]; }
+    function tick(ts) {
+      if (!t0) t0 = ts;
+      if (Math.abs(window.scrollY - setY) > 2) return stop();
+      var p = Math.min(1, p0 + (ts - t0) / FULL), r = range();
+      window.scrollTo(0, r[0] + r[1] * p);
+      setY = window.scrollY;
+      if (p >= 1) return stop();
+      raf = requestAnimationFrame(tick);
+    }
+    function start() {
+      p0 = progress();
+      if (p0 >= 0.98) { p0 = 0; window.scrollTo(0, range()[0]); }
+      setY = window.scrollY; t0 = 0;
+      raf = requestAnimationFrame(tick);
+      render(p0);
+    }
+    function stop() {
+      if (!raf) return;
+      cancelAnimationFrame(raf); raf = 0;
+      render(progress());
+    }
+    function render(p) {
+      var state = raf ? 'run' : p >= 0.98 ? 'done' : 'idle';
+      if (state === shown) return;
+      shown = state;
+      btn.setAttribute('data-state', state);
+      label.textContent = state === 'run' ? 'Pause' : state === 'done' ? 'Replay' : 'Auto-play';
+    }
+    btn.addEventListener('click', function () { if (raf) stop(); else start(); });
+    function interrupt(e) { if (raf && !btn.contains(e.target)) stop(); }
+    window.addEventListener('wheel', interrupt, { passive: true });
+    window.addEventListener('touchstart', interrupt, { passive: true });
+    window.addEventListener('pointerdown', interrupt);
+    window.addEventListener('keydown', interrupt);
+    return { render: render };
+  })();
+
+  root.classList.add('is-live');
+  measure();
+  window.addEventListener('scroll', request, { passive: true });
+  window.addEventListener('resize', function () { measure(); request(); });
+  if ('ResizeObserver' in window) new ResizeObserver(function () { measure(); request(); }).observe(stage);
+  render(progress());
+})();

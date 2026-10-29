@@ -1,0 +1,156 @@
+/* ==========================================================================
+   Ideogram 4 vs SD 3.5 — 第二版：兩座塔（layout: dit-tower，js/dit-tower.js）
+   .is-live 之後 .tw-track 才拉長、舞台才釘住；沒有 JS 就只剩說明文字。
+   圖例和捲動提示沿用 dit-compare.css 的 .dc-legend、.dc-scroll-hint。
+   ========================================================================== */
+
+.tw {
+  --dc-sd: #2f67d0;
+  --dc-ig: var(--accent);
+  --tw-panel-w: 340px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tw { --dc-sd: #7ea6ff; }
+}
+:root[data-theme="dark"] .tw { --dc-sd: #7ea6ff; }
+.is-dit-tower .statusbar { display: none; }
+
+.tw-hero { padding-top: clamp(48px, 7vw, 96px); padding-bottom: clamp(24px, 4vw, 40px); }
+.tw-hero .dc-scroll-hint a { color: var(--ink-2); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+
+/* ---------- track 與舞台 ---------- */
+.tw-track { position: relative; }
+.tw-world, .tw-more, .tw-stops, .tw-panel-top, .tw-facts { display: none; }
+.tw-caps { display: grid; gap: 28px; }
+.tw:not(.is-live) .tw-track { max-width: calc(var(--wrap) + var(--gutter) * 2); margin: 0 auto; padding: 0 var(--gutter) 48px; }
+
+.tw.is-live .tw-track { height: 900svh; }
+.tw.is-live .tw-stage {
+  position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h));
+  display: grid; grid-template-columns: var(--tw-panel-w) minmax(0, 1fr);
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  overflow: hidden;
+}
+.tw.is-live .tw-world { display: block; grid-column: 1 / -1; grid-row: 1; width: 100%; height: 100%; }
+.tw.is-live .tw-panel {
+  grid-column: 1; grid-row: 1; position: relative; z-index: 2; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 20px 22px 20px max(var(--gutter), calc((100vw - var(--wrap)) / 2));
+  width: calc(var(--tw-panel-w) + max(0px, (100vw - var(--wrap)) / 2 - var(--gutter)));
+  background: linear-gradient(90deg, var(--bg) 82%, color-mix(in srgb, var(--bg) 0%, transparent));
+}
+.tw.is-live .tw-stage { grid-template-columns: calc(var(--tw-panel-w) + max(0px, (100vw - var(--wrap)) / 2 - var(--gutter))) minmax(0, 1fr); }
+.tw.is-live .tw-panel-top { display: flex; align-items: center; gap: 10px; }
+.tw.is-live .tw-stops { display: grid; }
+.tw.is-live .tw-facts { display: grid; }
+.tw.is-live .tw-caps { display: grid; gap: 0; flex: 1; min-height: 0; }
+.tw.is-live .tw-cap { grid-area: 1 / 1; align-self: start; opacity: 0; translate: 0 8px; transition: opacity 0.3s, translate 0.3s var(--ease); pointer-events: none; }
+.tw.is-live .tw-cap.is-on { opacity: 1; translate: none; pointer-events: auto; }
+
+.tw-status {
+  display: flex; align-items: center; gap: 8px; margin: 0; padding: 6px 12px;
+  border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--bg) 80%, transparent);
+  font: 500 11.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); white-space: nowrap;
+}
+.tw-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.tw-play {
+  display: inline-flex; align-items: center; gap: 8px; margin-left: auto; padding: 6px 12px;
+  border: 1px solid var(--line-2); border-radius: 999px; background: none; cursor: pointer;
+  font: 500 11.5px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-2); white-space: nowrap;
+}
+.tw-play:hover { border-color: var(--ink); color: var(--ink); }
+.tw-play-icon { width: 0; height: 0; border-left: 7px solid currentColor; border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
+.tw-play[data-state="run"] .tw-play-icon { width: 7px; height: 9px; border: 0; border-left: 2.5px solid currentColor; border-right: 2.5px solid currentColor; }
+
+.tw-stops { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; list-style: none; }
+.tw-stops button {
+  position: relative; display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 4px 0 8px;
+  border: 0; background: none; cursor: pointer; text-align: left;
+  font: 500 10px var(--font-mono); letter-spacing: 0.03em; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tw-stops button span { font-size: 11px; color: var(--ink-3); }
+.tw-stops button i { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--line); overflow: hidden; }
+.tw-stops button i::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+.tw-stops button.is-on { color: var(--ink); }
+.tw-stops button.is-on span { color: var(--accent); }
+.tw-stops button:hover { color: var(--ink); }
+
+.tw-cap h2 { margin: 10px 0 0; font-size: clamp(22px, 2.1vw, 28px); line-height: 1.2; font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; }
+.tw-cap p:not(.kicker) { margin: 12px 0 0; padding-left: 12px; font-size: 14.5px; line-height: 1.7; color: var(--ink-2); border-left: 2px solid var(--dc-sd); }
+.tw-cap p b { display: block; font: 600 10.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--dc-sd); }
+.tw-cap .tw-cap-ig { border-left-color: var(--dc-ig); }
+.tw-cap .tw-cap-ig b { color: var(--dc-ig); }
+
+.tw-facts { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); margin: 0; border-top: 1px dashed var(--line-2); font: 500 12px var(--font-mono); }
+.tw-facts > * { margin: 0; padding: 7px 8px 6px 0; border-bottom: 1px dashed var(--line); min-width: 0; overflow-wrap: anywhere; }
+.tw-facts dt { color: var(--ink-3); font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; }
+.tw-facts dd { font-weight: 600; font-variant-numeric: tabular-nums; }
+.tw-facts .sd { color: var(--dc-sd); }
+.tw-facts .ig { color: var(--dc-ig); }
+
+.tw.is-live .tw-more {
+  display: block; position: absolute; right: max(var(--gutter), calc((100vw - var(--wrap)) / 2)); bottom: 18px; z-index: 2; margin: 0;
+  font: 500 11.5px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-3); transition: opacity 0.3s;
+}
+.tw-more span { display: inline-block; color: var(--accent); animation: dc-bob 1.6s var(--ease) infinite; }
+.tw.is-end .tw-more { opacity: 0; }
+
+/* ---------- 塔：SVG 世界 ---------- */
+.tw-world text { font-family: var(--font-mono); font-size: 14px; font-weight: 500; fill: var(--ink-2); }
+.tw-world .t-b { fill: var(--ink); font-weight: 600; }
+.tw-world .t-l { fill: var(--lane); font-weight: 600; }
+.tw-world .t-d { fill: var(--ink-3); }
+.tw-world .t-big { font-size: 26px; font-weight: 600; fill: var(--ink); letter-spacing: -0.02em; }
+.tw-world .t-pre { white-space: pre; }
+.tw-world .lane-sd { --lane: var(--dc-sd); }
+.tw-world .lane-ig { --lane: var(--dc-ig); }
+.tw-world .lane-n { --lane: var(--ink-3); }
+.tw-world path, .tw-world rect, .tw-world line, .tw-world circle { vector-effect: non-scaling-stroke; }
+
+.tw-box path { stroke: color-mix(in srgb, var(--lane) 60%, var(--ink)); stroke-width: 0.6; stroke-linejoin: round; transition: fill 0.25s; }
+.tw-box .f { fill: color-mix(in srgb, var(--lane) 30%, var(--surface)); }
+.tw-box .tp { fill: color-mix(in srgb, var(--lane) 16%, var(--surface)); }
+.tw-box .sd { fill: color-mix(in srgb, var(--lane) 48%, var(--surface)); }
+.tw-box.is-hot .f { fill: color-mix(in srgb, var(--lane) 88%, var(--surface)); }
+.tw-box.is-hot .tp { fill: color-mix(in srgb, var(--lane) 55%, var(--surface)); }
+.tw-box.is-hot .sd { fill: var(--lane); }
+.tw-box.is-ink .f { fill: color-mix(in srgb, var(--ink) 70%, var(--surface)); }
+.tw-box.is-ink .tp { fill: color-mix(in srgb, var(--ink) 40%, var(--surface)); }
+.tw-box.is-ink .sd { fill: var(--ink); }
+.tw-box.is-ghost path { fill: none; stroke: var(--line-2); stroke-dasharray: 3 3; }
+.tw-world .card { fill: var(--surface); stroke: var(--line-2); stroke-width: 1; }
+.tw-world .card-l { fill: var(--surface); stroke: var(--lane); stroke-width: 1.4; }
+.tw-world .cell { fill: none; stroke: var(--line-2); stroke-width: 0.5; }
+.tw-world .cell.on { fill: var(--lane); stroke: none; }
+.tw-world .cell.pad { fill: var(--line); stroke: none; }
+.tw-world .f-l { fill: var(--lane); }
+.tw-world .f-soft { fill: color-mix(in srgb, var(--lane) 22%, transparent); }
+.tw-world .f-line { fill: var(--line); }
+.tw-world .pipe { fill: none; stroke: var(--lane); stroke-width: 2; stroke-linecap: round; }
+.tw-world .pipe-d { fill: none; stroke: var(--lane); stroke-width: 1.4; stroke-dasharray: 5 4; }
+.tw-world .lead { fill: none; stroke: var(--ink-3); stroke-width: 0.8; }
+.tw-world .joint { fill: color-mix(in srgb, var(--lane) 10%, transparent); stroke: var(--lane); stroke-width: 1.4; stroke-dasharray: 6 4; }
+.tw-world .ink-f { fill: var(--ink-3); }
+
+/* ---------- 窄螢幕：塔佔滿舞台，說明疊在下面 ---------- */
+@media (max-width: 900px) {
+  .tw.is-live .tw-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .tw.is-live .tw-world { grid-row: 1 / -1; }
+  .tw.is-live .tw-panel {
+    grid-row: 2; width: auto; gap: 8px; padding: 10px var(--gutter) 12px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent); border-top: 1px solid var(--line-2);
+    backdrop-filter: blur(8px);
+  }
+  .tw.is-live .tw-caps { flex: none; }
+  .tw-cap h2 { font-size: 19px; margin-top: 6px; }
+  .tw-cap p:not(.kicker) { margin-top: 6px; font-size: 13px; line-height: 1.55; }
+  .tw-stops button { font-size: 0; padding-bottom: 6px; }
+  .tw-stops button span { font-size: 10px; }
+  .tw.is-live .tw-facts { display: none; }
+  .tw.is-live .tw-more { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tw.is-live .tw-cap, .tw-box path { transition: none; }
+  .tw-more span { animation: none; }
+}

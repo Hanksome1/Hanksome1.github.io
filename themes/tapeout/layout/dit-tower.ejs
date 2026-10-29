@@ -1,0 +1,97 @@
+<%
+  // Ideogram 4 vs SD 3.5 的第二版：把兩個模型畫成兩座並排的塔（js/dit-tower.js），鏡頭從塔頂一路往下走，在停靠站停下來說明。
+  // 舞台釘在畫面上，捲過 .tw-track 的距離換成 0–1 的進度；左邊一欄是說明，右邊是塔。沒有 JS 時只剩下說明文字。
+  var stops = [
+    { key: 'prompt', name: 'Prompt' },
+    { key: 'encoder', name: 'Encoder' },
+    { key: 'latent', name: 'Latent' },
+    { key: 'position', name: 'Entrance' },
+    { key: 'layer', name: 'Layer 1' }
+  ];
+  // 說明：key 是 data-cap，第 5 站拆成一段導言加五個運算
+  var caps = [
+    { key: 'intro', kicker: 'Overview', title: '兩座塔，從頭走到尾',
+      sd: '38 層，每一層是兩根細柱並排：文字一根、圖片一根，各有一組權重。',
+      ig: '34 層，每一層是一整塊寬板：文字和圖片共用同一組權重。' },
+    { key: 'prompt', stop: 0, kicker: 'Stop 01 — Prompt', title: '塔頂：輸入',
+      sd: '一句英文。三個 tokenizer 各切一次，每個最多 77 個 token，多的截掉。',
+      ig: '一份 JSON：描述、風格、色票，每個物件和文字都有 bbox。最多 2048 個 token。' },
+    { key: 'encoder', stop: 1, kicker: 'Stop 02 — Text encoder', title: '誰來讀這段文字',
+      sd: 'CLIP-L、OpenCLIP bigG 取倒數第二層，T5-XXL 取最後一層，疊成 154 × 4096。兩個 CLIP 的 pooled 向量另外送去調變每一層。',
+      ig: '一個凍結的 Qwen3-VL-8B。在它的 36 層裡抽 13 層接起來（53,248 維），再壓成 4608 維。' },
+    { key: 'latent', stop: 2, kicker: 'Stop 03 — Latent', title: '雜訊變成 token',
+      sd: '從一張純雜訊的 latent 出發，16 個通道。2 × 2 打包成 token，每個 64 維。',
+      ig: '一樣從純雜訊出發，但有 32 個通道，所以每個 token 是 128 維。1024² 兩邊都是 4096 個 token。' },
+    { key: 'position', stop: 3, kicker: 'Stop 04 — Entrance', title: '入口：排隊、標位置',
+      sd: '文字和圖片各走各的柱子。圖片 token 進門時疊上一張 2D sin-cos 位置表；文字在 DiT 裡不加位置。',
+      ig: '文字接在圖片前面，排進同一根柱子。位置不在入口加，而是在每一層的 attention 裡旋轉 q、k（3D MRoPE），所以每層側面都有 ⟳。' },
+    { key: 'layer', stop: 4, kicker: 'Stop 05 — Layer 1', title: '拆開第 1 層',
+      sd: '一層 213M 參數。拆開之後每一塊的面積照參數量畫，大塊就是參數多。',
+      ig: '一層 264M 參數。同一個比例尺：看得出它的錢主要花在哪裡。' },
+    { key: 'layer-ada', stop: 4, kicker: 'Stop 05 · 1 / 5 — adaLN', title: '調變產生器',
+      sd: 'c = 時間步 + pooled 文字。每根柱子用一個 2432 → 6 × 2432 的 Linear 產生 6 個調變向量，佔整層三分之一。',
+      ig: '只看時間步，先壓成 512 維，再用 512 → 4 × 4608 產生 4 個向量。只佔 3.6%。' },
+    { key: 'layer-norm', stop: 4, kicker: 'Stop 05 · 2 / 5 — Norm', title: '正規化',
+      sd: 'LayerNorm，再乘 (1 + scale) 加 shift。',
+      ig: 'RMSNorm，只乘 (1 + scale)。attention 和 MLP 的輸出還各再做一次 RMSNorm（sandwich norm）。' },
+    { key: 'layer-attn', stop: 4, kicker: 'Stop 05 · 3 / 5 — Attention', title: 'Attention',
+      sd: '兩根柱子各算自己的 QKV，在這一刻接起來做一次 joint attention，再拆回兩根。38 個 head × 64 維。',
+      ig: '一組權重算全部 token 的 QKV，18 個 head × 256 維。兩邊都對 q、k 做 RMSNorm。' },
+    { key: 'layer-mlp', stop: 4, kicker: 'Stop 05 · 4 / 5 — MLP', title: 'MLP',
+      sd: 'GELU，2432 → 9728 → 2432，兩個矩陣。',
+      ig: 'SwiGLU，4608 → 12288 → 4608，三個矩陣。整層最大的一塊，佔 64%。' },
+    { key: 'layer-gate', stop: 4, kicker: 'Stop 05 · 5 / 5 — Gate', title: '閘門與 residual',
+      sd: 'attention 和 MLP 的輸出各乘一個 gate，再加回 residual，交給第 2 層。',
+      ig: '一樣，但 gate 先過 tanh，限制在 ±1 之間。' },
+    { key: 'end', kicker: 'To be continued', title: '第 2 層之後',
+      sd: '接下來的停靠站還在製作：中間層快速通過、最後一層、塔底解碼、取樣迴圈、總帳。',
+      ig: '先看看第 1–5 站的感覺對不對，再往下做。' }
+  ];
+%>
+<div class="tw" data-tw data-section="DIT TOWER">
+  <header class="tw-hero wrap">
+    <p class="kicker">§ Explainer — Text-to-Image Transformers · v2</p>
+    <h1 class="article-title"><%= page.title %></h1>
+    <% if (page.summary) { %><p class="article-lede"><%= page.summary %></p><% } %>
+    <ul class="dc-legend tw-legend">
+      <li class="dc-legend-sd"><i></i><b>SD 3.5 Large</b><span>38 × 2432 · dual-stream</span></li>
+      <li class="dc-legend-ig"><i></i><b>Ideogram 4</b><span>34 × 4608 · single-stream</span></li>
+    </ul>
+    <p class="dc-scroll-hint">往下捲，鏡頭從塔頂往下走 <span aria-hidden="true">↓</span> · <a href="<%- url_for('/lab/ideogram4-vs-sd35/') %>">第一版（逐章並排）</a></p>
+  </header>
+
+  <section class="tw-track">
+    <div class="tw-stage">
+      <svg class="tw-world" data-tw-world role="img" aria-label="SD 3.5 Large 與 Ideogram 4 畫成兩座並排的塔，鏡頭從塔頂往下走"></svg>
+      <aside class="tw-panel">
+        <div class="tw-panel-top">
+          <p class="tw-status"><span class="tw-status-dot"></span><span data-tw-status>Overview</span></p>
+          <button type="button" class="tw-play" data-tw-play aria-label="自動播放"><span class="tw-play-icon" aria-hidden="true"></span><span data-tw-play-label>Auto-play</span></button>
+        </div>
+        <ol class="tw-stops">
+          <% stops.forEach(function (s, i) { %>
+            <li><button type="button" data-tw-stop="<%= s.key %>"><span><%= pad(i + 1) %></span><%= s.name %><i data-tw-bar></i></button></li>
+          <% }) %>
+        </ol>
+        <div class="tw-caps">
+          <% caps.forEach(function (c, i) { %>
+            <article class="tw-cap<%= i === 0 ? ' is-on' : '' %>" data-cap="<%= c.key %>">
+              <p class="kicker"><%= c.kicker %></p>
+              <h2><%= c.title %></h2>
+              <p class="tw-cap-sd"><b>SD 3.5</b><%= c.sd %></p>
+              <p class="tw-cap-ig"><b>Ideogram 4</b><%= c.ig %></p>
+            </article>
+          <% }) %>
+        </div>
+        <dl class="tw-facts" data-tw-facts></dl>
+      </aside>
+      <p class="tw-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+    </div>
+  </section>
+
+  <section class="tw-outro wrap">
+    <p class="kicker">§ Next</p>
+    <h2 class="dc-summary-title">第 6–10 站製作中</h2>
+    <p class="tw-outro-text">中間層快速通過、最後一層、塔底的 VAE 解碼、取樣迴圈（40 步對 20 步，加上 Ideogram 4 的無條件分身塔）、總計算量。完整的數字和互動比較在<a href="<%- url_for('/lab/ideogram4-vs-sd35/') %>">第一版</a>。</p>
+  </section>
+</div>

@@ -17,6 +17,7 @@
   <%- js('js/main') %>
   <% if (home) { %><%- js('js/waveform') %><%- js('js/tapeout') %><% } %>
   <% if (page.layout === 'dit-compare') { %><%- js('js/dit-compare') %><% } %>
+  <% if (page.layout === 'dit-tower') { %><%- js('js/dit-tower') %><% } %>
   <%- js('js/graph') %>
   <% if (page.content && page.content.indexOf('type="WaveDrom"') > -1) { %>
   <script src="<%- theme.wavedrom.skin %>"></script>
