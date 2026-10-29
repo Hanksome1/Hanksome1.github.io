@@ -1,0 +1,215 @@
+<%
+  // Ideogram 4 vs SD 3.5 Large：捲動式的逐層比較（js/dit-compare.js）。
+  // 左邊是敘述，右邊的舞台釘住不動，分成兩條 lane 並排；捲到哪一章，舞台就換成那一層的比較，章節內的捲動進度驅動動畫。
+  // 沒有 JS 時舞台藏起來，左邊的文字自己就讀得通。
+  var chapters = [
+    { key: 'prompt', name: 'Prompt' },
+    { key: 'encoder', name: 'Text encoder' },
+    { key: 'latent', name: 'Latent' },
+    { key: 'position', name: 'Position' },
+    { key: 'attention', name: 'Attention' },
+    { key: 'block', name: 'Block' },
+    { key: 'depth', name: 'Depth' },
+    { key: 'sampling', name: 'Sampling' },
+    { key: 'cost', name: 'Cost' }
+  ];
+  var lanes = [
+    { key: 'sd', name: 'SD 3.5 Large', sub: 'MMDiT · 8.1B' },
+    { key: 'ig', name: 'Ideogram 4', sub: 'Single-stream DiT · 9.3B' }
+  ];
+%>
+<div class="dc" data-dc data-section="DIT COMPARE">
+  <header class="dc-hero wrap">
+    <p class="kicker">§ Explainer — Text-to-Image Transformers</p>
+    <h1 class="article-title"><%= page.title %></h1>
+    <% if (page.summary) { %><p class="article-lede"><%= page.summary %></p><% } %>
+    <ul class="dc-legend">
+      <% lanes.forEach(function (l) { %><li class="dc-legend-<%= l.key %>"><i></i><b><%= l.name %></b><span><%= l.sub %></span></li><% }) %>
+    </ul>
+    <p class="dc-scroll-hint">往下捲：一章一層，右邊兩個模型同步走到同一層 <span aria-hidden="true">↓</span></p>
+  </header>
+
+  <div class="dc-track wrap">
+    <div class="dc-stage" data-dc-stage>
+      <nav class="dc-rail" aria-label="章節">
+        <ol>
+          <% chapters.forEach(function (c, i) { %>
+            <li><button type="button" data-rail="<%= c.key %>"><span><%= pad(i + 1) %></span><%= c.name %><i data-rail-bar></i></button></li>
+          <% }) %>
+        </ol>
+      </nav>
+      <div class="dc-lanes">
+        <% lanes.forEach(function (l) { %>
+          <section class="dc-lane dc-lane-<%= l.key %>" data-lane="<%= l.key %>" aria-label="<%= l.name %>">
+            <header class="dc-lane-head"><i></i><b><%= l.name %></b><span data-lane-tag></span></header>
+            <svg class="dc-svg" viewBox="0 0 360 440" preserveAspectRatio="xMidYMin meet" data-lane-svg role="img" aria-label="<%= l.name %> 在這一層的示意圖"></svg>
+            <dl class="dc-stats" data-lane-stats></dl>
+          </section>
+        <% }) %>
+      </div>
+      <p class="dc-diff" data-diff aria-live="polite"></p>
+    </div>
+
+    <div class="dc-steps">
+      <section class="dc-step" data-step="prompt">
+        <div class="dc-step-body">
+          <p class="kicker">§01 — Prompt</p>
+          <h2>同一個要求，兩種寫法</h2>
+          <p>我們想要同一張圖：一隻黃金獵犬踩著滑板經過一塊寫著 <code>SKATE DOG</code> 的招牌。兩個模型連「怎麼說」都不一樣。</p>
+          <dl class="dc-cmp">
+            <div class="dc-cmp-sd"><dt>SD 3.5 Large</dt><dd>一句英文就好。三個 tokenizer 各自把它切成 token，每個最多看 <b>77</b> 個，多的直接截掉，不夠的補 padding。</dd></div>
+            <div class="dc-cmp-ig"><dt>Ideogram 4</dt><dd>只吃<b>結構化 JSON</b>：整體描述、風格、色票，每個物件和每段文字都有自己的 bbox（<code>[y_min, x_min, y_max, x_max]</code>，0–1000）。最多 <b>2048</b> 個 token。官方說直接丟純文字會出問題，要先用 LLM（magic prompt）展開成 JSON。</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="dc-step" data-step="encoder">
+        <div class="dc-step-body">
+          <p class="kicker">§02 — Text encoder</p>
+          <h2>誰來讀這段文字</h2>
+          <p>文字要先變成一串向量，DiT 才看得懂。SD 3.5 用三個並聯的 encoder，Ideogram 4 只用一個大型的視覺語言模型，但從它的 13 層各抽一次。</p>
+          <dl class="dc-cmp">
+            <div class="dc-cmp-sd"><dt>SD 3.5 Large</dt><dd>CLIP-L（12 層、768 維）和 OpenCLIP bigG（32 層、1280 維）取<b>倒數第二層</b>，接起來 2048 維、補零到 4096；T5-XXL（24 層、4096 維）取最後一層。上下疊成 <b>154 × 4096</b>。兩個 CLIP 的 pooled 向量（768 + 1280）另外走一條路，加到時間步上，去調變每一層。</dd></div>
+            <div class="dc-cmp-ig"><dt>Ideogram 4</dt><dd>凍結的 <b>Qwen3-VL-8B</b>，只用文字模式跑它的 36 層，在第 0, 3, 6, …, 33, 35 層（從 0 數）各抓一份 hidden state，<b>13 × 4096 = 53,248 維</b>接在一起：淺層偏字面、深層偏語意，全部交給 DiT。進 DiT 前先 RMSNorm，再用一個 Linear 壓到 4608 維。</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="dc-step" data-step="latent">
+        <div class="dc-step-body">
+          <p class="kicker">§03 — Latent &amp; patchify</p>
+          <h2>把圖壓成一格一格的 token</h2>
+          <p>兩邊做法一樣：VAE 每邊縮 8 倍，再把 2 × 2 的 latent 打包成一個 token，等於每 16 × 16 像素一個 token。差別在每個 token 帶多少資訊。</p>
+          <dl class="dc-cmp">
+            <div class="dc-cmp-sd"><dt>SD 3.5 Large</dt><dd>latent <b>16 通道</b> → 每個 token 16 × 4 = <b>64 維</b>。</dd></div>
+            <div class="dc-cmp-ig"><dt>Ideogram 4</dt><dd>latent <b>32 通道</b> → 每個 token 32 × 4 = <b>128 維</b>。官方支援 256–2048、長寬比到 6:1。</dd></div>
+          </dl>
+          <div class="dc-ctl">
+            <label for="dc-res">解析度 <output data-out="res">1024 × 1024</output></label>
+            <input id="dc-res" type="range" min="512" max="2048" step="128" value="1024" data-ctl="res">
+            <p class="dc-ctl-note">token 數跟面積成正比；attention 的配對數是 token 數的平方。</p>
+        </div>
+        </div>
+      </section>
+
+      <section class="dc-step" data-step="position">
+        <div class="dc-step-body">
+          <p class="kicker">§04 — Sequence &amp; position</p>
+          <h2>排成一列，標上位置</h2>
+          <p>Transformer 本身不知道 token 的順序，位置要另外告訴它。這裡兩邊分歧很大：<b>要不要把文字和圖片放進同一條序列</b>，以及<b>位置加在哪裡</b>。</p>
+          <dl class="dc-cmp">
+            <div class="dc-cmp-sd"><dt>SD 3.5 Large</dt><dd>文字和圖片是<b>兩條流</b>，各走各的權重。圖片 token 進門時<b>加上</b>一張 2D sin-cos 位置表（從 192 × 192 的大表裁出需要的範圍）；文字 token 在 DiT 裡不加位置，順序已經由 T5 處理過。</dd></div>
+            <div class="dc-cmp-ig"><dt>Ideogram 4</dt><dd>文字和圖片<b>接成同一條序列</b> <code>[text | image]</code>。位置不加在 token 上，而是在每一層 attention 裡<b>旋轉 q、k</b>（3D MRoPE）：第 i 個文字 token 是 (i, i, i)，圖片 token 是 (0, h, w) 再加 65536，兩種永遠不會撞號。每個 head 的 128 組頻率裡，20 組給高、20 組給寬、其餘 88 組給第一軸。</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="dc-step" data-step="attention">
+        <div class="dc-step-body">
+          <p class="kicker">§05 — Attention</p>
+          <h2>誰看得到誰</h2>
+          <p>兩邊其實都是「全部看全部」：文字看圖片、圖片看文字，每一層都是。真正的差別在 <b>Q、K、V 是用誰的權重算出來的</b>。</p>
+          <dl class="dc-cmp">
+            <div class="dc-cmp-sd"><dt>SD 3.5 Large · dual-stream</dt><dd>文字 token 用 <code>W<sub>ctx</sub></code>、圖片 token 用 <code>W<sub>x</sub></code> 各自算 QKV，拼起來做一次 attention，再拆回兩條流各自走 MLP。<b>38 個 head × 64 維</b>。</dd></div>
+            <div class="dc-cmp-ig"><dt>Ideogram 4 · single-stream</dt><dd>文字和圖片<b>共用同一組權重</b>，像 LLM 一樣一條序列到底。<b>18 個 head × 256 維</b>：head 少、每個 head 寬 4 倍。</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="dc-step dc-step-long" data-step="block">
+        <div class="dc-step-body">
+          <p class="kicker">§06 — Inside one block</p>
+          <h2>走進一個 block</h2>
+          <p>慢慢往下捲，右邊會一個運算一個運算地走過一個 transformer block。底下的長條是這個 block 的參數都花在哪裡。</p>
+          <dl class="dc-cmp">
+            <div class="dc-cmp-sd"><dt>SD 3.5 Large</dt><dd>LayerNorm → ×(1+scale)+shift → attention → ×gate；MLP 是 GELU，2432 → 9728 → 2432。調變訊號 c = 時間步 + pooled 文字，每條流用一個 2432 → 6 × 2432 的 Linear 產生 6 個調變向量：<b>每個 block 有三分之一的參數花在這裡</b>。</dd></div>
+            <div class="dc-cmp-ig"><dt>Ideogram 4</dt><dd>RMSNorm 夾心（前後各一個）→ ×(1+scale)，沒有 shift → ×tanh(gate)；MLP 是 SwiGLU，4608 → 12288 → 4608。調變只看時間步，先壓到 512 維，每層一個 512 → 4 × 4608 的小 Linear，只佔 3.6%。</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="dc-step dc-step-xlong" data-step="depth">
+        <div class="dc-step-body">
+          <p class="kicker">§07 — Depth</p>
+          <h2>一層一層往下</h2>
+          <p>現在把 block 疊起來。往下捲一點就往下走一層，兩邊同時走，SD 3.5 走完 38 層的同時 Ideogram 4 走完 34 層。右邊的數字是走到這一層為止，<b>一次 forward</b> 累積的參數和計算量（看 §03 選的解析度）。</p>
+          <dl class="dc-cmp">
+            <div class="dc-cmp-sd"><dt>SD 3.5 Large</dt><dd><b>38 層 × 2432 寬</b>。最後一層的文字流只算 K、V 給圖片看，不再往下輸出。</dd></div>
+            <div class="dc-cmp-ig"><dt>Ideogram 4</dt><dd><b>34 層 × 4608 寬</b>，寬了 1.9 倍、淺了 4 層。文字 token 一路走到底，只是最後只取圖片那段的輸出。</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="dc-step dc-step-long" data-step="sampling">
+        <div class="dc-step-body">
+          <p class="kicker">§08 — Sampling loop</p>
+          <h2>整個網路，再重複 N 次</h2>
+          <p>上面那一整趟只是一步。兩個模型都是 flow matching：從純雜訊出發，每一步預測一個速度、往乾淨的圖走一小段。每一步要跑兩次 forward（有條件、無條件），再用 classifier-free guidance 合成。右邊每一根柱子就是一步，<b>柱子的面積就是計算量</b>，兩邊同一個比例尺。</p>
+          <dl class="dc-cmp">
+            <div class="dc-cmp-sd"><dt>SD 3.5 Large</dt><dd>官方參考實作預設 <b>40 步</b>、DPM++ 2M、CFG 4.5。無條件那次是「空 prompt」，一樣 154 + 4096 個 token、同一組權重。Turbo 版蒸餾到 4 步、CFG = 1，一步只要一次 forward。</dd></div>
+            <div class="dc-cmp-ig"><dt>Ideogram 4</dt><dd>Euler，預設 <b>20 步</b>（Turbo 12、Quality 48）；guidance 前面都是 7，最後 1–3 步降到 3 做「拋光」。無條件那次<b>只送圖片 token</b>（asymmetric CFG），而且跑的是<b>另一組獨立的 9.3B 權重</b>。</dd></div>
+          </dl>
+          <div class="dc-ctl">
+            <span class="dc-ctl-label">SD 3.5</span>
+            <div class="dc-seg" role="group" aria-label="SD 3.5 設定">
+              <button type="button" data-ctl="sd" value="large" aria-pressed="true">Large · 40 步</button>
+              <button type="button" data-ctl="sd" value="turbo" aria-pressed="false">Large Turbo · 4 步</button>
+            </div>
+            <span class="dc-ctl-label">Ideogram 4</span>
+            <div class="dc-seg" role="group" aria-label="Ideogram 4 設定">
+              <button type="button" data-ctl="ig" value="12" aria-pressed="false">Turbo · 12</button>
+              <button type="button" data-ctl="ig" value="20" aria-pressed="true">Default · 20</button>
+              <button type="button" data-ctl="ig" value="48" aria-pressed="false">Quality · 48</button>
+            </div>
+        </div>
+        </div>
+      </section>
+
+      <section class="dc-step" data-step="cost">
+        <div class="dc-step-body">
+          <p class="kicker">§09 — Cost</p>
+          <h2>算總帳</h2>
+          <p>把文字 encoder、每一步的兩次 forward 全部加起來（乘加算 2 FLOPs，只算矩陣乘法與 attention，VAE 解碼兩邊結構幾乎一樣所以略過）。拉拉看：</p>
+          <div class="dc-ctl">
+            <label for="dc-res2">解析度 <output data-out="res">1024 × 1024</output></label>
+            <input id="dc-res2" type="range" min="512" max="2048" step="128" value="1024" data-ctl="res">
+            <label for="dc-txt">Ideogram 4 的 JSON 長度 <output data-out="txt">300 tokens</output></label>
+            <input id="dc-txt" type="range" min="100" max="2048" step="50" value="300" data-ctl="txt">
+            <p class="dc-ctl-note">步數沿用 §08 選的設定。權重記憶體以 bf16 估算；官方的 Ideogram 4 權重另有 nf4 / fp8 量化版。</p>
+        </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section class="dc-summary wrap" data-section="SUMMARY">
+    <p class="kicker">§10 — Side by side</p>
+    <h2 class="dc-summary-title">一張表看完</h2>
+    <div class="dc-table-wrap">
+      <table class="dc-table">
+        <thead><tr><th scope="col"></th><th scope="col" class="dc-th-sd">SD 3.5 Large</th><th scope="col" class="dc-th-ig">Ideogram 4</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">DiT 參數</th><td>8.1B</td><td>9.3B（另有一組同尺寸的無條件分支）</td></tr>
+          <tr><th scope="row">文字 / 圖片</th><td>dual-stream：兩組權重，joint attention</td><td>single-stream：一組權重，一條序列</td></tr>
+          <tr><th scope="row">深 × 寬</th><td>38 × 2432</td><td>34 × 4608</td></tr>
+          <tr><th scope="row">Attention heads</th><td>38 × 64</td><td>18 × 256，QK-RMSNorm</td></tr>
+          <tr><th scope="row">MLP</th><td>GELU，4×（9728）</td><td>SwiGLU，12288</td></tr>
+          <tr><th scope="row">Norm / 調變</th><td>LayerNorm，shift + scale + gate；c = t + pooled 文字</td><td>RMSNorm 夾心，scale + tanh(gate)；只看 t，512 維瓶頸</td></tr>
+          <tr><th scope="row">位置</th><td>圖片加 2D sin-cos；文字不加</td><td>3D MRoPE，文字與圖片共用座標系</td></tr>
+          <tr><th scope="row">文字 encoder</th><td>CLIP-L + OpenCLIP bigG + T5-XXL</td><td>Qwen3-VL-8B，13 層 hidden state</td></tr>
+          <tr><th scope="row">文字長度</th><td>77 + 77 = 154 token</td><td>最多 2048 token（JSON）</td></tr>
+          <tr><th scope="row">每個圖片 token</th><td>16 通道 × 2 × 2 = 64 維</td><td>32 通道 × 2 × 2 = 128 維</td></tr>
+          <tr><th scope="row">取樣</th><td>40 步，CFG 4.5，無條件分支用空 prompt</td><td>20 步 Euler，guidance 7 → 3，無條件分支只有圖片</td></tr>
+          <tr><th scope="row">1024² 單步計算</th><td data-sum="sdStep">—</td><td data-sum="igStep">—</td></tr>
+          <tr><th scope="row">授權</th><td>Stability AI Community License</td><td>Ideogram 4 Non-Commercial</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ol class="dc-takeaways">
+      <li><b>參數花在哪裡不一樣。</b>SD 3.5 每個 block 有三分之一的參數在做 adaLN 調變；Ideogram 4 把調變壓到 3.6%，省下來的都給了更寬的 MLP。</li>
+      <li><b>文字理解的路線不一樣。</b>SD 3.5 用三個 encoder 讀一句話；Ideogram 4 用一個 8B 的視覺語言模型讀一份 JSON，還一次抓 13 層；JSON 裡的 bbox 讓排版直接寫在 prompt 裡。</li>
+      <li><b>一步更貴，但步數更少。</b>1024²、JSON 300 token 時，Ideogram 4 一步約是 SD 3.5 的 <span data-sum="stepRatio">3</span> 倍計算量；但預設步數只有一半，無條件分支又不帶文字，總量差距縮小到 <span data-sum="totalRatio">1.4</span> 倍。</li>
+    </ol>
+    <p class="dc-sources">資料來源：<a href="https://github.com/ideogram-oss/ideogram4">ideogram-oss/ideogram4</a>（<code>modeling_ideogram4.py</code>、<code>pipeline_ideogram4.py</code>、<code>docs/</code>）、<a href="https://github.com/Stability-AI/sd3.5">Stability-AI/sd3.5</a>（<code>mmditx.py</code>、<code>sd3_infer.py</code>）。計算量是依架構推出來的理論值，實際速度還取決於硬體、精度與 kernel。</p>
+  </section>
+</div>

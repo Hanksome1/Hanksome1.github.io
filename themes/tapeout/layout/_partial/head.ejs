@@ -65,6 +65,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="<%- theme.fonts.google %>">
 <%- css('css/style') %>
+<% if (page.layout === 'dit-compare') { %><%- css('css/dit-compare') %><% } %>
 <% if (page.content && page.content.indexOf('class="katex') > -1) { %><%- css('katex/katex.min') %><% } %>
 <% var ga = theme.analytics && theme.analytics.google; if (ga) { %>
 <script async src="https://www.googletagmanager.com/gtag/js?id=<%= ga %>"></script>

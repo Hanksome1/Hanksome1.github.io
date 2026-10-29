@@ -1,0 +1,219 @@
+/* ==========================================================================
+   Ideogram 4 vs SD 3.5 — 捲動式的逐層比較（layout: dit-compare，js/dit-compare.js）
+   舞台只有在 .is-live（JS 跑起來）時才出現並釘住；沒有 JS 就只剩左邊的文字。
+   ========================================================================== */
+
+.dc {
+  --dc-sd: #2f67d0;
+  --dc-ig: var(--accent);
+  --dc-stage-h: calc(100svh - var(--header-h));
+  --dc-line: 55; /* 啟動線：畫面高度的 55% */
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dc { --dc-sd: #7ea6ff; }
+}
+:root[data-theme="dark"] .dc { --dc-sd: #7ea6ff; }
+.is-dit-compare .statusbar { display: none; }
+
+/* ---------- hero ---------- */
+.dc-hero { padding-top: clamp(48px, 7vw, 96px); padding-bottom: clamp(32px, 5vw, 56px); }
+.dc-legend { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 32px 0 0; padding: 0; list-style: none; }
+.dc-legend li { display: flex; align-items: baseline; gap: 10px; }
+.dc-legend i { width: 12px; height: 12px; border-radius: 3px; align-self: center; }
+.dc-legend b { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.dc-legend span { font: 500 12px var(--font-mono); color: var(--ink-3); letter-spacing: 0.04em; }
+.dc-legend-sd i { background: var(--dc-sd); }
+.dc-legend-ig i { background: var(--dc-ig); }
+.dc-scroll-hint { margin: 28px 0 0; font: 500 12px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-3); }
+.dc-scroll-hint span { display: inline-block; color: var(--accent); animation: dc-bob 1.6s var(--ease) infinite; }
+@keyframes dc-bob { 50% { transform: translateY(4px); } }
+
+/* ---------- track：左文字、右舞台 ---------- */
+.dc-track { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); }
+.dc-stage { display: none; }
+.dc.is-live .dc-track {
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  grid-template-areas: "steps stage";
+  column-gap: clamp(28px, 3.4vw, 56px);
+}
+.dc.is-live .dc-stage {
+  grid-area: stage; align-self: start;
+  position: sticky; top: var(--header-h); height: var(--dc-stage-h);
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px;
+  padding: 16px 0 18px;
+}
+.dc.is-live .dc-steps { grid-area: steps; padding: 4svh 0 40svh; }
+
+/* ---------- 章節導覽 ---------- */
+.dc-rail ol { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; overflow-x: auto; scrollbar-width: none; }
+.dc-rail ol::-webkit-scrollbar { display: none; }
+.dc-rail li { flex: 1 0 auto; }
+.dc-rail button {
+  position: relative; display: flex; align-items: baseline; gap: 6px; width: 100%;
+  padding: 8px 8px 10px; border: 0; background: none; cursor: pointer;
+  font: 500 11px var(--font-mono); letter-spacing: 0.04em; color: var(--ink-3); white-space: nowrap; text-align: left;
+  transition: color 0.2s;
+}
+.dc-rail button span { color: var(--ink-3); opacity: 0.7; }
+.dc-rail button:hover { color: var(--ink); }
+.dc-rail button i { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--line); overflow: hidden; }
+.dc-rail button i::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+.dc-rail button.is-done i::after { transform: scaleX(1); background: var(--ink-3); }
+.dc-rail button.is-on { color: var(--ink); }
+.dc-rail button.is-on span { color: var(--accent); opacity: 1; }
+
+/* ---------- 兩條 lane ---------- */
+.dc-lanes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 14px; min-height: 0; }
+.dc-lane {
+  --lane: var(--dc-sd);
+  --lane-soft: color-mix(in srgb, var(--lane) 16%, transparent);
+  --lane-mid: color-mix(in srgb, var(--lane) 45%, var(--surface));
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; min-height: 0;
+  border: 1px solid var(--line-2); border-top: 3px solid var(--lane); border-radius: 4px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+.dc-lane-ig { --lane: var(--dc-ig); }
+.dc-lane-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px 0; min-width: 0; }
+.dc-lane-head i { width: 9px; height: 9px; border-radius: 2px; background: var(--lane); flex: none; }
+.dc-lane-head b { font-size: 15px; font-weight: 600; white-space: nowrap; }
+.dc-lane-head span { margin-left: auto; font: 500 11px var(--font-mono); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dc-svg { display: block; width: 100%; height: 100%; min-height: 0; overflow: visible; }
+.dc-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; border-top: 1px dashed var(--line-2); }
+.dc-stats > div { padding: 8px 12px 10px; min-width: 0; }
+.dc-stats > div + div { border-left: 1px dashed var(--line); }
+.dc-stats dt { font: 500 10px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dc-stats dd { margin: 2px 0 0; font: 600 15px var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.dc-diff {
+  margin: 0; min-height: 3.2em; padding: 10px 14px; display: flex; gap: 12px; align-items: baseline;
+  border: 1px solid var(--line-2); border-radius: 4px; background: var(--surface);
+  font-size: 14.5px; line-height: 1.55; color: var(--ink-2);
+}
+.dc-diff::before { content: "Δ"; flex: none; font: 600 14px var(--font-mono); color: var(--accent); }
+.dc-diff b { color: var(--ink); font-weight: 600; }
+.dc-diff .sd { color: var(--dc-sd); font-weight: 600; }
+.dc-diff .ig { color: var(--dc-ig); font-weight: 600; }
+
+/* ---------- 左邊的章節文字 ---------- */
+.dc-step { padding: 0 0 8svh; }
+.dc-step + .dc-step { margin-top: 4svh; }
+.dc.is-live .dc-step { min-height: 92svh; opacity: 0.32; transition: opacity 0.35s; }
+.dc.is-live .dc-step.is-on { opacity: 1; }
+.dc.is-live .dc-step-long { min-height: 190svh; }
+.dc.is-live .dc-step-xlong { min-height: 300svh; }
+/* 長的章節：文字釘在上面，捲動只拿來驅動右邊的動畫 */
+.dc.is-live .dc-step-long > .dc-step-body,
+.dc.is-live .dc-step-xlong > .dc-step-body { position: sticky; top: calc(var(--header-h) + 24px); }
+.dc-step h2 { margin: 14px 0 0; font-size: clamp(24px, 2.4vw, 30px); line-height: 1.2; font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; }
+.dc-step p { margin: 14px 0 0; font-size: 15.5px; line-height: 1.75; color: var(--ink-2); }
+.dc-step p b, .dc-cmp b { color: var(--ink); font-weight: 600; }
+.dc-step code, .dc-table code, .dc-sources code { font-size: 0.88em; padding: 1px 5px; border-radius: 3px; background: var(--bg-2); }
+.dc-cmp { margin: 18px 0 0; display: grid; gap: 14px; }
+.dc-cmp > div { padding-left: 14px; border-left: 2px solid var(--dc-sd); }
+.dc-cmp > .dc-cmp-ig { border-left-color: var(--dc-ig); }
+.dc-cmp dt { font: 600 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--dc-sd); }
+.dc-cmp-ig dt { color: var(--dc-ig); }
+.dc-cmp dd { margin: 4px 0 0; font-size: 14.5px; line-height: 1.7; color: var(--ink-2); }
+
+/* ---------- 控制項 ---------- */
+.dc-ctl { margin: 20px 0 0; display: grid; gap: 8px; padding: 14px; border: 1px dashed var(--line-2); border-radius: 4px; }
+.dc-ctl label, .dc-ctl-label { display: flex; justify-content: space-between; gap: 8px; font: 500 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.dc-ctl label + input + label { margin-top: 8px; }
+.dc-ctl output { color: var(--ink); font-weight: 600; text-transform: none; letter-spacing: 0; }
+.dc-ctl input[type="range"] { width: 100%; accent-color: var(--accent); }
+.dc-ctl .dc-ctl-note { margin: 4px 0 0; font-size: 13px; line-height: 1.6; color: var(--ink-3); }
+.dc-seg { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.dc-seg button {
+  padding: 6px 10px; border: 1px solid var(--line-2); border-radius: 999px; background: none; cursor: pointer;
+  font: 500 12px var(--font-mono); color: var(--ink-2); transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.dc-seg button:hover { border-color: var(--ink); color: var(--ink); }
+.dc-seg button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+
+/* ---------- SVG ---------- */
+.dc-svg text { font-family: var(--font-mono); font-size: 11px; font-weight: 500; fill: var(--ink); }
+.dc-svg .t-s { font-size: 9.5px; fill: var(--ink-2); }
+.dc-svg .t-d { font-size: 9.5px; fill: var(--ink-3); }
+.dc-svg .t-l { fill: var(--lane); font-weight: 600; }
+.dc-svg .t-b { font-size: 15px; font-weight: 600; }
+.dc-svg .t-xb { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+.dc-svg .t-cap { font-size: 9px; letter-spacing: 0.08em; fill: var(--ink-3); }
+.dc-svg .t-inv { fill: var(--surface); }
+.dc-svg .t-pre { white-space: pre; }
+.dc-svg .box { fill: var(--surface); stroke: var(--line-2); stroke-width: 1; }
+.dc-svg .box-l { fill: var(--lane-soft); stroke: var(--lane); stroke-width: 1.2; }
+.dc-svg .ghost { fill: none; stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.dc-svg .f-l { fill: var(--lane); }
+.dc-svg .f-soft { fill: var(--lane-soft); }
+.dc-svg .f-mid { fill: var(--lane-mid); }
+.dc-svg .f-line { fill: var(--line); }
+.dc-svg .f-line2 { fill: var(--line-2); }
+.dc-svg .f-ink { fill: var(--ink); }
+.dc-svg .f-ink3 { fill: var(--ink-3); }
+.dc-svg .s-l { fill: none; stroke: var(--lane); stroke-width: 1.4; }
+.dc-svg .s-line { fill: none; stroke: var(--line-2); stroke-width: 1; }
+.dc-svg .s-ink3 { fill: none; stroke: var(--ink-3); stroke-width: 1; }
+.dc-svg .arrow { fill: none; stroke: var(--ink-3); stroke-width: 1; marker-end: url(#dc-arrow); }
+.dc-svg .cell { fill: none; stroke: var(--line-2); stroke-width: 0.6; }
+.dc-svg .cell.is-tok { fill: var(--lane); stroke: none; }
+.dc-svg .cell.is-pad { fill: var(--line); stroke: none; }
+.dc-svg .node { fill: var(--surface); stroke: var(--line-2); stroke-width: 1; transition: fill 0.2s, stroke 0.2s; }
+.dc-svg .is-hot .node { fill: var(--lane-soft); stroke: var(--lane); stroke-width: 1.6; }
+.dc-svg .is-hot text { fill: var(--ink); font-weight: 600; }
+.dc-svg .is-past .node { stroke: var(--lane-mid); }
+.dc-svg .scene { transition: opacity 0.3s; }
+.dc-svg .scene.is-out { opacity: 0; }
+.dc-svg .fade { transition: opacity 0.25s; }
+
+/* ---------- 總表 ---------- */
+.dc-summary { padding-top: clamp(56px, 8vw, 104px); padding-bottom: clamp(56px, 8vw, 104px); }
+.dc-summary-title { margin: 14px 0 0; font-size: clamp(28px, 3.4vw, 44px); line-height: 1.1; font-weight: 600; letter-spacing: -0.03em; }
+.dc-table-wrap { margin-top: 28px; overflow-x: auto; }
+.dc-table { width: 100%; min-width: 620px; border-collapse: collapse; border-top: 2px solid var(--ink); font-size: 15px; line-height: 1.55; }
+.dc-table th, .dc-table td { padding: 11px 14px 11px 0; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.dc-table thead th { font: 600 12px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; }
+.dc-table tbody th { width: 150px; font: 500 12px/1.9 var(--font-mono); color: var(--ink-3); letter-spacing: 0.03em; }
+.dc-table td { width: calc(50% - 75px); color: var(--ink-2); }
+.dc-th-sd { color: var(--dc-sd); }
+.dc-th-ig { color: var(--dc-ig); }
+.dc-table td[data-sum] { font: 600 14px var(--font-mono); color: var(--ink); }
+.dc-takeaways { margin: 40px 0 0; padding: 0; list-style: none; counter-reset: tk; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.dc-takeaways li { counter-increment: tk; padding-top: 14px; border-top: 1px solid var(--line-2); font-size: 15px; line-height: 1.75; color: var(--ink-2); }
+.dc-takeaways li::before { content: "0" counter(tk); display: block; margin-bottom: 8px; font: 600 12px var(--font-mono); color: var(--accent); }
+.dc-takeaways b { display: block; margin-bottom: 4px; color: var(--ink); font-size: 16px; }
+.dc-sources { margin: 40px 0 0; max-width: 60em; font-size: 13.5px; line-height: 1.8; color: var(--ink-3); }
+.dc-sources a { color: var(--ink-2); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+
+/* ---------- 窄螢幕：舞台釘在上半部，文字從下面捲過 ---------- */
+@media (max-width: 900px) {
+  /* 舞台高度剛好放下兩張圖（寬 ÷ 2，比例 360 : 440）加上導覽列、標題和數字 */
+  .dc { --dc-stage-h: min(60svh, calc(128px + (100vw - var(--gutter) * 2 - 8px) / 2 * 1.2222)); }
+  .dc.is-live .dc-track { grid-template-columns: minmax(0, 1fr); grid-template-areas: "stage" "steps"; }
+  .dc.is-live .dc-stage {
+    z-index: 5; padding: 8px 0 10px; gap: 8px;
+    margin: 0 calc(var(--gutter) * -1); padding-left: var(--gutter); padding-right: var(--gutter);
+    background: var(--bg); border-bottom: 1px solid var(--line-2);
+  }
+  .dc.is-live .dc-steps { padding-top: 6svh; }
+  .dc.is-live .dc-step { min-height: 70svh; }
+  .dc.is-live .dc-step-long { min-height: 150svh; }
+  .dc.is-live .dc-step-xlong { min-height: 230svh; }
+  .dc.is-live .dc-step-long > .dc-step-body,
+  .dc.is-live .dc-step-xlong > .dc-step-body { top: calc(var(--header-h) + var(--dc-stage-h) + 12px); }
+  .dc-lanes { gap: 8px; }
+  .dc-lane-head { padding: 6px 8px 0; }
+  .dc-lane-head b { font-size: 12.5px; }
+  .dc-lane-head span { display: none; }
+  .dc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dc-stats > div { padding: 5px 8px 6px; }
+  .dc-stats > div:nth-child(3) { display: none; }
+  .dc-stats dt { font-size: 9px; }
+  .dc-stats dd { font-size: 12px; }
+  .dc-diff { display: none; }
+  .dc-takeaways { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dc-scroll-hint span { animation: none; }
+  .dc-svg .scene, .dc-svg .fade, .dc-svg .node, .dc.is-live .dc-step { transition: none; }
+}
