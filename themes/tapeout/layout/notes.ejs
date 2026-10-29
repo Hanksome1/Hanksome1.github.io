@@ -2,6 +2,10 @@
   var notes = split_posts(site.posts).notes.sort(function (a, b) { return b.updated - a.updated; });
   var g = graph_data();
   var courses = note_courses();
+  // 互動式解說頁：front-matter 有 explainer 的頁面（目前在 source/lab/）
+  var explainers = site.pages.filter(function (p) { return p.explainer; }).toArray()
+    .sort(function (a, b) { return (a.explainer.order || 0) - (b.explainer.order || 0); });
+  var sec = 1;
 %>
 <section class="page-head wrap" data-section="NOTES">
   <p class="kicker">§03 — Netlist</p>
@@ -12,7 +16,7 @@
 <% if (courses.length) { %>
 <section class="section section-tight wrap" data-section="COURSES">
   <header class="section-head">
-    <p class="kicker">§03.1 — Courses</p>
+    <p class="kicker">§03.<%= sec++ %> — Courses</p>
     <h2 class="section-title">Courses</h2>
   </header>
   <div class="chip-grid course-grid">
@@ -41,13 +45,45 @@
 </section>
 <% } %>
 
+<% if (explainers.length) { %>
+<section class="section section-tight wrap" data-section="INTERACTIVE">
+  <header class="section-head">
+    <p class="kicker">§03.<%= sec++ %> — Interactive</p>
+    <h2 class="section-title">Interactive</h2>
+  </header>
+  <div class="chip-grid course-grid">
+    <% explainers.forEach(function (p, i) { var x = p.explainer; %>
+      <article class="chip-card course-card reveal">
+        <span class="chip-designator" aria-hidden="true">X<%= i + 1 %></span>
+        <a class="chip-link" href="<%- url_for(p.path) %>">
+          <div class="chip-body">
+            <div class="chip-meta"><span><%= x.meta || 'Interactive' %></span></div>
+            <h3 class="chip-title"><%= p.title %></h3>
+            <% if (p.summary) { %><p class="chip-summary"><%= p.summary %></p><% } %>
+            <% if (x.metrics && x.metrics.length) { %>
+              <dl class="chip-metrics">
+                <% x.metrics.forEach(function (m) { %><div><dt><%= m.label %></dt><dd><%= m.value %></dd></div><% }) %>
+              </dl>
+            <% } %>
+            <% if (x.topics && x.topics.length) { %>
+              <ul class="chip-stack"><% x.topics.forEach(function (t) { %><li><%= t %></li><% }) %></ul>
+            <% } %>
+          </div>
+          <span class="chip-arrow" aria-hidden="true">→</span>
+        </a>
+      </article>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
 <section class="section section-tight wrap" data-section="GRAPH">
   <%- partial('_partial/graph', { graph: g, variant: 'global', file: 'netlist.graph', height: 'min(72vh, 640px)' }) %>
 </section>
 
 <section class="section wrap" data-section="INDEX">
   <header class="section-head">
-    <p class="kicker">§03.<%= courses.length ? 2 : 1 %> — Index</p>
+    <p class="kicker">§03.<%= sec++ %> — Index</p>
     <h2 class="section-title">Recently tended</h2>
   </header>
   <% if (notes.length) { %>

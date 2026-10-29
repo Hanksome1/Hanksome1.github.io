@@ -25,6 +25,7 @@
 .dc-legend-sd i { background: var(--dc-sd); }
 .dc-legend-ig i { background: var(--dc-ig); }
 .dc-scroll-hint { margin: 28px 0 0; font: 500 12px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-3); }
+.dc-scroll-hint a { color: var(--ink-2); text-decoration-color: var(--accent); text-underline-offset: 3px; }
 .dc-scroll-hint span { display: inline-block; color: var(--accent); animation: dc-bob 1.6s var(--ease) infinite; }
 @keyframes dc-bob { 50% { transform: translateY(4px); } }
 
