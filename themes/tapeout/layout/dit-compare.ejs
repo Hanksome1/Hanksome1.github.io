@@ -122,7 +122,7 @@
           <h2>走進一個 block</h2>
           <p>慢慢往下捲，右邊會一個運算一個運算地走過一個 transformer block。底下的長條是這個 block 的參數都花在哪裡。</p>
           <dl class="dc-cmp">
-            <div class="dc-cmp-sd"><dt>SD 3.5 Large</dt><dd>LayerNorm → ×(1+scale)+shift → attention → ×gate；MLP 是 GELU，2432 → 9728 → 2432。調變訊號 c = 時間步 + pooled 文字，每條流用一個 2432 → 6 × 2432 的 Linear 產生 6 個調變向量：<b>每個 block 有三分之一的參數花在這裡</b>。</dd></div>
+            <div class="dc-cmp-sd"><dt>SD 3.5 Large</dt><dd>LayerNorm → ×(1+scale)+shift → attention → ×gate（RMSNorm 只用在 attention 裡的 q、k）；MLP 是 GELU，2432 → 9728 → 2432。調變訊號 c = 時間步 + pooled 文字，每條流用一個 2432 → 6 × 2432 的 Linear 產生 6 個調變向量：<b>每個 block 有三分之一的參數花在這裡</b>。</dd></div>
             <div class="dc-cmp-ig"><dt>Ideogram 4</dt><dd>RMSNorm 夾心（前後各一個）→ ×(1+scale)，沒有 shift → ×tanh(gate)；MLP 是 SwiGLU，4608 → 12288 → 4608。調變只看時間步，先壓到 512 維，每層一個 512 → 4 × 4608 的小 Linear，只佔 3.6%。</dd></div>
           </dl>
         </div>
@@ -194,7 +194,7 @@
           <tr><th scope="row">深 × 寬</th><td>38 × 2432</td><td>34 × 4608</td></tr>
           <tr><th scope="row">Attention heads</th><td>38 × 64</td><td>18 × 256，QK-RMSNorm</td></tr>
           <tr><th scope="row">MLP</th><td>GELU，4×（9728）</td><td>SwiGLU，12288</td></tr>
-          <tr><th scope="row">Norm / 調變</th><td>LayerNorm，shift + scale + gate；c = t + pooled 文字</td><td>RMSNorm 夾心，scale + tanh(gate)；只看 t，512 維瓶頸</td></tr>
+          <tr><th scope="row">Norm / 調變</th><td>block 用 LayerNorm、q·k 用 RMSNorm；shift + scale + gate；c = t + pooled 文字</td><td>全部 RMSNorm（block 夾心、q·k 也是）；scale + tanh(gate)；只看 t，512 維瓶頸</td></tr>
           <tr><th scope="row">位置</th><td>圖片加 2D sin-cos；文字不加</td><td>3D MRoPE，文字與圖片共用座標系</td></tr>
           <tr><th scope="row">文字 encoder</th><td>CLIP-L + OpenCLIP bigG + T5-XXL</td><td>Qwen3-VL-8B，13 層 hidden state</td></tr>
           <tr><th scope="row">文字長度</th><td>77 + 77 = 154 token</td><td>最多 2048 token（JSON）</td></tr>

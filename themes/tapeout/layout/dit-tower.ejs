@@ -37,7 +37,7 @@
       sd: 'c = 時間步 + pooled 文字。每根柱子用一個 2432 → 6 × 2432 的 Linear 產生 6 個調變向量，佔整層三分之一。',
       ig: '只看時間步，先壓成 512 維，再用 512 → 4 × 4608 產生 4 個向量。只佔 3.6%。' },
     { key: 'layer-norm', stop: 4, kicker: 'Stop 05 · 2 / 5 — Norm', title: '正規化',
-      sd: 'LayerNorm，再乘 (1 + scale) 加 shift。',
+      sd: 'block 的正規化是 LayerNorm，再乘 (1 + scale) 加 shift。RMSNorm 也有，但只用在 attention 裡的 q、k 上（QK-norm）。',
       ig: 'RMSNorm，只乘 (1 + scale)。attention 和 MLP 的輸出還各再做一次 RMSNorm（sandwich norm）。' },
     { key: 'layer-attn', stop: 4, kicker: 'Stop 05 · 3 / 5 — Attention', title: 'Attention',
       sd: '兩根柱子各算自己的 QKV，在這一刻接起來做一次 joint attention，再拆回兩根。38 個 head × 64 維。',

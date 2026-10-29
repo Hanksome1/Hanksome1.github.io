@@ -576,7 +576,7 @@
     position: [['柱子', '2 根', '1 根'], ['位置', '入口加 2D 表', '每層旋轉 q、k']],
     layer: [['每層參數', '213M', '264M'], ['寬 × 層數', '2432 × 38', '4608 × 34']],
     'layer-ada': [['adaLN', '71M · 33%', '9.4M · 3.6%'], ['調變來源', 't + pooled', '只有 t']],
-    'layer-norm': [['Norm', 'LayerNorm', 'RMSNorm'], ['調變', 'scale + shift', 'scale']],
+    'layer-norm': [['block norm', 'LayerNorm', 'RMSNorm'], ['q、k norm', 'RMSNorm', 'RMSNorm'], ['調變', 'scale + shift', 'scale']],
     'layer-attn': [['heads', '38 × 64', '18 × 256'], ['QKV 權重', '2 組', '1 組']],
     'layer-mlp': [['MLP', 'GELU 9728', 'SwiGLU 12288'], ['參數', '95M', '170M']],
     'layer-gate': [['gate', '× gate', '× tanh(gate)'], ['下一站', '第 2 層', '第 2 層']],

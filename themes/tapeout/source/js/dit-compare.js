@@ -598,7 +598,7 @@
 
   // §06 Block：一個運算一個運算地走過
   var PH = [
-    { sd: 'LayerNorm', ig: 'RMSNorm', d: '進 attention 前先正規化：<span class="sd">LayerNorm</span> 減平均再除標準差；<span class="ig">RMSNorm</span> 只除 RMS，少一步。' },
+    { sd: 'LayerNorm', ig: 'RMSNorm', d: '進 attention 前先正規化：<span class="sd">LayerNorm</span> 減平均再除標準差；<span class="ig">RMSNorm</span> 只除 RMS，少一步。SD 3.5 也有 RMSNorm，但只用在 attention 裡的 q、k 上。' },
     { sd: '×(1+scale) + shift', ig: '×(1+scale)', mod: true, d: '用時間步調變：<span class="sd">SD 3.5</span> 有 scale 也有 shift；<span class="ig">Ideogram 4</span> 只有 scale。' },
     { sd: 'Joint attention', ig: 'Self-attention', attn: true, d: '<span class="sd">兩條流各算 QKV，拼起來做一次 attention</span>；<span class="ig">一條序列、一組 QKV</span>。兩邊都對 q、k 做 RMSNorm。' },
     { sd: null, ig: 'RMSNorm', d: '<span class="ig">Ideogram 4</span> 在 attention 輸出後再做一次 RMSNorm（sandwich norm）；<span class="sd">SD 3.5</span> 沒有這一步。' },
