@@ -434,8 +434,8 @@
     // 迴圈：從取樣器繞到塔外，回到最上面的 latent
     var lpX = key === 'sd' ? -250 : 1230, inX = key === 'sd' ? 186 : 760 + 50 * KX + 4;
     o.loop = wire(g, 'M' + (key === 'sd' ? e.sx - 30 : e.sx + 150) + ' ' + o.upY + 'H' + lpX + 'V-290H' + inX, 'pipe-d');
-    o.loopLab = T(g, lpX + (key === 'sd' ? 10 : -10), 400, '', 't-l', key === 'sd' ? 'start' : 'end', 22);
-    o.loopNote = T(g, lpX + (key === 'sd' ? 10 : -10), 424, key === 'sd' ? '× 2 forward / 步' : '× 2 forward / 步', 't-d', key === 'sd' ? 'start' : 'end', 13);
+    o.loopLab = T(g, lpX + (key === 'sd' ? 10 : -10), 400, '', 't-l', key === 'sd' ? 'start' : 'end', 30);
+    o.loopNote = T(g, lpX + (key === 'sd' ? 10 : -10), 428, '× 2 forward / 步', 't-d', key === 'sd' ? 'start' : 'end', 18);
     // VAE 解碼（只在最後一次）與輸出的圖
     o.dec = el('g', {}, g);
     var dy0 = vb + 90;
@@ -461,15 +461,19 @@
   var twin = (function () {
     var g = el('g', { class: 'lane-ig' }, L.ig), boxes = [];
     for (var i = 33; i >= 0; i--) { var b = Box(g, 'is-twin'); b.set(1290, i * PITCH, 300, TH, DZ); boxes[i] = b; }
-    T(g, 1290, -40, '無條件分支', 't-l', null, 16);
-    T(g, 1290, -22, '另一組 9.3B 權重 · 只有圖片 token', 't-d', null, 12);
-    T(g, 1290, 34 * PITCH + 30, '每一步跑一次', 't-d', null, 12);
+    // 只在第 9 站拉遠的鏡頭裡出現（畫面縮到四成左右），字要放大才讀得到
+    T(g, 1290, -96, '無條件分支', 't-l', null, 38);
+    T(g, 1290, -62, '另一組 9.3B 權重', 't-b', null, 24);
+    T(g, 1290, -32, '只送圖片 token，不帶文字', null, null, 22);
+    T(g, 1290, 34 * PITCH + 46, '每一步跑一次，', 't-b', null, 22);
+    T(g, 1290, 34 * PITCH + 76, '跟主塔的結果合成 CFG', null, null, 22);
     return { g: g };
   })();
   var sdTwice = (function () {
     var g = el('g', { class: 'lane-sd' }, L.sd);
-    T(g, -250, -330, '每一步這座塔跑兩次：', 't-l', null, 14);
-    T(g, -250, -312, '有 prompt 一次、空 prompt 一次', 't-d', null, 12);
+    T(g, -270, 470, '每一步這座塔跑兩次', 't-l', 'end', 26);
+    T(g, -270, 502, '有 prompt 一次', 't-b', 'end', 20);
+    T(g, -270, 528, '空 prompt 一次', 't-b', 'end', 20);
     return g;
   })();
 
