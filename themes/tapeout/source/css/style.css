@@ -1484,6 +1484,32 @@ details.note > summary + * { margin-top: 8px; }
   font: 500 11px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; color: var(--ink-3);
 }
 .to-skip:hover { color: var(--accent); border-color: var(--accent); }
+/* 跑完之後提示還能往下捲：封裝接腳的線就是從這裡往下接到 §01–§04。它在 .to-stage 外面、疊在 .to-bus 上面，
+   js/tapeout.js 把 left / top 對到 .to-frame 底邊的中點；往上提一點，躲開右下角的 .statusbar */
+.to-more { display: none; }
+.to-root.is-live > .to-more {
+  position: absolute; z-index: 3; margin: 0; transform: translate(-50%, calc(-100% - 40px)); translate: 0 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;
+  font: 500 11px var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent);
+  opacity: 0; transition: opacity 0.5s var(--ease), translate 0.5s var(--ease);
+}
+.to-root.is-end > .to-more { opacity: 1; translate: none; }
+.to-more span { padding: 5px 12px; background: var(--bg); border: 1px solid var(--accent); border-radius: 999px; }
+.to-more i { width: 9px; height: 9px; border-right: 1.5px solid; border-bottom: 1.5px solid; transform: rotate(45deg); animation: to-nudge 1.4s ease-in-out infinite; }
+@keyframes to-nudge { 50% { translate: 0 5px; } }
+
+/* 自動播放：從開場那一屏就看得到，所以疊在 .to-hero 上面；右下角是 .statusbar，放在右上角的數據底下 */
+.to-play { display: none; }
+.to-root.is-live .to-stage > .to-play {
+  position: absolute; right: var(--to-x); top: calc(var(--to-y) + 88px); z-index: 5;
+  display: flex; align-items: center; gap: 8px; padding: 7px 14px 7px 12px; cursor: pointer;
+  background: var(--to-glass); border: 1px solid var(--line-2); border-radius: 999px; backdrop-filter: blur(10px);
+  font: 500 11px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink);
+  transition: color 0.2s, border-color 0.2s, top 0.3s var(--ease);
+}
+.to-play:hover, .to-play[data-state="run"] { color: var(--accent); border-color: var(--accent); }
+.to-play-ic { width: 8px; height: 9px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.to-play[data-state="run"] .to-play-ic { clip-path: none; background: linear-gradient(90deg, currentColor 35%, transparent 35% 65%, currentColor 65%); }
 
 /* 名字、一句話和個人資料 */
 .to-id { grid-area: id; align-self: start; }
@@ -1657,6 +1683,10 @@ details.note > summary + * { margin-top: 8px; }
     grid-template-areas: "status" "id" "frame" "readout" "term";
   }
   .to-stage > .to-frame { margin-top: 0; }
+  /* 收完之後名字底下是個人資料，自動播放鍵改放到狀態列右邊 */
+  .to-root.is-live.is-folded .to-stage > .to-play { top: var(--to-y); }
+  /* 晶片底下的數據和終端機 tapeout 之後就退場了，提示放進那塊空出來的地方 */
+  .to-root.is-live > .to-more { transform: translate(-50%, 56px); }
   .to-skip, .to-layers, .to-id-k, .to-id-tag, .to-id-hl, .to-id-links, .to-id-spec > div:nth-child(n + 3) { display: none; }
   .to-canvas::after { background: linear-gradient(var(--bg) 160px, transparent 230px); }
   .to-id-name { font-size: 36px; }

@@ -611,6 +611,7 @@
   var R = {
     hero: function (t) {
       heroFold.step(t);
+      root.classList.toggle('is-folded', t >= 0.6); // 窄螢幕的自動播放鍵收完之後移到狀態列旁邊
       // 收到最後，夾頭和晶種從上面垂下來
       var drop = ease(seg(t, 0.72, 1));
       set(ingot.rig, 'opacity', r1(seg(t, 0.72, 0.85)));
@@ -816,6 +817,7 @@
     });
     root.classList.toggle('is-routing', tr > 0 && tr < 1);
     root.classList.toggle('is-done', localT('tapeout', p) >= 0.8);
+    root.classList.toggle('is-end', p >= 0.98); // 跑完了，提示底下還有東西（.to-more）
   }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
@@ -1030,6 +1032,14 @@
     return last;
   }
 
+  // ---- 跑完之後的「往下捲」提示（.to-more）：跟著 .to-frame 的底邊中點走 ----
+  var more = root.querySelector('.to-more');
+  function renderMore(rects) {
+    if (!more) return;
+    setStyle(more, 'left', r1(rects.stage.left - rects.root.left + view.fx) + 'px');
+    setStyle(more, 'top', r1(rects.stage.top - rects.root.top + view.fy + view.fh / 2) + 'px');
+  }
+
   // ---- main loop ----
   var last = {};
   var hh = 64;
@@ -1043,6 +1053,7 @@
     var rects = {
       root: root.getBoundingClientRect(),
       track: track.getBoundingClientRect(),
+      stage: stage.getBoundingClientRect(),
       leads: wires.map(function (w) { return w.lead.getBoundingClientRect(); }),
       kickers: wires.map(function (w) { return w.kicker.getBoundingClientRect(); }),
       cards: cards.map(measureCard)
@@ -1063,6 +1074,8 @@
     renderMetrics(p);
     renderChrome(p);
     renderBus(seg(localT('tapeout', p), 0.8, 1), rects);
+    renderMore(rects);
+    autoplay.render(p);
   }
 
   var ticking = false;
@@ -1071,6 +1084,58 @@
     ticking = true;
     requestAnimationFrame(function () { ticking = false; frame(); });
   }
+
+  // ---- autoplay：按一下就照固定速度把 p 從現在推到 1，用 window.scrollTo 帶著頁面捲，所以跟手動捲的畫面一模一樣 ----
+  // 使用者一碰滾輪、觸控、按鍵，或捲動位置被別的東西改掉（拖捲軸、點錨點），就停下來交還給他
+  var autoplay = (function () {
+    var btn = root.querySelector('[data-to-play]');
+    if (!btn || reduceMotion) return { render: function () {} };
+    var label = btn.querySelector('[data-to-play-label]');
+    var FULL = 24000; // 從頭播到尾的毫秒數
+    var raf = 0, p0 = 0, t0 = 0, setY = 0, shown = '';
+    function range() {
+      var top = track.getBoundingClientRect().top + window.scrollY - headerH();
+      return [top, track.offsetHeight - stage.offsetHeight];
+    }
+    function now() { var r = range(); return r[1] > 0 ? clamp01((window.scrollY - r[0]) / r[1]) : 1; }
+    function tick(ts) {
+      if (!t0) t0 = ts;
+      if (Math.abs(window.scrollY - setY) > 2) return stop();
+      var p = Math.min(1, p0 + (ts - t0) / FULL), r = range();
+      window.scrollTo(0, r[0] + r[1] * p);
+      setY = window.scrollY;
+      if (p >= 1) return stop();
+      raf = requestAnimationFrame(tick);
+    }
+    function start() {
+      p0 = now();
+      if (p0 >= 0.98) { p0 = 0; window.scrollTo(0, range()[0]); }
+      setY = window.scrollY;
+      t0 = 0;
+      raf = requestAnimationFrame(tick);
+      render(p0);
+    }
+    function stop() {
+      if (!raf) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+      render(now());
+    }
+    function render(p) {
+      var state = raf ? 'run' : p >= 0.98 ? 'done' : 'idle';
+      if (state === shown) return;
+      shown = state;
+      btn.setAttribute('data-state', state);
+      label.textContent = state === 'run' ? 'Pause' : state === 'done' ? 'Replay' : 'Auto-play';
+    }
+    btn.addEventListener('click', function () { if (raf) stop(); else start(); });
+    function interrupt(e) { if (raf && !btn.contains(e.target)) stop(); }
+    window.addEventListener('wheel', interrupt, { passive: true });
+    window.addEventListener('touchstart', interrupt, { passive: true });
+    window.addEventListener('pointerdown', interrupt);
+    window.addEventListener('keydown', interrupt);
+    return { render: render };
+  })();
 
   root.classList.add(reduceMotion ? 'is-static' : 'is-live');
   heroFold.measure(); // .is-live 之後開場那一屏才排得出來

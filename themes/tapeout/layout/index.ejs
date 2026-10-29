@@ -79,6 +79,8 @@
         </div>
       </div>
       <a class="to-skip" href="#sec-projects">Skip intro <span aria-hidden="true">↓</span></a>
+      <% /* 按一下自己捲完整段開場（js/tapeout.js 的 autoplay）；沒有 JS 或 reduced-motion 就不顯示 */ %>
+      <button class="to-play" type="button" data-to-play data-state="idle"><i class="to-play-ic" aria-hidden="true"></i><span data-to-play-label>Auto-play</span></button>
 
       <% /* 開場那一屏，跟原本首頁的 hero 一樣；內容左邊一欄都有，所以對輔助科技藏起來，語言切換也不進 tab 順序 */ %>
       <div class="to-hero" aria-hidden="true">
@@ -97,4 +99,6 @@
   </section>
   <%- partial('_partial/home-sections', { anchors: true }) %>
   <svg class="to-bus" data-to-bus aria-hidden="true"></svg>
+  <% /* 跑完之後提示還能往下捲；疊在 .to-bus 上面，線才不會壓到字，位置由 js/tapeout.js 對齊 .to-frame 的底邊 */ %>
+  <p class="to-more" aria-hidden="true"><span>Keep scrolling</span><i></i></p>
 </div>
