@@ -24,7 +24,7 @@
 .tw-caps { display: grid; gap: 28px; }
 .tw:not(.is-live) .tw-track { max-width: calc(var(--wrap) + var(--gutter) * 2); margin: 0 auto; padding: 0 var(--gutter) 48px; }
 
-.tw.is-live .tw-track { height: 900svh; }
+.tw.is-live .tw-track { height: 1650svh; }
 .tw.is-live .tw-stage {
   position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h));
   display: grid; grid-template-columns: var(--tw-panel-w) minmax(0, 1fr);
@@ -62,7 +62,7 @@
 .tw-play-icon { width: 0; height: 0; border-left: 7px solid currentColor; border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
 .tw-play[data-state="run"] .tw-play-icon { width: 7px; height: 9px; border: 0; border-left: 2.5px solid currentColor; border-right: 2.5px solid currentColor; }
 
-.tw-stops { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; list-style: none; }
+.tw-stops { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px 4px; margin: 0; padding: 0; list-style: none; }
 .tw-stops button {
   position: relative; display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 4px 0 8px;
   border: 0; background: none; cursor: pointer; text-align: left;
@@ -114,9 +114,12 @@
 .tw-box.is-hot .f { fill: color-mix(in srgb, var(--lane) 88%, var(--surface)); }
 .tw-box.is-hot .tp { fill: color-mix(in srgb, var(--lane) 55%, var(--surface)); }
 .tw-box.is-hot .sd { fill: var(--lane); }
+.tw-box.is-past .f { fill: color-mix(in srgb, var(--lane) 48%, var(--surface)); }
+.tw-box.is-past .tp { fill: color-mix(in srgb, var(--lane) 30%, var(--surface)); }
 .tw-box.is-ink .f { fill: color-mix(in srgb, var(--ink) 70%, var(--surface)); }
 .tw-box.is-ink .tp { fill: color-mix(in srgb, var(--ink) 40%, var(--surface)); }
 .tw-box.is-ink .sd { fill: var(--ink); }
+.tw-box.is-twin path { fill: color-mix(in srgb, var(--lane) 7%, transparent); stroke: var(--lane); stroke-dasharray: 4 3; }
 .tw-box.is-ghost path { fill: none; stroke: var(--line-2); stroke-dasharray: 3 3; }
 .tw-world .card { fill: var(--surface); stroke: var(--line-2); stroke-width: 1; }
 .tw-world .card-l { fill: var(--surface); stroke: var(--lane); stroke-width: 1.4; }
@@ -154,3 +157,7 @@
   .tw.is-live .tw-cap, .tw-box path { transition: none; }
   .tw-more span { animation: none; }
 }
+
+.tw-outro-text { max-width: 44em; margin: 16px 0 0; font-size: 15.5px; line-height: 1.8; color: var(--ink-2); }
+.tw-outro-text a { color: var(--ink); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.tw-outro { padding-top: clamp(48px, 7vw, 88px); padding-bottom: clamp(48px, 7vw, 88px); }

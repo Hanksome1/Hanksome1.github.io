@@ -6,7 +6,12 @@
     { key: 'encoder', name: 'Encoder' },
     { key: 'latent', name: 'Latent' },
     { key: 'position', name: 'Entrance' },
-    { key: 'layer', name: 'Layer 1' }
+    { key: 'layer', name: 'Layer 1' },
+    { key: 'middle', name: 'Layers' },
+    { key: 'last', name: 'Last' },
+    { key: 'exit', name: 'Exit' },
+    { key: 'loop', name: 'Loop' },
+    { key: 'cost', name: 'Cost' }
   ];
   // 說明：key 是 data-cap，第 5 站拆成一段導言加五個運算
   var caps = [
@@ -43,9 +48,21 @@
     { key: 'layer-gate', stop: 4, kicker: 'Stop 05 · 5 / 5 — Gate', title: '閘門與 residual',
       sd: 'attention 和 MLP 的輸出各乘一個 gate，再加回 residual，交給第 2 層。',
       ig: '一樣，但 gate 先過 tanh，限制在 ±1 之間。' },
-    { key: 'end', kicker: 'To be continued', title: '第 2 層之後',
-      sd: '接下來的停靠站還在製作：中間層快速通過、最後一層、塔底解碼、取樣迴圈、總帳。',
-      ig: '先看看第 1–5 站的感覺對不對，再往下做。' }
+    { key: 'middle', stop: 5, kicker: 'Stop 06 — Layers', title: '一層一層往下',
+      sd: '第 2 到 37 層結構完全一樣，只是權重不同。每一層 forward 約 0.78 TFLOPs（1024²）。',
+      ig: '第 2 到 33 層也一樣。每一層約 2.6 TFLOPs：寬了 1.9 倍，計算量多了 3 倍多。' },
+    { key: 'last', stop: 6, kicker: 'Stop 07 — Last layer', title: '最後一層',
+      sd: '第 38 層的文字柱只算 K、V 給圖片看，沒有 MLP、也不再往下輸出，所以畫得比較薄。',
+      ig: '文字 token 一路走到第 34 層，但出了塔只取圖片那一段，文字的輸出直接丟掉。' },
+    { key: 'exit', stop: 7, kicker: 'Stop 08 — Exit', title: '塔底：輸出的是「速度」',
+      sd: 'final layer（norm + 調變 + Linear）把每個 token 變回 64 維，拼回 128² × 16。這不是圖，是速度 v；取樣器拿它把 z 往乾淨的方向推一小步。',
+      ig: '一樣，每個 token 變回 128 維，拼回 128² × 32，再用 Euler 走一步：z ← z + v·Δt。' },
+    { key: 'loop', stop: 8, kicker: 'Stop 09 — Sampling loop', title: '整座塔，再跑 N 次',
+      sd: '預設 40 步。每一步跑兩次：有 prompt 一次、空 prompt 一次，同一座塔，再用 CFG 4.5 合起來。',
+      ig: '預設 20 步。無條件那次跑的是旁邊另一座獨立的 9.3B 塔，而且只送圖片 token。全部走完才用 VAE 解碼成圖。' },
+    { key: 'cost', stop: 9, kicker: 'Stop 10 — Cost', title: '算總帳',
+      sd: '1024²、40 步：約 2.37 PFLOPs。權重（bf16）約 27 GB。',
+      ig: '1024²、20 步、JSON 300 token：約 3.40 PFLOPs，是 SD 的 1.4 倍；一步貴了 2.9 倍，靠步數少一半追回來。權重約 55 GB。' }
   ];
 %>
 <div class="tw" data-tw data-section="DIT TOWER">
@@ -90,8 +107,8 @@
   </section>
 
   <section class="tw-outro wrap">
-    <p class="kicker">§ Next</p>
-    <h2 class="dc-summary-title">第 6–10 站製作中</h2>
-    <p class="tw-outro-text">中間層快速通過、最後一層、塔底的 VAE 解碼、取樣迴圈（40 步對 20 步，加上 Ideogram 4 的無條件分身塔）、總計算量。完整的數字和互動比較在<a href="<%- url_for('/lab/ideogram4-vs-sd35/') %>">第一版</a>。</p>
+    <p class="kicker">§ More</p>
+    <h2 class="dc-summary-title">想自己調參數？</h2>
+    <p class="tw-outro-text">解析度、JSON 長度、步數預設都可以拉的版本，和逐項對照的總表，在<a href="<%- url_for('/lab/ideogram4-vs-sd35/') %>">第一版</a>。計算量是依架構推出來的理論值（乘加算 2 FLOPs，VAE 解碼不計），規格來自 <a href="https://github.com/ideogram-oss/ideogram4">ideogram-oss/ideogram4</a> 與 <a href="https://github.com/Stability-AI/sd3.5">Stability-AI/sd3.5</a> 的參考程式碼。</p>
   </section>
 </div>

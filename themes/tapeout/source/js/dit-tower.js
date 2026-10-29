@@ -44,6 +44,27 @@
   function wire(g, d, cls) { return el('path', { d: d, class: cls, pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1 }, g); }
   function draw(e, k) { set(e, 'stroke-dashoffset', r1((1 - k) * 1000) / 1000); set(e, 'opacity', k > 0 ? 1 : 0); }
 
+  var PIX = 24;
+  function target(x, y) {
+    var sky = [140 + y * 3, 196 + y * 1.5, 232];
+    if (y >= 17) return [150, 150, 146];
+    var dx = x - 5, dy = y - 5;
+    if (dx * dx + dy * dy < 9) return [250, 210, 90];
+    if (x >= 14 && x <= 22 && y >= 2 && y <= 6) return (y === 4 && x >= 15 && x <= 21 && x % 2) ? [245, 240, 230] : [40, 40, 42];
+    var ex = (x - 9.5) / 5.5, ey = (y - 11) / 4;
+    if (ex * ex + ey * ey < 1) return [226, 166, 58];
+    if (x >= 5 && x <= 15 && y === 16) return [196, 57, 45];
+    return sky;
+  }
+  function rng(seed) {
+    return function () {
+      seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
   // ---- 斜投影：(x, y, z) → (x + z·KX, y − z·KY)，看得到正面、頂面和右側面 ----
   var KX = 0.55, KY = 0.38;
   function Box(parent, cls) {
@@ -119,18 +140,33 @@
       var rg = el('g', {}, labels);
       return { g: rg, x: c.x - 7, line: el('path', { class: 'pipe' }, rg), plus: [0, 1].map(function () { return T(rg, 0, 0, '⊕', 't-l', 'middle', 13); }) };
     });
+    // 標題放在塔底、避開第 8 站從塔底接出去的線：SD 放在文字柱下面（文字流在塔底就結束了），IG 靠左
     var base = el('g', {}, L[key]);
-    var title = T(base, (tw.cols[0].x + tw.right) / 2, 0, key === 'sd' ? 'SD 3.5 Large' : 'Ideogram 4', 't-l', 'middle', 18);
-    var sub = T(base, (tw.cols[0].x + tw.right) / 2, 0, key === 'sd' ? '38 層 · 文字 W_ctx ｜ 圖片 W_x' : '34 層 · 文字 + 圖片 共用 W', 't-d', 'middle', 13);
-    tower[key] = { tw: tw, rows: rows, subs: subs, first: first, joint: joint, res: res, title: title, sub: sub };
+    var tx = key === 'sd' ? 70 : 470, ta = key === 'sd' ? 'middle' : 'start';
+    var title = T(base, tx, 0, key === 'sd' ? 'SD 3.5 Large' : 'Ideogram 4', 't-l', ta, 18);
+    var sub = T(base, tx, 0, key === 'sd' ? '38 層 · 文字 ｜ 圖片' : '34 層 · 文字 + 圖片 共用 W', 't-d', ta, 13);
+    // 第 6、7 站：鏡頭走到哪一層，旁邊就標出層數
+    var cur = el('g', {}, L[key]);
+    var curLab = T(cur, key === 'sd' ? LEFT_LABEL : RIGHT_LABEL, 0, '', 't-l', key === 'sd' ? 'end' : 'start', 16);
+    var curLead = el('path', { class: 'lead' }, cur);
+    var curNote = T(cur, key === 'sd' ? LEFT_LABEL : RIGHT_LABEL, 0, '', 't-d', key === 'sd' ? 'end' : 'start', 12);
+    tower[key] = { tw: tw, rows: rows, subs: subs, first: first, joint: joint, res: res, title: title, sub: sub, base: base, cur: cur, curLab: curLab, curLead: curLead, curNote: curNote };
   });
 
   // 第 1 層的位置：k = 0 是一塊完整的板子，k = 1 是拆開的樣子
-  function layoutTower(key, k, hot, rotOn) {
+  // cur：第 6、7 站鏡頭所在的層（從 0 數），沒有就是 -1
+  function layoutTower(key, k, hot, rotOn, cur) {
     var t = tower[key], tw = t.tw, dx = DZ * KX, dy = DZ * KY;
     t.rows.forEach(function (row) {
       var y = row.i * PITCH + EX * k;
-      row.boxes.forEach(function (b, j) { b.set(tw.cols[j].x, y, tw.cols[j].w, TH, DZ); });
+      row.y = y;
+      row.boxes.forEach(function (b, j) {
+        // SD 最後一層的文字柱只算 K、V（pre_only），畫得比較薄
+        var thin = key === 'sd' && j === 0 && row.i === tw.L - 1;
+        b.set(tw.cols[j].x, y, tw.cols[j].w, thin ? 6 : TH, DZ);
+        b.g.classList.toggle('is-hot', row.i === cur);
+        b.g.classList.toggle('is-past', cur >= 0 && row.i < cur);
+      });
       if (row.rot) {
         set(row.rot, 'x', r1(tw.right + dx / 2));
         set(row.rot, 'y', r1(y + TH / 2 - dy / 2 + 4));
@@ -159,7 +195,11 @@
       y += h + (sb.s.gap != null ? sb.s.gap : SUBGAP) * k;
     });
     t.blockH = y;
-    t.first.boxes.forEach(function (b, j) { b.set(tw.cols[j].x, 0, tw.cols[j].w, TH, DZ); show(b.g, 1 - seg(k, 0, 0.25)); });
+    t.first.boxes.forEach(function (b, j) {
+      b.set(tw.cols[j].x, 0, tw.cols[j].w, TH, DZ);
+      show(b.g, 1 - seg(k, 0, 0.25));
+      b.g.classList.toggle('is-past', cur > 0);
+    });
     if (t.first.rot) {
       set(t.first.rot, 'x', r1(tw.right + dx / 2));
       set(t.first.rot, 'y', r1(TH / 2 - dy / 2 + 4));
@@ -357,10 +397,120 @@
     return out;
   })();
 
+  // ---- 塔底下面：final layer、速度 v、取樣器、迴圈、無條件分身塔、VAE、總帳 ----
+  var below = { sd: el('g', { class: 'lane-sd' }, L.sd), ig: el('g', { class: 'lane-ig' }, L.ig) };
+  var EXIT = {
+    sd: { x: 172, w: 158, sx: 191, C: 16, bottom: 37 * PITCH + TH, pipeX: 300, dims: 64, note: 'Linear 2432 → 64' },
+    ig: { x: 470, w: 300, sx: 640, C: 32, bottom: 33 * PITCH + TH, pipeX: 740, dims: 128, note: 'Linear 4608 → 128' }
+  };
+  var ex = {};
+  ['sd', 'ig'].forEach(function (key) {
+    var e = EXIT[key], g = el('g', {}, below[key]), o = { g: g };
+    o.pipe = wire(g, 'M' + e.pipeX + ' ' + (e.bottom + 6) + 'V852', 'pipe');
+    o.fin = el('g', {}, g);
+    Box(o.fin, 'is-ink').set(e.x, 860, e.w, 10, DZ);
+    var lx = key === 'sd' ? LEFT_LABEL : RIGHT_LABEL, la = key === 'sd' ? 'end' : 'start';
+    T(o.fin, lx, 864, 'final layer', 't-b', la, 13);
+    T(o.fin, lx, 880, 'norm · ×(1+scale)', null, la, 12);
+    T(o.fin, lx, 895, e.note, null, la, 12);
+    if (key === 'ig') {
+      // 文字那一段的輸出丟掉，只取圖片 token
+      var tw = 300 * 300 / 4396;
+      el('rect', { x: e.x, y: 860, width: r1(tw), height: 10, class: 'f-line' }, o.fin);
+      T(o.fin, e.x + 2, 896, '✕ text 丟掉', 't-d', null, 12);
+    }
+    o.v = el('g', {}, g);
+    var vs = [];
+    for (var i = e.C - 1; i >= 0; i--) { var b = Box(o.v, i % 4 ? '' : 'is-hot'); b.set(e.sx, 918 + i * 4, 120, 2.5, 50); vs[i] = b; }
+    var vb = 918 + e.C * 4;
+    T(o.v, lx, 940, 'v  128² × ' + e.C, 't-l', la, 13);
+    T(o.v, lx, 956, '速度：往乾淨的圖走的方向', 't-d', la, 12);
+    o.vPipe = wire(g, 'M' + (e.sx + 60) + ' 874V' + (918 - 22), 'pipe');
+    o.up = el('g', {}, g);
+    el('rect', { x: e.sx - 30, y: vb + 22, width: 180, height: 28, rx: 4, class: 'card-l' }, o.up);
+    T(o.up, e.sx + 60, vb + 41, key === 'sd' ? 'z ← DPM++ 2M 一步' : 'z ← z + v·Δt', 't-b', 'middle', 13);
+    o.upPipe = wire(g, 'M' + (e.sx + 60) + ' ' + (vb + 4) + 'V' + (vb + 20), 'pipe');
+    o.upY = vb + 36;
+    // 迴圈：從取樣器繞到塔外，回到最上面的 latent
+    var lpX = key === 'sd' ? -250 : 1230, inX = key === 'sd' ? 186 : 760 + 50 * KX + 4;
+    o.loop = wire(g, 'M' + (key === 'sd' ? e.sx - 30 : e.sx + 150) + ' ' + o.upY + 'H' + lpX + 'V-290H' + inX, 'pipe-d');
+    o.loopLab = T(g, lpX + (key === 'sd' ? 10 : -10), 400, '', 't-l', key === 'sd' ? 'start' : 'end', 22);
+    o.loopNote = T(g, lpX + (key === 'sd' ? 10 : -10), 424, key === 'sd' ? '× 2 forward / 步' : '× 2 forward / 步', 't-d', key === 'sd' ? 'start' : 'end', 13);
+    // VAE 解碼（只在最後一次）與輸出的圖
+    o.dec = el('g', {}, g);
+    var dy0 = vb + 90;
+    el('path', { d: 'M' + (e.sx + 20) + ' ' + dy0 + 'H' + (e.sx + 100) + 'L' + (e.sx + 150) + ' ' + (dy0 + 50) + 'H' + (e.sx - 30) + 'Z', class: 'card-l' }, o.dec);
+    T(o.dec, e.sx + 60, dy0 + 31, 'VAE decoder', 't-b', 'middle', 13);
+    T(o.dec, lx, dy0 + 24, '只在最後一步之後', 't-d', la, 12);
+    o.decPipe = wire(g, 'M' + (e.sx + 60) + ' ' + (o.upY + 14) + 'V' + (dy0 - 4), 'pipe-d');
+    o.img = [];
+    var iy = dy0 + 66, cs = 7;
+    o.imgY = iy;
+    var rnd = rng(key === 'sd' ? 7 : 11);
+    for (var y = 0; y < PIX; y++) for (var x = 0; x < PIX; x++) {
+      o.img.push({ r: el('rect', { x: e.sx + 60 - PIX * cs / 2 + x * cs, y: iy + y * cs, width: cs + 0.3, height: cs + 0.3 }, g), n: [rnd() * 255, rnd() * 255, rnd() * 255], t: target(x, y) });
+    }
+    o.imgLab = T(g, e.sx + 60, iy + PIX * cs + 22, '', 't-b', 'middle', 14);
+    o.imgEnd = iy + PIX * cs;
+    // 總帳
+    o.cost = el('g', {}, g);
+    o.costY = iy + PIX * cs + 70;
+    ex[key] = o;
+  });
+  // Ideogram 4 的無條件分支：旁邊一座獨立權重的分身塔，只吃圖片 token
+  var twin = (function () {
+    var g = el('g', { class: 'lane-ig' }, L.ig), boxes = [];
+    for (var i = 33; i >= 0; i--) { var b = Box(g, 'is-twin'); b.set(1290, i * PITCH, 300, TH, DZ); boxes[i] = b; }
+    T(g, 1290, -40, '無條件分支', 't-l', null, 16);
+    T(g, 1290, -22, '另一組 9.3B 權重 · 只有圖片 token', 't-d', null, 12);
+    T(g, 1290, 34 * PITCH + 30, '每一步跑一次', 't-d', null, 12);
+    return { g: g };
+  })();
+  var sdTwice = (function () {
+    var g = el('g', { class: 'lane-sd' }, L.sd);
+    T(g, -250, -330, '每一步這座塔跑兩次：', 't-l', null, 14);
+    T(g, -250, -312, '有 prompt 一次、空 prompt 一次', 't-d', null, 12);
+    return g;
+  })();
+
+  // 總帳的數字（1024²、JSON 300 token、預設步數），算法同第一版
+  var COST = (function () {
+    function blockFlops(key, nText, nImg) {
+      var D = key === 'sd' ? 2432 : 4608, N = nText + nImg;
+      var linear = key === 'sd' ? 24 * D * D * N : 2 * (4 * D * D + 3 * D * 12288) * N;
+      return { total: linear + 4 * N * N * D };
+    }
+    var nImg = 4096;
+    var sdPass = 38 * blockFlops('sd', 154, nImg).total;
+    var igCond = 34 * blockFlops('ig', 300, nImg).total + 2 * 53248 * 4608 * 300, igUn = 34 * blockFlops('ig', 0, nImg).total;
+    var sd = { block: blockFlops('sd', 154, nImg).total, steps: 40, step: 2 * sdPass, pass: sdPass, text: 2 * 5.6e9 * 77 * 2 };
+    var ig = { block: blockFlops('ig', 300, nImg).total, steps: 20, step: igCond + igUn, cond: igCond, text: 2 * 8e9 * 300 };
+    sd.total = sd.steps * sd.step + sd.text;
+    ig.total = ig.steps * ig.step + ig.text;
+    sd.mem = (8.1 + 4.8 + 0.82) * 2; ig.mem = (9.3 * 2 + 8.8) * 2;
+    sd.params = 213e6; ig.params = 264e6;
+    return { sd: sd, ig: ig };
+  })();
+  function fmtF(n) { return n >= 1e15 ? (n / 1e15).toFixed(2) + ' PFLOPs' : n >= 1e12 ? (n / 1e12).toFixed(n >= 1e14 ? 0 : 1) + ' TFLOPs' : (n / 1e9).toFixed(0) + ' GFLOPs'; }
+  function fmtP(n) { return n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : (n / 1e6).toFixed(0) + 'M'; }
+  ['sd', 'ig'].forEach(function (key) {
+    var o = ex[key], c = COST[key], e = EXIT[key], y = o.costY, max = Math.max(COST.sd.total, COST.ig.total), mm = Math.max(COST.sd.mem, COST.ig.mem);
+    var x0 = e.sx - 30;
+    T(o.cost, x0, y, '一張圖', 't-d', null, 12);
+    T(o.cost, x0, y + 30, fmtF(c.total), 't-big');
+    o.bar = el('rect', { x: x0, y: y + 42, width: 0, height: 14, rx: 2, class: 'f-l' }, o.cost);
+    o.barW = 300 * c.total / max;
+    T(o.cost, x0, y + 76, c.steps + ' 步 × ' + fmtF(c.step) + ' / 步', null, null, 12);
+    T(o.cost, x0, y + 104, '權重 bf16 ≈ ' + c.mem.toFixed(0) + ' GB', 't-d', null, 12);
+    o.mem = el('rect', { x: x0, y: y + 112, width: 0, height: 8, rx: 2, class: 'f-soft' }, o.cost);
+    o.memW = 300 * c.mem / mm;
+  });
+
   // ---- 段落與鏡頭 ----
-  var BEATS = [['intro', 0.7], ['prompt', 1.1], ['encoder', 1.4], ['latent', 1.1], ['position', 1.1], ['layer', 3.2], ['end', 0.9]];
-  var HOLD = 0.3;
-  var STOPS = ['prompt', 'encoder', 'latent', 'position', 'layer'];
+  var BEATS = [['intro', 0.7], ['prompt', 1.1], ['encoder', 1.4], ['latent', 1.1], ['position', 1.1], ['layer', 3.2],
+    ['middle', 2.2], ['last', 1.0], ['exit', 1.4], ['loop', 2.2], ['cost', 1.2]];
+  var HOLD = 0.4;
+  var STOPS = ['prompt', 'encoder', 'latent', 'position', 'layer', 'middle', 'last', 'exit', 'loop', 'cost'];
   var total = BEATS.reduce(function (s, b) { return s + b[1]; }, HOLD), spans = {}, acc = 0;
   BEATS.forEach(function (b) { spans[b[0]] = { start: acc / total, len: b[1] / total }; acc += b[1]; });
   function localT(k, p) { return clamp01((p - spans[k].start) / spans[k].len); }
@@ -377,7 +527,11 @@
     ['latent', 0.35, CX, -260, 1350], ['latent', 1, CX, -240, 1350],
     ['position', 0.35, CX, -10, 1350], ['position', 1, CX, 10, 1350],
     ['layer', 0.2, CX, 160, 1380], ['layer', 1, CX, 175, 1380],
-    ['end', 0.7, CX, 430, 2000]
+    ['middle', 0.15, CX, 200, 1380], ['middle', 1, CX, 600, 1380],
+    ['last', 0.35, CX, 690, 1350], ['last', 1, CX, 700, 1350],
+    ['exit', 0.3, CX, 950, 1350], ['exit', 1, CX, 980, 1350],
+    ['loop', 0.25, 690, 260, 2500], ['loop', 0.8, 690, 280, 2500], ['loop', 1, CX, 1200, 1450],
+    ['cost', 0.35, CX, 1420, 1450], ['cost', 1, CX, 1430, 1450]
   ];
   var shots = SHOTS.map(function (s) { return { p: spans[s[0]].start + spans[s[0]].len * s[1], x: s[2], y: s[3], w: s[4] }; });
   function camera(p) {
@@ -426,29 +580,35 @@
     'layer-attn': [['heads', '38 × 64', '18 × 256'], ['QKV 權重', '2 組', '1 組']],
     'layer-mlp': [['MLP', 'GELU 9728', 'SwiGLU 12288'], ['參數', '95M', '170M']],
     'layer-gate': [['gate', '× gate', '× tanh(gate)'], ['下一站', '第 2 層', '第 2 層']],
-    end: [['已走過', '1 / 38 層', '1 / 34 層'], ['下一段', '製作中', '製作中']]
+    last: [['輸出', '只有圖片流', '只取圖片 token'], ['一次 forward', fmtF(COST.sd.pass), fmtF(COST.ig.cond)]],
+    exit: [['輸出', 'v · 128² × 16', 'v · 128² × 32'], ['取樣器', 'DPM++ 2M', 'Euler']],
+    cost: [['一張圖', fmtF(COST.sd.total), fmtF(COST.ig.total)], ['每一步', fmtF(COST.sd.step), fmtF(COST.ig.step)], ['權重 bf16', '≈ ' + COST.sd.mem.toFixed(0) + ' GB', '≈ ' + COST.ig.mem.toFixed(0) + ' GB']]
   };
+  // 第 6、9 站的數字跟著捲動變
+  var live = { middle: null, loop: null };
   var LAYER_SUBS = ['ada', 'norm', 'attn', 'mlp', 'gate'];
   function capKey(beat, t) {
     if (beat !== 'layer') return beat;
     if (t < 0.2) return 'layer';
     return 'layer-' + LAYER_SUBS[Math.min(4, Math.floor((t - 0.2) / 0.8 * 5))];
   }
-  var shownCap = '';
+  var shownCap = '', factsHTML = '';
   function renderPanel(beat, key, p) {
     if (key !== shownCap) {
       if (caps[shownCap]) caps[shownCap].classList.remove('is-on');
       if (caps[key]) caps[key].classList.add('is-on');
       shownCap = key;
       var si0 = STOPS.indexOf(beat);
-      statusEl.textContent = si0 >= 0 ? 'Stop ' + ('0' + (si0 + 1)) + ' / 05' : beat === 'end' ? 'Next' : 'Overview';
-      factsEl.innerHTML = '<dt></dt><dd class="sd">SD 3.5</dd><dd class="ig">Ideogram 4</dd>' +
-        (FACTS[key] || []).map(function (f) { return '<dt>' + f[0] + '</dt><dd>' + f[1] + '</dd><dd>' + f[2] + '</dd>'; }).join('');
+      statusEl.textContent = si0 >= 0 ? 'Stop ' + (si0 < 9 ? '0' : '') + (si0 + 1) + ' / 10' : 'Overview';
     }
+    var rows = live[key] || FACTS[key] || [];
+    var html = '<dt></dt><dd class="sd">SD 3.5</dd><dd class="ig">Ideogram 4</dd>' +
+      rows.map(function (f) { return '<dt>' + f[0] + '</dt><dd>' + f[1] + '</dd><dd>' + f[2] + '</dd>'; }).join('');
+    if (html !== factsHTML) { factsEl.innerHTML = html; factsHTML = html; }
     var si = STOPS.indexOf(beat);
     stopBtns.forEach(function (b, i) {
       b.classList.toggle('is-on', i === si);
-      var v = i < si || (beat === 'end') ? 1 : i === si ? localT(beat, p) : 0;
+      var v = i < si ? 1 : i === si ? localT(beat, p) : 0;
       b.querySelector('[data-tw-bar]').style.setProperty('--p', r1(v * 100) / 100);
     });
     root.classList.toggle('is-end', p > 0.97);
@@ -525,12 +685,88 @@
     function rotOn(i) { return seg(rotT, i / 34 * 0.7, i / 34 * 0.7 + 0.3); }
 
     // Stop 5：拆開第 1 層
-    var k = ease(seg(t.layer, 0, 0.18)) * (1 - ease(seg(t.end, 0, 0.45)));
+    var k = ease(seg(t.layer, 0, 0.18)) * (1 - ease(seg(t.middle, 0, 0.15)));
     var key = capKey(beat, t.layer);
     var hot = key.indexOf('layer-') === 0 ? key.slice(6) : null;
-    layoutTower('sd', k, hot, function () { return 0; });
-    layoutTower('ig', k, hot, rotOn);
-    var modOn = seg(t.layer, 0.1, 0.2) * (1 - seg(t.end, 0, 0.3));
+    // Stop 6、7：目前走到的層
+    var curs = { sd: -1, ig: -1 };
+    if (beat === 'middle' && t.middle > 0.12) {
+      var m = seg(t.middle, 0.12, 1);
+      curs.sd = 1 + Math.min(35, Math.floor(m * 36));
+      curs.ig = 1 + Math.min(31, Math.floor(m * 32));
+    } else if (beat === 'last') { curs.sd = 37; curs.ig = 33; }
+    layoutTower('sd', k, hot, function () { return 0; }, curs.sd);
+    layoutTower('ig', k, hot, rotOn, curs.ig);
+    ['sd', 'ig'].forEach(function (kk) {
+      var tw = tower[kk], c = curs[kk], L0 = TOWERS[kk].L;
+      show(tw.cur, c >= 0 ? 1 : 0);
+      if (c < 0) return;
+      var y = c * PITCH + TH / 2, lx = kk === 'sd' ? LEFT_LABEL : RIGHT_LABEL;
+      set(tw.curLab, 'y', r1(y + 6));
+      tw.curLab.textContent = 'Layer ' + (c + 1) + ' / ' + L0;
+      set(tw.curNote, 'y', r1(y + 24));
+      tw.curNote.textContent = beat === 'last' ? (kk === 'sd' ? '文字柱只算 K、V' : '文字的輸出會被丟掉') : '累積 ' + fmtF((c + 1) * COST[kk].block);
+      set(tw.curLead, 'd', 'M' + (kk === 'sd' ? lx + 6 : lx - 6) + ' ' + r1(y) + 'H' + (kk === 'sd' ? -4 : r1(TOWERS.ig.right + DZ * KX + 4)));
+    });
+    live.middle = curs.sd > 0 ? [
+      ['第幾層', (curs.sd + 1) + ' / 38', (curs.ig + 1) + ' / 34'],
+      ['累積參數', fmtP((curs.sd + 1) * COST.sd.params), fmtP((curs.ig + 1) * COST.ig.params)],
+      ['累積計算', fmtF((curs.sd + 1) * COST.sd.block), fmtF((curs.ig + 1) * COST.ig.block)]
+    ] : [['每層參數', '213M', '264M'], ['每層計算', fmtF(COST.sd.block), fmtF(COST.ig.block)]];
+    var titleOn = Math.max(1 - seg(t.prompt, 0, 0.2), seg(t.loop, 0.05, 0.2) * (1 - seg(t.loop, 0.85, 1)));
+    show(tower.sd.base, titleOn); show(tower.ig.base, titleOn);
+
+    // Stop 8：塔底
+    ['sd', 'ig'].forEach(function (kk) {
+      var o = ex[kk];
+      draw(o.pipe, seg(t.exit, 0, 0.2));
+      show(o.fin, seg(t.exit, 0.12, 0.3));
+      draw(o.vPipe, seg(t.exit, 0.28, 0.42));
+      show(o.v, seg(t.exit, 0.35, 0.55));
+      draw(o.upPipe, seg(t.exit, 0.55, 0.68));
+      show(o.up, seg(t.exit, 0.6, 0.78));
+    });
+
+    // Stop 9：取樣迴圈
+    show(twin.g, seg(t.loop, 0.08, 0.3));
+    show(sdTwice, seg(t.loop, 0.08, 0.3));
+    var steps = seg(t.loop, 0.3, 0.85), done = t.loop >= 0.85;
+    var n = { sd: Math.round(steps * 40), ig: Math.round(steps * 20) };
+    var frac = {};
+    ['sd', 'ig'].forEach(function (kk) {
+      var o = ex[kk], N = COST[kk].steps, kk2 = n[kk];
+      draw(o.loop, seg(t.loop, 0.02, 0.3));
+      o.loopLab.textContent = t.loop > 0.02 ? 'step ' + kk2 + ' / ' + N : '';
+      show(o.loopLab, seg(t.loop, 0.2, 0.3)); show(o.loopNote, seg(t.loop, 0.2, 0.3) * (kk === 'sd' ? 1 : 1));
+      // 乾淨的圖佔多少：SD 用 shift = 3 的排程，IG 的 logit-normal 排程在 1024² 大致相當於 shift ≈ 2
+      var sh = kk === 'sd' ? 3 : 2, sg = 1 - kk2 / N, a = kk2 >= N ? 1 : 1 - sh * sg / (1 + (sh - 1) * sg);
+      frac[kk] = a;
+      if (o.lastK !== kk2) {
+        o.lastK = kk2;
+        o.img.forEach(function (q) {
+          q.r.setAttribute('fill', 'rgb(' + [0, 1, 2].map(function (j) { return Math.round(a * q.t[j] + (1 - a) * q.n[j]); }).join(',') + ')');
+        });
+      }
+      draw(o.decPipe, seg(t.loop, 0.85, 0.95));
+      show(o.dec, seg(t.loop, 0.85, 0.95));
+      o.img.forEach(function (q) { if (q.r._tw_o !== (t.loop > 0.25 ? 1 : 0)) { q.r._tw_o = t.loop > 0.25 ? 1 : 0; q.r.style.opacity = q.r._tw_o; } });
+      o.imgLab.textContent = done ? '1024 × 1024 ✓' : t.loop > 0.25 ? '第 ' + kk2 + ' 步的樣子' : '';
+    });
+    live.loop = [
+      ['步數', n.sd + ' / 40', n.ig + ' / 20'],
+      ['每步', '2 次 · 同一座塔', '2 次 · 兩座塔'],
+      ['乾淨的圖', Math.round(frac.sd * 100) + '%', Math.round(frac.ig * 100) + '%']
+    ];
+
+    // Stop 10：總帳
+    ['sd', 'ig'].forEach(function (kk) {
+      var o = ex[kk];
+      show(o.cost, seg(t.cost, 0, 0.2));
+      set(o.bar, 'width', r1(o.barW * ease(seg(t.cost, 0.15, 0.6))));
+      set(o.mem, 'width', r1(o.memW * ease(seg(t.cost, 0.4, 0.8))));
+    });
+
+    var modOn = seg(t.layer, 0.1, 0.2) * (1 - seg(t.middle, 0, 0.15));
     show(mod.sd, modOn); show(mod.ig, modOn);
     var sdAda = tower.sd.subs[0], igAda = tower.ig.subs[0];
     set(mod.sdWire, 'd', 'M-46 -99H-8V' + r1(sdAda.y + sdAda.h / 2) + 'H-2');
