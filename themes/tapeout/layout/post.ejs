@@ -20,7 +20,7 @@
     </p>
     <h1 class="article-title"><%= page.title %></h1>
     <% if (page.summary) { %><p class="article-lede"><%= page.summary %></p><% } %>
-    <% var tour = course ? course_tour(course, page) : null; if (tour) { %><%- partial('_partial/course-tour', { tour: tour, course: course, variant: '' }) %><% } %>
+    <% var tour = course ? course_tour(course, page) : null; if (tour) { %><%- partial('_partial/course-tour', { tour: tour, course: course }) %><% } %>
     <% if (isNote && page.aliases) { %>
       <p class="note-aliases"><span class="label">aka</span><% [].concat(page.aliases).forEach(function (a) { %><span><%= a %></span><% }) %></p>
     <% } %>

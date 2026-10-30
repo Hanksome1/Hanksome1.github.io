@@ -1,17 +1,23 @@
 <%
-  // 課程動畫導覽的入口：筆記標頭（variant 空白）和 /notes/ 的課程卡片（variant: 'card'）共用。
-  // tour 來自 course_tour()；這篇筆記屬於某一站時，連結直接跳到那一站，小地圖上那一站會亮。
+  // 課程動畫導覽的入口，放在筆記的摘要下面。tour 來自 course_tour()。
+  // 左邊的小圖是動畫開場那張八站地圖的縮小版：這篇所在的站亮起來，一顆點沿著路線跑。
+  // 這篇屬於某一站時，連結直接跳到那一站。
   var stops = tour.stops, k = tour.hot ? stops.indexOf(tour.hot) : -1;
-  var fill = k > 0 ? (k / (stops.length - 1) * 100).toFixed(1) : 0;
+  var TW = 28, TH = 26, GAP = 6, X0 = 5, Y1 = 6, Y2 = 44;
+  var route = 'M0 19 H136 C144 19 144 57 136 57 H0';
 %>
-<a class="tour-banner<%= variant ? ' tour-banner--' + variant : '' %>" href="<%- url_for(tour.url) %><%= tour.hot ? '#' + tour.hot.id : '' %>">
+<a class="tour-entry" href="<%- url_for(tour.url) %><%= tour.hot ? '#' + tour.hot.id : '' %>">
+  <svg class="tour-thumb" viewBox="0 0 146 76" aria-hidden="true">
+    <path class="r" d="<%= route %>"/>
+    <% stops.forEach(function (s, i) { var row = i < 4 ? 0 : 1, col = row ? 7 - i : i; %>
+    <rect class="t<%= i === k ? ' is-hot' : i < k ? ' is-past' : '' %>" x="<%= X0 + col * (TW + GAP) %>" y="<%= row ? Y2 : Y1 %>" width="<%= TW %>" height="<%= TH %>" rx="3"/>
+    <% }) %>
+    <circle class="k" r="3"><animateMotion dur="7s" repeatCount="indefinite" path="<%= route %>"/></circle>
+  </svg>
   <span class="tour-copy">
-    <span class="tour-kicker"><span class="tour-play" aria-hidden="true"></span>動畫導覽 · <%= course.tag %></span>
-    <span class="tour-title"><% if (tour.hot) { %>這篇是 design flow 的第 <%= tour.hot.n %> 站：<%= tour.hot.label %><% } else if (variant === 'card') { %>用一條 design flow 走完這門課<% } else { %>整門課的筆記，畫成一條 design flow<% } %></span>
-    <% if (tour.tagline && variant !== 'card') { %><span class="tour-sub"><%= tour.tagline %></span><% } %>
+    <span class="tour-kicker"><span class="tour-play"></span>動畫導覽 · <%= tour.hot ? '第 ' + tour.hot.n + ' 站 / ' + stops.length : course.tag %></span>
+    <span class="tour-title"><% if (tour.hot) { %>在 design flow 動畫裡看「<%= tour.hot.label %>」這一站<% } else { %>把 <%= course.tag %> 整學期的筆記串成一條 design flow<% } %></span>
+    <% if (tour.tagline) { %><span class="tour-sub"><%= tour.tagline %></span><% } %>
   </span>
-  <span class="tour-strip" style="--fill: <%= fill %>%" aria-hidden="true">
-    <% stops.forEach(function (s, i) { %><span class="tour-st<%= i < k ? ' is-past' : i === k ? ' is-hot' : '' %>"><i></i><b><%= s.label %></b></span><% }) %>
-  </span>
-  <span class="tour-go"><%= tour.hot ? '看這一站' : '開始看' %> →</span>
+  <span class="tour-arrow" aria-hidden="true">→</span>
 </a>
