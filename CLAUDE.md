@@ -31,3 +31,20 @@ About 的 `pinout`、`timeline` 的 `period`、`awards` 的 `date` 兩邊相同�
 - 站內連結：連到其他專案用 `/en/projects/<slug>/`；連到只有中文的文章或筆記沿用原網址，Markdown 連結後面加 (in Chinese)，`[[wikilink]]` 照抄。
 - 頁內錨點：標題翻成英文後 id 會變成英文標題以 `-` 連接（例如 `## Looking back: where things likely went wrong` → `#Looking-back-where-things-likely-went-wrong`），`](#…)` 要跟著改，改完在產生的 HTML 裡確認 id 存在。
 - 人稱：「我」寫 I、「我們」寫 we。
+
+## 發佈
+
+push 到 `main` 就會由 `.github/workflows/pages.yml` 部署到 https://hanksome1.github.io ，沒有審核這一關。使用者說要發佈時：
+
+1. 跑 `npx hexo generate`（cloud session 先 `npm ci`），輸出不能有任何 `WARN`。
+2. commit，然後把改動放進 `main` 並 push；cloud session 在自己的分支上做完，先 merge `origin/main`，再 merge 回 `main`。
+3. 使用者只說要先看、或 push 被擋時，停在分支上，請使用者從 session 的 Changes 卡片按 Create PR。
+
+### 新增頁面
+
+- 動畫解說頁用 `scroll-explainer` skill。一頁要有這些檔案，照 `6811dec`（KroQuant）的接法：
+  - `source/lab/<slug>/index.md`：front-matter 寫 `layout: <slug>`；要列在 `/notes/` 就加 `kind: note` 和 `reading`（閱讀分鐘數）。
+  - `themes/tapeout/layout/<slug>.ejs`、`source/css/<slug>.css`、`source/js/<slug>.js`（後兩個在主題資料夾底下）。
+  - `themes/tapeout/layout/_partial/head.ejs` 加一行 CSS、`layout.ejs` 加一行 JS，都用 `page.layout === '<slug>'` 判斷。
+- 文章放 `source/_posts/blog/`，筆記放 `source/_posts/notes/`。
+- front-matter 有 `synced: obsidian` 的筆記是 `npm run sync` 從 Obsidian vault 產生的，每次同步都會覆蓋，不要直接改。vault 只在使用者的 Mac 上，cloud session 跑不了同步。

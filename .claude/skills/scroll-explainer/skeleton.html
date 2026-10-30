@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scroll Explainer Skeleton</title>
+<style>
+/* 骨架：兩座塔、四個 beat、鏡頭、說明欄、停靠站、對照表、自動播放。
+   換內容時改 BEATS、SHOTS、FACTS、說明卡和「世界」那一段；其他照抄 */
+:root {
+  --bg: #f3f0e8; --surface: #faf8f3; --ink: #151513; --ink-2: #4b4840; --ink-3: #888376;
+  --line: #ddd7c9; --line-2: #c5bead; --accent: #ff5418; --lane-a: #2f67d0; --lane-b: var(--accent);
+  --header-h: 0px; --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0c0d0b; --surface: #141613; --ink: #ecebe4; --ink-2: #b4b1a7; --ink-3: #75736a; --line: #252722; --line-2: #363931; --accent: #ff6a2c; --lane-a: #7ea6ff; }
+}
+:root[data-theme="dark"] { --bg: #0c0d0b; --surface: #141613; --ink: #ecebe4; --ink-2: #b4b1a7; --ink-3: #75736a; --line: #252722; --line-2: #363931; --accent: #ff6a2c; --lane-a: #7ea6ff; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, sans-serif; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 48px 16px; }
+.kicker { margin: 0; font: 500 12px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+
+/* ---------- track 與舞台：.is-live 之後才拉長、才釘住 ---------- */
+.world, .stops, .facts, .top { display: none; }
+.caps { display: grid; gap: 28px; }
+.x:not(.is-live) .track { max-width: 1100px; margin: 0 auto; padding: 0 16px 48px; }
+.x.is-live .track { height: 600svh; }
+.x.is-live .stage {
+  position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h));
+  display: grid; grid-template-columns: 340px minmax(0, 1fr); overflow: hidden;
+  border-block: 1px solid var(--line);
+}
+.x.is-live .world { display: block; grid-area: 1 / 1 / 2 / -1; width: 100%; height: 100%; }
+.x.is-live .panel {
+  grid-area: 1 / 1; position: relative; z-index: 2; display: flex; flex-direction: column; gap: 14px; padding: 20px;
+  background: linear-gradient(90deg, var(--bg) 82%, transparent);
+}
+.x.is-live .top { display: flex; align-items: center; gap: 10px; }
+.x.is-live .stops, .x.is-live .facts { display: grid; }
+.x.is-live .caps { gap: 0; }
+.x.is-live .cap { grid-area: 1 / 1; opacity: 0; translate: 0 8px; transition: opacity 0.3s, translate 0.3s var(--ease); pointer-events: none; }
+.x.is-live .cap.is-on { opacity: 1; translate: none; pointer-events: auto; }
+.cap h2 { margin: 8px 0 0; font-size: 24px; line-height: 1.2; }
+.cap p:not(.kicker) { margin: 10px 0 0; padding-left: 12px; border-left: 2px solid var(--lane-a); font-size: 14.5px; color: var(--ink-2); }
+.cap p b { display: block; font: 600 10.5px var(--mono); text-transform: uppercase; color: var(--lane-a); }
+.cap .cap-b { border-left-color: var(--lane-b); }
+.cap .cap-b b { color: var(--lane-b); }
+
+.status { margin: 0; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; font: 500 11.5px var(--mono); text-transform: uppercase; }
+.play { margin-left: auto; padding: 5px 12px; border: 1px solid var(--line-2); border-radius: 999px; background: none; color: var(--ink-2); font: 500 11.5px var(--mono); cursor: pointer; }
+.stops { grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0; padding: 0; list-style: none; }
+.stops button { position: relative; width: 100%; padding: 4px 0 8px; border: 0; background: none; text-align: left; font: 500 10px var(--mono); color: var(--ink-3); cursor: pointer; }
+.stops button i { position: absolute; inset: auto 0 0; height: 2px; background: var(--line); }
+.stops button i::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+.stops button.is-on { color: var(--ink); }
+.facts { grid-template-columns: auto 1fr 1fr; margin: 0; font: 500 12px var(--mono); border-top: 1px dashed var(--line-2); }
+.facts > * { margin: 0; padding: 6px 8px 5px 0; border-bottom: 1px dashed var(--line); }
+.facts dt { color: var(--ink-3); }
+.facts .a { color: var(--lane-a); } .facts .b { color: var(--lane-b); }
+
+/* ---------- SVG 世界：顏色全部吃變數 ---------- */
+.world text { font: 500 14px var(--mono); fill: var(--ink-2); }
+.world .t-l { fill: var(--lane); font-weight: 600; }
+.lane-a { --lane: var(--lane-a); } .lane-b { --lane: var(--lane-b); }
+.world path { vector-effect: non-scaling-stroke; }
+.box path { stroke: color-mix(in srgb, var(--lane) 60%, var(--ink)); stroke-width: 0.6; }
+.box .f { fill: color-mix(in srgb, var(--lane) 30%, var(--surface)); }
+.box .tp { fill: color-mix(in srgb, var(--lane) 16%, var(--surface)); }
+.box .sd { fill: color-mix(in srgb, var(--lane) 48%, var(--surface)); }
+.box.is-hot .f { fill: var(--lane); }
+.box.is-past .f { fill: color-mix(in srgb, var(--lane) 55%, var(--surface)); }
+.world .pipe { fill: none; stroke: var(--lane); stroke-width: 2; }
+
+@media (max-width: 900px) {
+  .x.is-live .stage { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .x.is-live .world { grid-area: 1 / 1 / -1 / -1; }
+  .x.is-live .panel { grid-area: 2 / 1; padding: 10px 16px; background: color-mix(in srgb, var(--bg) 92%, transparent); border-top: 1px solid var(--line-2); backdrop-filter: blur(8px); }
+  .x.is-live .facts { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .x.is-live .cap { transition: none; } }
+</style>
+</head>
+<body>
+<header class="wrap"><p class="kicker">§ Explainer</p><h1>A vs B：兩座塔</h1><p>往下捲 ↓</p></header>
+
+<div class="x" data-x>
+  <section class="track">
+    <div class="stage">
+      <svg class="world" data-world role="img" aria-label="A 與 B 畫成兩座並排的塔"></svg>
+      <aside class="panel">
+        <div class="top">
+          <p class="status" data-status>Overview</p>
+          <button class="play" type="button" data-play>Auto-play</button>
+        </div>
+        <ol class="stops">
+          <li><button type="button" data-stop="top">01 Top<i></i></button></li>
+          <li><button type="button" data-stop="walk">02 Layers<i></i></button></li>
+          <li><button type="button" data-stop="exit">03 Exit<i></i></button></li>
+          <li><button type="button" data-stop="cost">04 Cost<i></i></button></li>
+        </ol>
+        <!-- 說明文字寫在 HTML 裡：沒有 JS 時就是依序排好的內容 -->
+        <div class="caps">
+          <article class="cap is-on" data-cap="intro"><p class="kicker">Overview</p><h2>兩座塔</h2><p><b>A</b>12 層，窄。</p><p class="cap-b"><b>B</b>8 層，寬。</p></article>
+          <article class="cap" data-cap="top"><p class="kicker">Stop 01</p><h2>塔頂：輸入</h2><p><b>A</b>…</p><p class="cap-b"><b>B</b>…</p></article>
+          <article class="cap" data-cap="walk"><p class="kicker">Stop 02</p><h2>一層一層往下</h2><p><b>A</b>…</p><p class="cap-b"><b>B</b>…</p></article>
+          <article class="cap" data-cap="exit"><p class="kicker">Stop 03</p><h2>塔底：輸出</h2><p><b>A</b>…</p><p class="cap-b"><b>B</b>…</p></article>
+          <article class="cap" data-cap="cost"><p class="kicker">Stop 04</p><h2>算總帳</h2><p><b>A</b>…</p><p class="cap-b"><b>B</b>…</p></article>
+        </div>
+        <dl class="facts" data-facts></dl>
+      </aside>
+    </div>
+  </section>
+</div>
+<footer class="wrap"><p class="kicker">§ Sources</p><p>資料來源、數字怎麼算的。</p></footer>
+
+<script>
+(function () {
+  'use strict';
+  var root = document.querySelector('[data-x]');
+  if (!root) return;
+  var track = root.querySelector('.track'), stage = root.querySelector('.stage');
+  var svg = root.querySelector('[data-world]'), panel = root.querySelector('.panel');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var NS = 'http://www.w3.org/2000/svg';
+
+  // ---- helpers ----
+  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function seg(t, a, b) { return clamp01((t - a) / (b - a)); }
+  function ease(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  function lerp(a, b, k) { return a + (b - a) * k; }
+  function r1(n) { return Math.round(n * 10) / 10; }
+  function el(name, attrs, parent, text) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  // 值沒變就不寫回 DOM
+  function set(e, k, v) { var key = '_x_' + k; if (e[key] === v) return; e[key] = v; e.setAttribute(k, v); }
+  function show(e, o) { set(e, 'opacity', r1(o * 100) / 100); }
+  // pathLength = 1 的線：k = 0 看不到，k = 1 整條畫完
+  function wire(g, d, cls) { return el('path', { d: d, class: cls, pathLength: 1, 'stroke-dasharray': '1 1' }, g); }
+  function draw(e, k) { set(e, 'stroke-dashoffset', r1((1 - k) * 1000) / 1000); set(e, 'opacity', k > 0 ? 1 : 0); }
+
+  // ---- 斜投影的方塊：正面、頂面、右側面 ----
+  var KX = 0.55, KY = 0.38, DZ = 70;
+  function Box(parent) {
+    var g = el('g', { class: 'box' }, parent);
+    var tp = el('path', { class: 'tp' }, g), sd = el('path', { class: 'sd' }, g), f = el('path', { class: 'f' }, g);
+    return { g: g, set: function (x, y, w, h) {
+      var dx = r1(DZ * KX), dy = r1(DZ * KY);
+      set(f, 'd', 'M' + x + ' ' + y + 'h' + w + 'v' + h + 'h' + (-w) + 'Z');
+      set(tp, 'd', 'M' + x + ' ' + y + 'l' + dx + ' ' + (-dy) + 'h' + w + 'l' + (-dx) + ' ' + dy + 'Z');
+      set(sd, 'd', 'M' + (x + w) + ' ' + y + 'l' + dx + ' ' + (-dy) + 'v' + h + 'l' + (-dx) + ' ' + dy + 'Z');
+    } };
+  }
+
+  // ---- 世界：建一次，之後每幀只改屬性 ----
+  var PITCH = 22, TH = 14;
+  var TOWERS = { a: { L: 12, x: 0, w: 160 }, b: { L: 8, x: 340, w: 300 } };
+  var towers = {};
+  Object.keys(TOWERS).forEach(function (key) {
+    var tw = TOWERS[key], g = el('g', { class: 'lane-' + key }, svg), rows = [];
+    for (var i = tw.L - 1; i >= 0; i--) { var b = Box(g); b.set(tw.x, i * PITCH, tw.w, TH); rows[i] = b; } // 由下往上畫
+    T(g, tw.x, -60, key.toUpperCase(), 't-l');
+    var out = wire(g, 'M' + (tw.x + tw.w / 2) + ' ' + (tw.L * PITCH) + 'v120', 'pipe');
+    towers[key] = { rows: rows, out: out };
+  });
+  function T(g, x, y, s, cls) { return el('text', { x: x, y: y, class: cls }, g, s); }
+
+  // ---- 段落與鏡頭 ----
+  var BEATS = [['intro', 0.6], ['top', 1], ['walk', 2], ['exit', 1], ['cost', 1]];
+  var HOLD = 0.3, STOPS = ['top', 'walk', 'exit', 'cost'];
+  var total = BEATS.reduce(function (s, b) { return s + b[1]; }, HOLD), spans = {}, acc = 0;
+  BEATS.forEach(function (b) { spans[b[0]] = { start: acc / total, len: b[1] / total }; acc += b[1]; });
+  function localT(k, p) { return clamp01((p - spans[k].start) / spans[k].len); }
+  function beatAt(p) { var cur = BEATS[0][0]; BEATS.forEach(function (b) { if (p >= spans[b[0]].start) cur = b[0]; }); return cur; }
+
+  // 每格 [beat, t, 中心 x, 中心 y, 寬]：同一個位置放兩格 = 鏡頭停住
+  var SHOTS = [['intro', 0, 360, 150, 1100], ['intro', 0.3, 360, 150, 1100], ['top', 0.6, 360, -20, 800],
+    ['walk', 0.2, 360, 40, 800], ['walk', 1, 360, 240, 800], ['exit', 0.6, 360, 360, 800], ['cost', 1, 360, 200, 1100]];
+  var shots = SHOTS.map(function (s) { return { p: spans[s[0]].start + spans[s[0]].len * s[1], x: s[2], y: s[3], w: s[4] }; });
+  function camera(p) {
+    var i = 0;
+    while (i < shots.length - 1 && shots[i + 1].p <= p) i++;
+    var a = shots[i], b = shots[Math.min(i + 1, shots.length - 1)];
+    var k = b.p > a.p ? ease(clamp01((p - a.p) / (b.p - a.p))) : 0;
+    return { x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), w: Math.exp(lerp(Math.log(a.w), Math.log(b.w), k)) }; // 寬度用對數插值
+  }
+  // 取景框是舞台上沒被說明欄蓋住的那一塊：寬螢幕在右邊，窄螢幕在上面
+  var view = {};
+  function measure() {
+    var r = stage.getBoundingClientRect(), pr = panel.getBoundingClientRect();
+    view.W = r.width; view.H = r.height;
+    view.narrow = window.matchMedia('(max-width: 900px)').matches;
+    if (view.narrow) { view.fx = 0; view.fy = 0; view.fw = r.width; view.fh = Math.max(120, pr.top - r.top); }
+    else { view.fx = pr.right - r.left; view.fy = 0; view.fw = r.width - view.fx; view.fh = r.height; }
+  }
+  function renderCamera(c) {
+    var s = Math.min(view.fw / c.w, view.fh / (c.w * 0.62));
+    var vx = c.x - (view.fx + view.fw / 2) / s, vy = c.y - (view.fy + view.fh / 2) / s;
+    set(svg, 'viewBox', [r1(vx), r1(vy), r1(view.W / s), r1(view.H / s)].join(' '));
+  }
+
+  // ---- 說明欄 ----
+  var caps = {};
+  [].forEach.call(root.querySelectorAll('[data-cap]'), function (c) { caps[c.getAttribute('data-cap')] = c; });
+  var statusEl = root.querySelector('[data-status]'), factsEl = root.querySelector('[data-facts]');
+  var stopBtns = [].slice.call(root.querySelectorAll('[data-stop]'));
+  var FACTS = { intro: [['層數', '12', '8']], top: [['輸入', '…', '…']], exit: [['輸出', '…', '…']], cost: [['總計', '…', '…']] };
+  var live = {}, shownCap = '', factsHTML = '';
+  function renderPanel(beat, p) {
+    if (beat !== shownCap) {
+      if (caps[shownCap]) caps[shownCap].classList.remove('is-on');
+      if (caps[beat]) caps[beat].classList.add('is-on');
+      shownCap = beat;
+      var i0 = STOPS.indexOf(beat);
+      statusEl.textContent = i0 >= 0 ? 'Stop 0' + (i0 + 1) + ' / 0' + STOPS.length : 'Overview';
+    }
+    var rows = live[beat] || FACTS[beat] || [];
+    var html = '<dt></dt><dd class="a">A</dd><dd class="b">B</dd>' +
+      rows.map(function (f) { return '<dt>' + f[0] + '</dt><dd>' + f[1] + '</dd><dd>' + f[2] + '</dd>'; }).join('');
+    if (html !== factsHTML) { factsEl.innerHTML = html; factsHTML = html; }
+    var si = STOPS.indexOf(beat);
+    stopBtns.forEach(function (b, i) {
+      b.classList.toggle('is-on', i === si);
+      b.querySelector('i').style.setProperty('--p', i < si ? 1 : i === si ? r1(localT(beat, p) * 100) / 100 : 0);
+    });
+  }
+
+  // ---- 每一幀：只看 p，所以倒著捲、跳站都對 ----
+  function render(p) {
+    var t = {};
+    BEATS.forEach(function (b) { t[b[0]] = localT(b[0], p); });
+    var beat = beatAt(p);
+    // walk：鏡頭走到哪一層就亮哪一層；數字跟著捲動跑
+    var m = seg(t.walk, 0.1, 1), cur = {};
+    Object.keys(TOWERS).forEach(function (key) {
+      var L = TOWERS[key].L, c = beat === 'walk' ? Math.min(L - 1, Math.floor(m * L)) : -1;
+      cur[key] = c;
+      towers[key].rows.forEach(function (b, i) {
+        b.g.classList.toggle('is-hot', i === c);
+        b.g.classList.toggle('is-past', c >= 0 && i < c);
+      });
+      draw(towers[key].out, seg(t.exit, 0.1, 0.7));
+    });
+    live.walk = [['第幾層', (cur.a + 1) + ' / 12', (cur.b + 1) + ' / 8']];
+    renderCamera(camera(p));
+    renderPanel(beat, p);
+    autoplay.render(p);
+  }
+
+  function progress() {
+    var r = track.getBoundingClientRect(), range = r.height - stage.offsetHeight;
+    var hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 0;
+    return range > 0 ? clamp01((hh - r.top) / range) : 1;
+  }
+  var ticking = false;
+  function request() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () { ticking = false; render(progress()); });
+  }
+
+  // 停靠站：捲到那一站開頭往後一點
+  function trackTop() {
+    var hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 0;
+    return track.getBoundingClientRect().top + window.scrollY - hh;
+  }
+  stopBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var s = spans[b.getAttribute('data-stop')];
+      window.scrollTo({ top: trackTop() + (track.offsetHeight - stage.offsetHeight) * (s.start + s.len * 0.3), behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
+  });
+
+  // ---- 自動播放：照固定速度把 p 推到 1，用 scrollTo 帶著頁面捲；使用者一碰滾輪、觸控或按鍵就停 ----
+  var autoplay = (function () {
+    var btn = root.querySelector('[data-play]');
+    if (!btn || reduceMotion) { if (btn) btn.hidden = true; return { render: function () {} }; }
+    var FULL = 20000, raf = 0, p0 = 0, t0 = 0, setY = 0, shown = '';
+    function range() { return [trackTop(), track.offsetHeight - stage.offsetHeight]; }
+    function tick(ts) {
+      if (!t0) t0 = ts;
+      if (Math.abs(window.scrollY - setY) > 2) return stop(); // 捲動位置被別的東西改掉
+      var p = Math.min(1, p0 + (ts - t0) / FULL), r = range();
+      window.scrollTo(0, r[0] + r[1] * p);
+      setY = window.scrollY;
+      if (p >= 1) return stop();
+      raf = requestAnimationFrame(tick);
+    }
+    function start() {
+      p0 = progress();
+      if (p0 >= 0.98) { p0 = 0; window.scrollTo(0, range()[0]); }
+      setY = window.scrollY; t0 = 0;
+      raf = requestAnimationFrame(tick);
+      render(p0);
+    }
+    function stop() { if (!raf) return; cancelAnimationFrame(raf); raf = 0; render(progress()); }
+    function render(p) {
+      var state = raf ? 'run' : p >= 0.98 ? 'done' : 'idle';
+      if (state === shown) return;
+      shown = state;
+      btn.textContent = state === 'run' ? 'Pause' : state === 'done' ? 'Replay' : 'Auto-play';
+    }
+    btn.addEventListener('click', function () { if (raf) stop(); else start(); });
+    function interrupt(e) { if (raf && !btn.contains(e.target)) stop(); }
+    window.addEventListener('wheel', interrupt, { passive: true });
+    window.addEventListener('touchstart', interrupt, { passive: true });
+    window.addEventListener('pointerdown', interrupt);
+    window.addEventListener('keydown', interrupt);
+    return { render: render };
+  })();
+
+  root.classList.add('is-live');
+  measure();
+  window.addEventListener('scroll', request, { passive: true });
+  window.addEventListener('resize', function () { measure(); request(); });
+  if ('ResizeObserver' in window) new ResizeObserver(function () { measure(); request(); }).observe(stage);
+  render(progress());
+})();
+</script>
+</body>
+</html>
