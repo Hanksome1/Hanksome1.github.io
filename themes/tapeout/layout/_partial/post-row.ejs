@@ -11,6 +11,6 @@
     <% if (post.summary) { %><span class="log-summary"><%= post.summary %></span><% } %>
   </span>
   <span class="log-tags"><% tags.slice(0, 3).forEach(function (t) { %><span>#<%= t %></span><% }) %></span>
-  <span class="log-read"><%= reading_time(post.content) %> min</span>
+  <span class="log-read"><%= post.reading || reading_time(post.content) %> min</span>
   <span class="log-arrow" aria-hidden="true">→</span>
 </a>
