@@ -1,0 +1,258 @@
+<%
+  // ICLAB 設計流程的捲動導覽（js/iclab-flow.js）。說明文字寫在這裡，沒有 JS 時依序排好；
+  // NOTES 是每一站的筆記入口：[網址, 畫面上卡片的短標題, 卡片的小標]，完整標題直接取自筆記。
+  var NOTES = {
+    hub:       ['/notes/iclab/', '筆記總覽'],
+    intro:     ['/notes/iclab-intro/', '數位 IC 的設計流程'],
+    datatype:  ['/notes/iclab-verilog-datatype/', '資料型態與參數'],
+    operators: ['/notes/iclab-verilog-operators/', '運算子'],
+    assign:    ['/notes/iclab-verilog-assignment/', '賦值與 latch'],
+    timing:    ['/notes/iclab-verilog-timing-control/', '時序控制 @ wait #'],
+    func:      ['/notes/iclab-verilog-function-task/', 'function 與 task'],
+    guide:     ['/notes/iclab-rtl-guideline/', 'RTL coding guidelines'],
+    fsm:       ['/notes/iclab-fsm/', 'FSM 的寫法'],
+    hw4:       ['/notes/iclab-hw4-qrcode/', 'QR code 解碼器', 'HW4'],
+    lab05:     ['/notes/iclab-lab05-cpu/', '三級管線 CPU', 'LAB05'],
+    lint:      ['/notes/iclab-spyglass/', '用 SpyGlass 做 lint'],
+    tb:        ['/notes/iclab-testbench/', 'Testbench 的寫法'],
+    hw1:       ['/notes/iclab-hw1-rop3/', 'ROP3 窮舉驗證', 'HW1'],
+    synth:     ['/notes/iclab-synthesis/', '邏輯合成'],
+    dc:        ['/notes/iclab-design-compiler/', 'Design Compiler'],
+    hw3:       ['/notes/iclab-hw3-enigma/', 'Enigma 合成優化', 'HW2–3'],
+    lec:       ['/notes/iclab-lec/', 'Logic equivalence checking'],
+    apr:       ['/notes/iclab-apr/', 'APR 流程'],
+    fp:        ['/notes/iclab-apr-floorplan/', 'Floorplan'],
+    pp:        ['/notes/iclab-apr-powerplan/', 'Power plan'],
+    hw5:       ['/notes/iclab-hw5-attention/', 'Attention 加速器', 'HW5'],
+    golden:    ['/notes/iclab-3dgs-golden-pattern/', 'Golden pattern 格式', 'FINAL'],
+    proj:      ['/projects/3dgs-accelerator/', '3DGS 硬體加速器', 'PROJECT']
+  };
+  // 筆記的 path 開頭有 /（obsidian.js 的 permalink），專案的沒有，所以比對前兩邊都去掉頭尾的 /
+  function trim(s) { return String(s || '').replace(/^\/+|\/+$/g, ''); }
+  var byPath = {}, count = 0;
+  site.posts.forEach(function (p) {
+    byPath[trim(p.path)] = p;
+    if (trim(p.path) !== 'notes/iclab' && (p.tags ? p.tags.map(function (t) { return t.name; }) : []).indexOf('ICLAB') > -1) count++;
+  });
+  var notes = {};
+  Object.keys(NOTES).forEach(function (k) {
+    var n = NOTES[k], post = byPath[trim(n[0])];
+    notes[k] = { href: url_for(n[0]), title: post ? post.title : n[1], short: n[1], kind: n[2] || 'NOTE' };
+  });
+  function attr(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function links(keys) {
+    return '<ul class="ic-notes">' + keys.map(function (k) {
+      var n = notes[k];
+      return '<li><a href="' + n.href + '" title="' + attr(n.title) + '"><span class="k">' + n.kind + '</span><span class="s">' + attr(n.short) + '</span><span class="l">' + attr(n.title) + '</span></a></li>';
+    }).join('') + '</ul>';
+  }
+  var cfg = JSON.stringify({ notes: notes, count: count }).replace(/</g, '\\u003c');
+%>
+<div class="ic" data-ic>
+  <header class="ic-hero wrap">
+    <p class="kicker">§ Explainer — Course · <a href="<%- notes.hub.href %>">ICLAB 筆記總覽</a></p>
+    <h1 class="ic-title">ICLAB：一條 <em>design flow</em>，串起整學期的筆記</h1>
+    <p class="ic-lede">清大 EE4292 積體電路設計實驗從寫 Verilog 開始，經過 lint、模擬、合成、LEC，一路做到 APR。往下捲，同一個 8-bit 累加器會一站一站變成 RTL、波形、gate-level netlist 和 layout。每一站的卡片都是筆記的入口，點下去就是那一篇。</p>
+    <dl class="ic-meta">
+      <div><dt>課號</dt><dd>EE4292 · 清大電機</dd></div>
+      <div><dt>學期</dt><dd>114 學年度上學期</dd></div>
+      <div><dt>工具</dt><dd>VCS · SpyGlass · DC · Conformal · Innovus</dd></div>
+      <div><dt>筆記</dt><dd><a href="<%- notes.hub.href %>"><%= count %> 篇 · 總覽</a></dd></div>
+    </dl>
+    <p class="ic-hint">往下捲，或按 Auto-play ↓</p>
+  </header>
+
+  <section class="ic-track">
+    <div class="ic-stage">
+      <svg class="ic-world" data-world role="img" aria-label="ICLAB 設計流程的動畫：一個 8-bit 累加器依序經過 RTL、FSM、lint、testbench、合成、LEC，再經過 floorplan、power plan、placement、CTS、routing 和 sign-off 變成 layout"></svg>
+      <aside class="ic-panel">
+        <div class="ic-top">
+          <p class="ic-status"><i></i><span data-status>Overview</span></p>
+          <button type="button" class="ic-play" data-play aria-label="自動播放"><span class="ic-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+        </div>
+        <ol class="ic-stops">
+          <li><button type="button" data-stop="rtl"><span>01</span>RTL<i></i></button></li>
+          <li><button type="button" data-stop="fsm"><span>02</span>FSM<i></i></button></li>
+          <li><button type="button" data-stop="lint"><span>03</span>Lint<i></i></button></li>
+          <li><button type="button" data-stop="sim"><span>04</span>Sim<i></i></button></li>
+          <li><button type="button" data-stop="synth"><span>05</span>Synth<i></i></button></li>
+          <li><button type="button" data-stop="lec"><span>06</span>LEC<i></i></button></li>
+          <li><button type="button" data-stop="floorplan"><span>07</span>Floor<i></i></button></li>
+          <li><button type="button" data-stop="power"><span>08</span>Power<i></i></button></li>
+          <li><button type="button" data-stop="place"><span>09</span>Place<i></i></button></li>
+          <li><button type="button" data-stop="cts"><span>10</span>CTS<i></i></button></li>
+          <li><button type="button" data-stop="route"><span>11</span>Route<i></i></button></li>
+          <li><button type="button" data-stop="signoff"><span>12</span>Sign-off<i></i></button></li>
+          <li><button type="button" data-stop="projects"><span>13</span>Labs<i></i></button></li>
+        </ol>
+        <!-- 說明文字寫在 HTML 裡：沒有 JS 時就是依序排好的內容 -->
+        <div class="ic-caps">
+          <article class="ic-cap is-on" data-cap="intro">
+            <p class="kicker">Overview</p>
+            <h2>一條 flow 走完一學期</h2>
+            <p>上面那條線是一顆數位晶片從規格到封裝的流程。ICLAB 負責中間那一段：從 logic design 做到 physical design，每一週往右推一站。</p>
+            <p class="hl"><b>怎麼看</b>往下捲，同一個小電路會一站一站換成新的樣子。畫面上標著 NOTE 的卡片可以點，會連到那一站的筆記。</p>
+            <%- links(['intro', 'hub']) %>
+          </article>
+          <article class="ic-cap" data-cap="rtl">
+            <p class="kicker">Stop 01 — RTL · W2–5</p>
+            <h2>先用 Verilog 描述硬體</h2>
+            <p>一個 8-bit 累加器：<code>in_valid</code> 拉高時把 <code>din</code> 加進 <code>sum</code>。11 行 code，對應右邊一個加法器、一個 MUX 和一排 flip-flop。</p>
+            <p><b>賦值</b><code>wire nxt = sum + din</code> 是 continuous assignment，合成出組合邏輯；<code>sum &lt;= nxt</code> 是 nonblocking，同一個 clock edge 的 register 一起更新。</p>
+            <p class="hl"><b>RTL</b>描述的是架構，不是程式：寫每一行都要想得出它會變成什麼電路。</p>
+            <%- links(['datatype', 'operators', 'assign', 'timing', 'func', 'guide']) %>
+          </article>
+          <article class="ic-cap" data-cap="fsm">
+            <p class="kicker">Stop 02 — FSM · W4</p>
+            <h2>控制交給 FSM</h2>
+            <p>FSM 拆成三塊：state register（循序）、next-state logic 和 output logic（組合），寫成 1 個 sequential 加 2 個 combinational always block。</p>
+            <p class="xs">下面的表一個 cycle 一格：<code>load</code> 決定下一個狀態，<code>busy</code> 只看 state，是 Moore machine。</p>
+            <p class="hl"><b>大型設計</b>不要用一個 FSM 管全部。HW4 的 QR code 解碼器是一個主 FSM，FIND、ROTATE 底下各有自己的小 FSM。</p>
+            <%- links(['fsm', 'hw4', 'lab05']) %>
+          </article>
+          <article class="ic-cap" data-cap="lint">
+            <p class="kicker">Stop 03 — Lint · W1 Lab</p>
+            <h2>模擬之前先 lint</h2>
+            <p>Lint 不用 testbench，直接靜態檢查 RTL：會合成出 latch 的寫法、位寬不一致、multiple drivers、宣告了沒用到的訊號。</p>
+            <p>這段 <code>case</code> 沒有 default，<code>b = 0</code> 時 y 要記住舊值，就合成出 latch。一開始先給 y 預設值就好。</p>
+            <p class="hl xs"><b>spy.tcl</b>依序跑 lint_rtl、lint_turbo_rtl、lint_functional_rtl、lint_abstract 四個 goal，結果接在同一份 report。ICLAB 的 lab 和作業都要先過 SpyGlass。</p>
+            <%- links(['lint', 'guide', 'synth', 'assign']) %>
+          </article>
+          <article class="ic-cap" data-cap="sim">
+            <p class="kicker">Stop 04 — Simulation · W3</p>
+            <h2>Testbench 在 negedge 動手</h2>
+            <p>五個步驟：定義參數、接上 DUT、reset 與 clock、餵 pattern、比對答案。正確答案要用跟 RTL 不一樣的方法算，通常是 Python 先存成 golden file。</p>
+            <p>DUT 在 posedge 取樣，testbench 就在 negedge 改輸入、比對輸出，錯開半個週期，避開 race condition。比對用 <code>!==</code>，輸出是 X 也抓得到。</p>
+            <p class="hl xs"><b>HW1</b>窮舉 16-bit 的 din 時，<code>din &lt;= 16'hFFFF</code> 會溢位成 0，迴圈永遠跑不完，要另外用 17-bit 的計數器。</p>
+            <%- links(['tb', 'timing', 'hw1']) %>
+          </article>
+          <article class="ic-cap" data-cap="synth">
+            <p class="kicker">Stop 05 — Synthesis · W6–8</p>
+            <h2>合成：RTL 變成 gate</h2>
+            <p>Design Compiler 吃 RTL、constraint 和 standard cell library，read、elaborate、compile，從 library 挑 cell 組出 gate-level netlist。</p>
+            <p><b>Clock gating · Lab06</b>每個 flip-flop 前面的 enable MUX 換成共用的 clock-gating cell：面積少 16%，dynamic power 剩約 1/5。</p>
+            <p class="hl"><b>HW3</b>Enigma 的 Area × Cycle time 從 8.8 降到 4.8 ×10⁴：rotor 改用 shift、切 pipeline，最後拿掉 datapath 的 reset。</p>
+            <%- links(['synth', 'dc', 'hw3']) %>
+          </article>
+          <article class="ic-cap" data-cap="lec">
+            <p class="kicker">Stop 06 — LEC · W9–10</p>
+            <h2>證明 netlist 和 RTL 一樣</h2>
+            <p>模擬只驗得到跑過的 pattern；LEC 用 formal 的方法證明所有輸入下都等價。先把兩邊的 key point 一一對應，再比每個 key point 前面的 logic cone。</p>
+            <p class="xs">acc 有 11 個 PI、8 個 DFF、8 個 PO；要比的是 DFF 和 PO，共 16 個 compared point。</p>
+            <p class="hl"><b>乘法器</b>RTL 裡一個 <code>*</code>，netlist 裡是結構完全不同的 DesignWare 乘法器。Lab10 有 16 個乘法器，basic flow 直接 abort；MDP flow 加 hierarchical compare 538 秒比完。</p>
+            <%- links(['lec', 'intro']) %>
+          </article>
+          <article class="ic-cap" data-cap="floorplan">
+            <p class="kicker">Stop 07 — Floorplan · W11</p>
+            <h2>先決定晶片的框架</h2>
+            <p>APR 先讀入 netlist、.lib、.lef、.sdc，接著 floorplan：core 多大、長寬比多少、I/O 和 macro 放在哪裡。</p>
+            <p>Utilization = cell 總面積 S ÷ core 面積 X·Y。Core 外面留 margin Z 給 power ring：lab 的 3 組 ring 是 Z = 2 + 6×4 + 5×1.5 + 2 = 35.5 µm。</p>
+            <p class="hl xs"><b>I/O</b><code>clk</code>、<code>rst_n</code> 移到每一邊的中間，離邏輯比較近。</p>
+            <%- links(['apr', 'fp']) %>
+          </article>
+          <article class="ic-cap" data-cap="power">
+            <p class="kicker">Stop 08 — Power plan · W12</p>
+            <h2>三層水管</h2>
+            <p>電從 pad 進到 ring（大水管），經過 stripe（中水管）分到整個 core，最後由 Metal 1 的 rail（小水管）送進每一排 cell。</p>
+            <p class="xs">Ring 的寬度跟電流成正比：100 mW、1 V 是 100 mA，M4 / M5 每 µm 流 10 mA，VDD、VSS 各至少 10 µm。</p>
+            <p class="hl"><b>方向</b>Rail 是水平的，最下層的 stripe 一定要垂直，每經過一條 rail 才接得下去。ICLAB 的設定是奇數層水平、偶數層垂直。</p>
+            <%- links(['pp', 'apr']) %>
+          </article>
+          <article class="ic-cap" data-cap="place">
+            <p class="kicker">Stop 09 — Placement · W12</p>
+            <h2>把 cell 排進 row</h2>
+            <p>Global placement 先大致擺好、估 congestion；detailed placement 再對齊 row、消除重疊。Timing-driven 想把相關的 cell 擺近，congestion-driven 想擺鬆一點留空間繞線。</p>
+            <p class="xs">同一個 library 的 cell 高度相同，才能排在 row 上共用上下兩條 rail。每隔一段距離放一個 tap cell，固定 well 的電位、防 latch-up。</p>
+            <%- links(['apr', 'intro']) %>
+          </article>
+          <article class="ic-cap" data-cap="cts">
+            <p class="kicker">Stop 10 — CTS · W12–13</p>
+            <h2>Clock 終於變成一棵樹</h2>
+            <p>合成時 clock 設成 ideal network，CTS 才真的把 clock 接到每個 flip-flop，中間插 buffer 平衡延遲，壓低 skew 和 insertion delay。</p>
+            <p class="hl"><b>Hold</b>這一步最要注意 hold：t<sub>launch</sub> + t<sub>clk→q</sub> + t<sub>data</sub> ≥ t<sub>capture</sub> + t<sub>hold</sub>。新資料到得太快，會蓋掉接收端還沒取樣完的舊資料。</p>
+            <%- links(['apr', 'dc']) %>
+          </article>
+          <article class="ic-cap" data-cap="route">
+            <p class="kicker">Stop 11 — Routing · W13</p>
+            <h2>NanoRoute 把線接起來</h2>
+            <p>照每一層的方向繞線：奇數層水平、偶數層垂直，換層的地方打 via，同時處理 crosstalk 和 antenna effect。</p>
+            <p class="xs">繞完才知道真的 R、C：合成時用 wire load model 估，APR 還是初估，RC extraction 之後的數字才可信。</p>
+            <p class="hl"><b>Margin</b>目標 4 ns：合成壓 3.2 ns、APR 壓 3.6 ns，sign-off 才用 4 ns。越後面 timing 只會越差。</p>
+            <%- links(['apr', 'dc']) %>
+          </article>
+          <article class="ic-cap" data-cap="signoff">
+            <p class="kicker">Stop 12 — Sign-off · W13</p>
+            <h2>六項檢查都過才算完成</h2>
+            <p>DRC、LVS、LEC、用 SPEF 做的 STA、帶 SDF 的 post-layout simulation，再用它的波形做 power analysis。</p>
+            <p class="hl"><b>每一次轉換</b>都要確認功能沒被改壞：RTL ↔ 合成後、合成後 ↔ APR 後用 LEC，APR 後的 netlist ↔ layout 用 LVS。</p>
+            <%- links(['apr', 'lec', 'intro']) %>
+          </article>
+          <article class="ic-cap" data-cap="projects">
+            <p class="kicker">Stop 13 — Labs &amp; final · W14–17</p>
+            <h2>每份作業練的是其中一站</h2>
+            <p>拉遠回到整條 flow：HW1 練 testbench，HW2–3 練合成，HW4 練 FSM，HW5 練 datapath 共用，Lab05 把 CPU 接上 SRAM，Lab09–13 跑 LEC 和 APR。</p>
+            <p class="hl"><b>期末專題</b>3DGS 硬體加速器把整套 flow 走完一次：128×128、64 顆 Gaussian 跑到 367.8 FPS，cycle time 5 ns，post-layout 功耗 2.63 mW，全班第一（25 組）。</p>
+            <%- links(['hw1', 'hw3', 'hw4', 'hw5', 'lab05', 'golden', 'proj']) %>
+          </article>
+        </div>
+        <dl class="ic-facts" data-facts></dl>
+      </aside>
+      <p class="ic-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+    </div>
+  </section>
+
+  <section class="ic-outro wrap">
+    <p class="kicker">§ Summary</p>
+    <h2>三件事</h2>
+    <ol class="ic-take">
+      <li><b>每一站都在換表示法。</b>RTL、netlist、layout 是同一個電路的三種寫法，每換一次就用 LEC 或 LVS 確認功能沒變，模擬只是其中一種驗證。</li>
+      <li><b>工具會化簡，結構要自己決定。</b>合成把邏輯壓得很好，但 pipeline 切在哪、FSM 怎麼拆、datapath 要不要共用，都要在 RTL 想清楚。HW3 裡直覺很貴的 shift 反而比 offset 好。</li>
+      <li><b>越後面的數字越真。</b>Wire load model、APR 初估、RC extraction 一路變準，timing 也一路變差，所以每一站都要留 margin，floorplan 時就先試擺、看 congestion。</li>
+    </ol>
+
+    <div class="table-wrap">
+      <table class="ic-table">
+        <caption>課程進度（取自筆記總覽）</caption>
+        <thead><tr><th>週</th><th>課程主題</th><th>Lab</th><th>這頁的哪一站</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>課程介紹、cell-based design flow</td><td>工作站環境、SpyGlass</td><td>Overview · 03 Lint</td></tr>
+          <tr><td>2</td><td>Verilog</td><td>Verilog simulator</td><td>01 RTL</td></tr>
+          <tr><td>3</td><td>Testbench、function 與 task</td><td>Testbench 的 debug 與撰寫</td><td>04 Sim</td></tr>
+          <tr><td>4</td><td>合成、FSM</td><td>Verdi、FSM 練習</td><td>02 FSM</td></tr>
+          <tr><td>5</td><td>RTL coding guidelines</td><td>RTL 模擬與除錯</td><td>01 RTL</td></tr>
+          <tr><td>6</td><td>Synthesis (I)：Design Compiler</td><td>Coding for synthesis (I)</td><td>05 Synth</td></tr>
+          <tr><td>7</td><td>–</td><td>Line-based 影像處理</td><td>02 FSM</td></tr>
+          <tr><td>8</td><td>Synthesis (II)：為合成做最佳化</td><td>Coding for synthesis (II)</td><td>05 Synth</td></tr>
+          <tr><td>9–10</td><td>Logic equivalence checking</td><td>LEC、LEC 實務</td><td>06 LEC</td></tr>
+          <tr><td>11</td><td>APR (I)：physical design flow</td><td>Innovus：floorplan</td><td>07 Floorplan</td></tr>
+          <tr><td>12</td><td>APR (II)：Cadence Innovus</td><td>Power plan、placement、CTS、routing</td><td>08–11</td></tr>
+          <tr><td>13</td><td>Design examples</td><td>CTS、routing、驗證、power analysis</td><td>10–12</td></tr>
+          <tr><td>14–17</td><td>期末專題</td><td>專題諮詢與報告</td><td>13 Labs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ic-cols">
+      <div>
+        <h3>這頁連到的筆記</h3>
+        <ul>
+          <li>觀念：<a href="<%- notes.intro.href %>"><%= notes.intro.title %></a></li>
+          <li>Verilog：<a href="<%- notes.datatype.href %>">資料型態</a>、<a href="<%- notes.operators.href %>">運算子</a>、<a href="<%- notes.assign.href %>">賦值</a>、<a href="<%- notes.timing.href %>">時序控制</a>、<a href="<%- notes.func.href %>">function 與 task</a>、<a href="<%- notes.fsm.href %>">FSM</a>、<a href="<%- notes.guide.href %>">RTL guidelines</a></li>
+          <li>驗證：<a href="<%- notes.tb.href %>">Testbench</a>、<a href="<%- notes.lint.href %>">SpyGlass</a>、<a href="<%- notes.lec.href %>">LEC</a></li>
+          <li>合成：<a href="<%- notes.synth.href %>">邏輯合成</a>、<a href="<%- notes.dc.href %>">Design Compiler</a></li>
+          <li>APR：<a href="<%- notes.apr.href %>">APR 流程</a>、<a href="<%- notes.fp.href %>">Floorplan</a>、<a href="<%- notes.pp.href %>">Power plan</a></li>
+          <li>作業：<a href="<%- notes.hw1.href %>">HW1</a>、<a href="<%- notes.hw3.href %>">HW2–3</a>、<a href="<%- notes.hw4.href %>">HW4</a>、<a href="<%- notes.hw5.href %>">HW5</a>、<a href="<%- notes.lab05.href %>">Lab05</a>；期末：<a href="<%- notes.proj.href %>">3DGS 加速器</a>、<a href="<%- notes.golden.href %>">golden pattern</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>資料來源與畫面怎麼來的</h3>
+        <ul>
+          <li>流程、指令和所有數字都取自上面的筆記：clock gating 的面積與功耗是 Lab06，Enigma 的 PI 是 HW3，乘法器的比對時間是 Lab10，3DGS 的規格取自專案頁。</li>
+          <li>8-bit 累加器 acc 是為這頁寫的小例子。它的 netlist、波形、key point 數照 RTL 算得出來，但 floorplan 到 routing 的 layout 是固定種子產生的示意圖，不是 Innovus 跑出來的結果。</li>
+          <li>Floorplan 那一站的 utilization 是這張示意圖自己的 cell 面積 ÷ core 面積；ring 畫成 lab 設定的 3 組 VDD / VSS。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+<script type="application/json" id="ic-cfg"><%- cfg %></script>

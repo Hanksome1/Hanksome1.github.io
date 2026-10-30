@@ -10,6 +10,7 @@
         <a href="<%- url_for('/notes/') %>">§ Note</a>
         <% if (course) { %>
           <span>/</span><% if (course.isHub) { %><span><%= course.tag %></span><% } else { %><a href="<%- url_for(course.hub) %>" title="<%= course.name || course.tag %>"><%= course.tag %></a><% } %>
+          <% if (course.tour) { %><span>·</span><a href="<%- url_for(course.tour) %>">▶ 動畫導覽</a><% } %>
         <% } %>
         <span>·</span>tended <time datetime="<%= date_xml(page.updated) %>"><%= date(page.updated, 'YYYY.MM.DD') %></time>
       <% } else { %>

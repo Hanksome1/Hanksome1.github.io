@@ -23,6 +23,7 @@
     <% courses.forEach(function (c, i) { %>
       <article class="chip-card course-card reveal">
         <span class="chip-designator" aria-hidden="true">J<%= i + 1 %></span>
+        <% if (c.tour) { %><a class="course-tour" href="<%- url_for(c.tour) %>">▶ 動畫導覽</a><% } %>
         <a class="chip-link" href="<%- url_for(c.hub.path) %>">
           <div class="chip-body">
             <div class="chip-meta"><span><%= [c.code || c.tag, c.term].filter(Boolean).join(' · ') %></span></div>
