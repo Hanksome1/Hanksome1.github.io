@@ -298,3 +298,32 @@ hexo.extend.helper.register('part_no', function (post) {
   const i = projects.findIndex(p => p._id === post._id);
   return 'PRJ-' + String(i + 1).padStart(3, '0');
 });
+
+// css() / js() 加上檔案內容的短雜湊（?v=…）。GitHub Pages 讓瀏覽器快取 10 分鐘，
+// 不加的話剛部署完會拿到新 HTML 配舊 CSS／JS，版面直接壞掉
+const fs = require('fs');
+const crypto = require('crypto');
+const pathFn = require('path');
+const assetHash = new Map();
+
+function versioned(file, ext) {
+  if (/^(https?:)?\/\//.test(file)) return file;
+  const rel = file.replace(/^\/+/, '') + (file.endsWith(ext) ? '' : ext);
+  for (const dir of [pathFn.join(hexo.theme_dir, 'source'), hexo.source_dir]) {
+    const abs = pathFn.join(dir, rel);
+    let stat;
+    try { stat = fs.statSync(abs); } catch (e) { continue; }
+    const key = abs + ':' + stat.mtimeMs;
+    if (!assetHash.has(key)) assetHash.set(key, crypto.createHash('md5').update(fs.readFileSync(abs)).digest('hex').slice(0, 8));
+    return this.url_for(rel) + '?v=' + assetHash.get(key);
+  }
+  return this.url_for(rel);
+}
+
+hexo.extend.helper.register('css', function (file) {
+  return `<link rel="stylesheet" href="${versioned.call(this, file, '.css')}">`;
+});
+
+hexo.extend.helper.register('js', function (file) {
+  return `<script src="${versioned.call(this, file, '.js')}"></script>`;
+});

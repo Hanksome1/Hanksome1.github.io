@@ -1,16 +1,17 @@
 <%
   // 課程動畫導覽的入口，只放在課程總覽筆記的摘要下面。tour 來自 course_tour()。
   // 左邊的小圖是動畫開場那張八站地圖的縮小版，一顆點沿著路線跑。
+  // svg 上的尺寸與 fill／stroke 是 CSS 還沒載入時的備援，CSS 會蓋過去。
   var TW = 28, TH = 26, GAP = 6, X0 = 5, Y1 = 6, Y2 = 44;
   var route = 'M0 19 H136 C144 19 144 57 136 57 H0';
 %>
 <a class="tour-entry" href="<%- url_for(tour.url) %>">
-  <svg class="tour-thumb" viewBox="0 0 146 76" aria-hidden="true">
-    <path class="r" d="<%= route %>"/>
+  <svg class="tour-thumb" viewBox="0 0 146 76" width="146" height="76" aria-hidden="true">
+    <path class="r" d="<%= route %>" fill="none" stroke="currentColor"/>
     <% tour.stops.forEach(function (s, i) { var row = i < 4 ? 0 : 1, col = row ? 7 - i : i; %>
-    <rect class="t" x="<%= X0 + col * (TW + GAP) %>" y="<%= row ? Y2 : Y1 %>" width="<%= TW %>" height="<%= TH %>" rx="3"/>
+    <rect class="t" x="<%= X0 + col * (TW + GAP) %>" y="<%= row ? Y2 : Y1 %>" width="<%= TW %>" height="<%= TH %>" rx="3" fill="none" stroke="currentColor"/>
     <% }) %>
-    <circle class="k" r="3"><animateMotion dur="7s" repeatCount="indefinite" path="<%= route %>"/></circle>
+    <circle class="k" r="3" fill="currentColor"><animateMotion dur="7s" repeatCount="indefinite" path="<%= route %>"/></circle>
   </svg>
   <span class="tour-copy">
     <span class="tour-kicker"><span class="tour-play"></span>動畫導覽 · <%= tour.stops.length %> 站</span>
