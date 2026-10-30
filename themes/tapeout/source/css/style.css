@@ -1801,8 +1801,8 @@ details.note > summary + * { margin-top: 8px; }
 }
 
 /* ==========================================================================
-   課程動畫導覽的入口（_partial/course-tour.ejs），放在筆記摘要下面
-   左邊是動畫開場地圖的縮圖：走過的站淡 accent、這一站實心 accent，一顆點沿路線跑
+   課程動畫導覽的入口（_partial/course-tour.ejs），放在課程總覽筆記的摘要下面
+   左邊是動畫開場地圖的縮圖，一顆點沿路線跑
    ========================================================================== */
 .tour-entry {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px;
@@ -1815,9 +1815,7 @@ details.note > summary + * { margin-top: 8px; }
 .tour-thumb { display: block; width: 146px; height: 76px; padding-right: 14px; border-right: 1px dashed var(--line-2); }
 .tour-thumb .r { fill: none; stroke: var(--line-2); stroke-width: 1.2; }
 .tour-thumb .t { fill: var(--surface); stroke: var(--ink-3); stroke-width: 1; }
-.tour-thumb .t.is-past { fill: color-mix(in srgb, var(--accent) 22%, var(--surface)); stroke: color-mix(in srgb, var(--accent) 55%, var(--surface)); }
-.tour-thumb .t.is-hot { fill: var(--accent); stroke: var(--accent); }
-.tour-thumb .k { fill: var(--ink); }
+.tour-thumb .k { fill: var(--accent); }
 .tour-copy { display: block; min-width: 0; }
 .tour-kicker { display: flex; align-items: center; gap: 7px; font: 600 10.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
 .tour-play { width: 0; height: 0; border-left: 7px solid currentColor; border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }

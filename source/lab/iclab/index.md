@@ -7,8 +7,8 @@ layout: iclab-flow
 # kind: note 讓這一頁跟 source/_posts/notes/ 的筆記一起列在 /notes/；reading 是列表上顯示的閱讀分鐘數
 kind: note
 reading: 10
-# 動畫的站點：課程筆記的標頭和 /notes/ 的課程卡片也用這份資料（notes 是筆記網址的最後一段），
-# 一篇筆記出現在好幾站時，標頭標第一個符合的站
+# 動畫的站點：開場地圖的每一格，ICLAB 筆記總覽標頭的動畫入口也用這份資料畫縮圖。
+# notes 是這一站的筆記（網址的最後一段），地圖上的篇數從這裡算
 tour:
   tagline: 同一個 8-bit 累加器從 RTL、合成、LEC 一路變成 layout，每一站都能點進對應的筆記。
   stops:

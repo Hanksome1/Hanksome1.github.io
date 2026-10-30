@@ -102,18 +102,15 @@ hexo.extend.helper.register('note_course', function (post) {
 });
 
 // 課程的動畫導覽（notes.courses 的 tour 指到 source/lab/ 的頁面，頁面 front-matter 的 tour.stops 是站點）。
-// 回傳導覽頁的網址、站點，以及這篇筆記在哪一站（hot）；沒有設定 tour 就回傳 null
-hexo.extend.helper.register('course_tour', function (course, post) {
+// 課程總覽筆記的標頭用它放動畫入口；沒有設定 tour 就回傳 null
+hexo.extend.helper.register('course_tour', function (course) {
   if (!course || !course.tour) return null;
   const page = this.site.pages.toArray().find(p => trimSlash(p.path).replace(/\/?index\.html$/, '') === trimSlash(course.tour));
   if (!page || !page.tour || !page.tour.stops) {
     hexo.log.warn(`[notes] 課程 ${course.tag} 的 tour ${course.tour} 找不到頁面，或頁面沒有 tour.stops`);
     return null;
   }
-  const slug = post ? trimSlash(post.path).split('/').pop() : '';
-  const stops = page.tour.stops;
-  const hot = slug ? stops.find(s => (s.notes || []).includes(slug)) || null : null;
-  return { url: course.tour, title: page.title, tagline: page.tour.tagline, stops, hot };
+  return { url: course.tour, title: page.title, tagline: page.tour.tagline, stops: page.tour.stops };
 });
 
 // ── Floorplan ────────────────────────────────────────────────
