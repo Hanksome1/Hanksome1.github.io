@@ -561,6 +561,8 @@
     function measure() {
       fly.forEach(function (f) { f.src.style.transform = ''; f.src._tos_transform = ''; });
       var sr = stage.getBoundingClientRect();
+      var tag = q('.to-hero .hero-tagline').getBoundingClientRect();
+      stage.style.setProperty('--to-play-y', r1(tag.top - sr.top + tag.height / 2) + 'px'); // 自動播放開關對齊一句話
       fly.forEach(function (f) {
         var s = f.src.getBoundingClientRect(), d = f.dst.getBoundingClientRect();
         f.gone = !d.width;
@@ -611,7 +613,7 @@
   var R = {
     hero: function (t) {
       heroFold.step(t);
-      root.classList.toggle('is-folded', t >= 0.6); // 窄螢幕的自動播放鍵收完之後移到狀態列旁邊
+      root.classList.toggle('is-folded', t >= 0.6); // 自動播放開關從一句話旁邊縮成小藥丸
       // 收到最後，夾頭和晶種從上面垂下來
       var drop = ease(seg(t, 0.72, 1));
       set(ingot.rig, 'opacity', r1(seg(t, 0.72, 0.85)));
@@ -1090,8 +1092,9 @@
   var autoplay = (function () {
     var btn = root.querySelector('[data-to-play]');
     if (!btn || reduceMotion) return { render: function () {} };
-    var label = btn.querySelector('[data-to-play-label]');
-    var FULL = 24000; // 從頭播到尾的毫秒數
+    var name = btn.querySelector('[data-to-play-name]');
+    var bit = btn.querySelector('[data-to-play-bit]');
+    var FULL = 24000; // 從頭播到尾的毫秒數；改了要連 style.css .to-play-hint 的 24 s 和 index.ejs 的 aria-label 一起改
     var raf = 0, p0 = 0, t0 = 0, setY = 0, shown = '';
     function range() {
       var top = track.getBoundingClientRect().top + window.scrollY - headerH();
@@ -1123,10 +1126,13 @@
     }
     function render(p) {
       var state = raf ? 'run' : p >= 0.98 ? 'done' : 'idle';
+      if (raf) btn.style.setProperty('--to-play-p', String(Math.round(p * 1000) / 1000));
       if (state === shown) return;
       shown = state;
       btn.setAttribute('data-state', state);
-      label.textContent = state === 'run' ? 'Pause' : state === 'done' ? 'Replay' : 'Auto-play';
+      btn.setAttribute('aria-checked', String(state === 'run'));
+      bit.textContent = state === 'run' ? '1' : '0';
+      name.textContent = state === 'done' ? 'replay' : 'run';
     }
     btn.addEventListener('click', function () { if (raf) stop(); else start(); });
     function interrupt(e) { if (raf && !btn.contains(e.target)) stop(); }

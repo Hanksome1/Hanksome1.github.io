@@ -1498,18 +1498,51 @@ details.note > summary + * { margin-top: 8px; }
 .to-more i { width: 9px; height: 9px; border-right: 1.5px solid; border-bottom: 1.5px solid; transform: rotate(45deg); animation: to-nudge 1.4s ease-in-out infinite; }
 @keyframes to-nudge { 50% { translate: 0 5px; } }
 
-/* 自動播放：從開場那一屏就看得到，所以疊在 .to-hero 上面；右下角是 .statusbar，放在右上角的數據底下 */
+/* 自動播放：跟頁首主題開關同一種開關，撥成 1'b1 就自己播完開場；疊在 .to-hero 上面，開場那一屏對齊一句話（--to-play-y，js/tapeout.js 的 heroFold 量的）。
+   開場收完（.is-folded）縮成右上角數據底下的小藥丸，播放時軌道裡的底色就是進度（--to-play-p，js/tapeout.js 的 autoplay 寫的） */
 .to-play { display: none; }
 .to-root.is-live .to-stage > .to-play {
-  position: absolute; right: var(--to-x); top: calc(var(--to-y) + 88px); z-index: 5;
-  display: flex; align-items: center; gap: 8px; padding: 7px 14px 7px 12px; cursor: pointer;
-  background: var(--to-glass); border: 1px solid var(--line-2); border-radius: 999px; backdrop-filter: blur(10px);
-  font: 500 11px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink);
-  transition: color 0.2s, border-color 0.2s, top 0.3s var(--ease);
+  --t: 50px; --k: 17px; --g: 3px; /* 軌道寬、圓鈕大小、圓鈕和軌道的間距 */
+  position: absolute; right: var(--to-x); top: var(--to-play-y); translate: 0 -50%; z-index: 5;
+  display: flex; align-items: center; gap: 14px; padding: 0; cursor: pointer;
+  background: none; border: 1px solid transparent; border-radius: 999px;
+  font: 500 12px var(--font-mono); color: var(--ink-2);
+  transition: top 0.45s var(--ease), background-color 0.3s, border-color 0.2s;
+  animation: to-play-in 0.7s var(--ease) 0.5s backwards;
 }
-.to-play:hover, .to-play[data-state="run"] { color: var(--accent); border-color: var(--accent); }
-.to-play-ic { width: 8px; height: 9px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
-.to-play[data-state="run"] .to-play-ic { clip-path: none; background: linear-gradient(90deg, currentColor 35%, transparent 35% 65%, currentColor 65%); }
+.to-root.is-live.is-folded .to-stage > .to-play {
+  --t: 30px; --k: 9px; --g: 2px;
+  top: calc(var(--to-y) + 107px); gap: 10px; padding: 8px 12px 8px 14px;
+  background: var(--to-glass); border-color: var(--line-2); backdrop-filter: blur(10px);
+}
+.to-root.is-live.is-folded .to-stage > .to-play:hover { border-color: var(--accent); }
+.to-play:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+@keyframes to-play-in { from { opacity: 0; } }
+
+.to-play-text { text-align: right; line-height: 1.6; white-space: nowrap; }
+.to-play-sig { display: block; }
+.to-play-name { color: var(--ink); }
+.to-play-sig em { font-style: normal; color: var(--accent); }
+.to-play-hint { display: block; font-size: 11px; color: var(--ink-3); }
+.to-play-hint::before { content: "Click to watch · 24 s"; }
+.to-play[data-state="run"] .to-play-hint::before { content: "Click to pause"; }
+.to-root.is-folded .to-play-tail, .to-root.is-folded .to-play-hint { display: none; }
+
+.to-play-track {
+  position: relative; flex: none; width: var(--t); height: calc(var(--k) + 2 * var(--g) + 3px);
+  border: 1.5px solid var(--ink); border-radius: 999px;
+}
+.to-play[data-state="run"] .to-play-track { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 30%, transparent) calc(var(--to-play-p, 0) * 100%), transparent 0); }
+.to-play-knob {
+  position: absolute; top: var(--g); left: var(--g); width: var(--k); height: var(--k);
+  border-radius: 50%; background: var(--ink);
+  transition: translate 0.3s var(--ease), background 0.3s;
+}
+.to-play:hover .to-play-knob { translate: 4px 0; }
+.to-play[data-state="run"] .to-play-knob { translate: calc(var(--t) - 3px - var(--k) - 2 * var(--g)) 0; background: var(--accent); }
+/* 開場那一屏還沒按過的時候，圓鈕隔一陣子自己往右推一下，看得出來撥得動 */
+.to-root:not(.is-folded) .to-play[data-state="idle"]:not(:hover) .to-play-knob { animation: to-play-nudge 7s ease-in-out infinite; }
+@keyframes to-play-nudge { 0%, 90%, 97%, 100% { translate: 0 0; } 93%, 94% { translate: 5px 0; } }
 
 /* 名字、一句話和個人資料 */
 .to-id { grid-area: id; align-self: start; }
@@ -1683,8 +1716,8 @@ details.note > summary + * { margin-top: 8px; }
     grid-template-areas: "status" "id" "frame" "readout" "term";
   }
   .to-stage > .to-frame { margin-top: 0; }
-  /* 收完之後名字底下是個人資料，自動播放鍵改放到狀態列右邊 */
-  .to-root.is-live.is-folded .to-stage > .to-play { top: var(--to-y); }
+  /* 收完之後名字底下是個人資料，自動播放開關改放到狀態列右邊 */
+  .to-root.is-live.is-folded .to-stage > .to-play { top: calc(var(--to-y) + 16px); }
   /* 晶片底下的數據和終端機 tapeout 之後就退場了，提示放進那塊空出來的地方 */
   .to-root.is-live > .to-more { transform: translate(-50%, 56px); }
   .to-skip, .to-layers, .to-id-k, .to-id-tag, .to-id-hl, .to-id-links, .to-id-spec > div:nth-child(n + 3) { display: none; }
@@ -1744,6 +1777,11 @@ details.note > summary + * { margin-top: 8px; }
   .spec-strip > div:nth-child(n + 3) { border-top: 1px solid var(--line); }
 }
 
+/* 最窄的手機上一句話第一行比較長，開關縮小一點才不會碰到 */
+@media (max-width: 360px) {
+  .to-root.is-live:not(.is-folded) .to-stage > .to-play { --t: 38px; --k: 12px; }
+}
+
 @media (max-width: 640px) {
   :root { --header-h: 56px; }
   body { font-size: 15.5px; }
@@ -1751,6 +1789,12 @@ details.note > summary + * { margin-top: 8px; }
   .nav-pin, .tt-label { display: none; }
   .site-nav { gap: 14px; }
   .site-nav a { font-size: 12px; letter-spacing: 0.02em; }
+  /* 一句話右邊放不下整行訊號，開關底下留一行提示就好 */
+  .to-root.is-live:not(.is-folded) .to-stage > .to-play { flex-direction: column-reverse; align-items: flex-end; gap: 5px; }
+  .to-root:not(.is-folded) .to-play-sig { display: none; }
+  .to-play-hint::before { content: "Tap · 24 s"; }
+  .to-play[data-state="run"] .to-play-hint::before { content: "Tap to pause"; }
+  .to-root.is-live.is-folded .to-stage > .to-play { gap: 8px; padding: 8px 10px; } /* 320px 也要跟狀態列排得下 */
   .hero-name { flex-direction: column; gap: 14px; }
   .hero-zh { writing-mode: horizontal-tb; border-left: 0; padding: 0; letter-spacing: 0.25em; }
   .wave-bar .wave-spec { display: none; }
