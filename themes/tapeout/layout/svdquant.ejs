@@ -1,0 +1,172 @@
+<%
+  // SVDQuant 論文的捲動解說（js/svdquant.js）。說明文字寫在這裡，沒有 JS 時依序排好；
+  // 畫面上的小例子是頁面載入時現算的（固定種子的 64×64 linear）。
+%>
+<div class="sq" data-sq>
+  <header class="sq-hero wrap">
+    <p class="kicker">§ Explainer — Paper · arXiv 2411.05007</p>
+    <h1 class="sq-title">SVDQuant：讓<em>低秩分支</em>吸收 outlier，把 diffusion model 壓到 4 bit</h1>
+    <p class="sq-lede">W4A4 是權重和 activation 都只剩 4 bit。到這個程度，LLM 常用的 smoothing 不夠用：它只是把 outlier 從 activation 搬到權重，搬過去的那一邊照樣難量化。SVDQuant 先把 outlier 盡量推給權重，再用 SVD 切出一條 16-bit 的低秩分支把它們吸走，剩下的殘差才量化成 4 bit。往下捲，從一層 linear 的 64 個值開始，一路看到 kernel fusion 和 FLUX.1 的結果。</p>
+    <dl class="sq-meta">
+      <div><dt>作者</dt><dd>Li*, Lin*, Zhang*, …, Han</dd></div>
+      <div><dt>單位</dt><dd>MIT HAN Lab 等</dd></div>
+      <div><dt>會議</dt><dd>ICLR 2025 · Spotlight</dd></div>
+      <div><dt>論文</dt><dd><a href="https://arxiv.org/abs/2411.05007" target="_blank" rel="noopener">arXiv 2411.05007</a></dd></div>
+    </dl>
+    <p class="sq-hint">往下捲，或按 Auto-play ↓</p>
+  </header>
+
+  <section class="sq-track">
+    <div class="sq-stage">
+      <svg class="sq-world" data-world role="img" aria-label="SVDQuant 的動畫解說：activation 與權重的 outlier、INT4 量化、smoothing、SVD 拆出低秩分支、誤差比較、Nunchaku 的 kernel fusion、LoRA 與實驗結果"></svg>
+      <aside class="sq-panel">
+        <div class="sq-top">
+          <p class="sq-status"><i></i><span data-status>Overview</span></p>
+          <button type="button" class="sq-play" data-play aria-label="自動播放"><span class="sq-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+        </div>
+        <ol class="sq-stops">
+          <li><button type="button" data-stop="outlier"><span>01</span>Outlier<i></i></button></li>
+          <li><button type="button" data-stop="smooth"><span>02</span>Smooth<i></i></button></li>
+          <li><button type="button" data-stop="svd"><span>03</span>SVD<i></i></button></li>
+          <li><button type="button" data-stop="branch"><span>04</span>Branch<i></i></button></li>
+          <li><button type="button" data-stop="compare"><span>05</span>Compare<i></i></button></li>
+          <li><button type="button" data-stop="engine"><span>06</span>Nunchaku<i></i></button></li>
+          <li><button type="button" data-stop="lora"><span>07</span>LoRA<i></i></button></li>
+          <li><button type="button" data-stop="results"><span>08</span>Results<i></i></button></li>
+        </ol>
+        <!-- 說明文字寫在 HTML 裡：沒有 JS 時就是依序排好的內容 -->
+        <div class="sq-caps">
+          <article class="sq-cap is-on" data-cap="intro">
+            <p class="kicker">Overview</p>
+            <h2>兩邊都有 outlier</h2>
+            <p>一層 linear 是 <code>O = X·W</code>。X 的每一列是一個 token，每一行是一個 channel；W 的第 j 列對應 X 的第 j 個 channel。</p>
+            <p class="hl"><b>W4A4</b>X 和 W 都要壓成 4 bit。X 有幾條特別亮的直線（outlier channel），W 也有幾列特別大，兩邊都不好量化。</p>
+            <p class="nt">畫面上是一個合成的 64×64 例子，頁面載入時用固定種子產生、現場計算。數字屬於這個例子，不是論文的。</p>
+          </article>
+          <article class="sq-cap" data-cap="outlier">
+            <p class="kicker">Stop 01 — Outlier</p>
+            <h2>一組只有一個 scale</h2>
+            <p>INT4 每 64 個值共用一個 scale = max|x| / 7，每個值只能是 −8 到 7 倍的 scale。</p>
+            <p class="hl"><b>X 這邊</b>最大的 outlier 是 62.6，scale 變成 8.95，絕對值不到 4.5 的值全部變成 0：64 個裡剩 4 個不是 0。</p>
+            <p class="xs"><b>W 這邊</b>w17 那一列的一個權重把 scale 撐到 0.157，大約一半的權重變成 0。</p>
+          </article>
+          <article class="sq-cap" data-cap="smooth">
+            <p class="kicker">Stop 02 — Smoothing</p>
+            <h2>把難度從 X 搬到 W</h2>
+            <p>SmoothQuant：每個 channel 乘一個 λⱼ，<code>X̂ = X·diag(λ)⁻¹</code>、<code>Ŵ = diag(λ)·W</code>，乘起來不變。λⱼ = max|Xⱼ|^α / max|Wⱼ|^(1−α)。</p>
+            <p>α = 0.5 時每個 channel 兩邊的 max 剛好一樣大，上下兩排長條會變成鏡像。</p>
+            <p class="hl"><b>代價</b>X̂ 好量化多了（Q(X̂) 裡的 0 從 92% 降到 49%），但 Ŵ 變難（Q(Ŵ) 的 0 從 25% 升到 34%）。outlier 沒有消失，只是搬家。</p>
+          </article>
+          <article class="sq-cap" data-cap="svd">
+            <p class="kicker">Stop 03 — SVD</p>
+            <h2>搬到權重的 outlier，用低秩吸走</h2>
+            <p>outlier 集中在少數幾個 channel，Ŵ 的奇異值就只有前幾個特別大。用 SVD 把前 r 個切出來：<code>Ŵ = L₁L₂ + R</code>，L₁ = U_r·Σ_r、L₂ = V_rᵀ。</p>
+            <p class="hl"><b>殘差 R</b>前 3 個奇異值（13.4、12.6、9.6）拿走之後，max|R| 只剩 max|Ŵ| 的三成，熱圖上幾乎看不到亮點。只有 R 要量化成 4 bit。</p>
+            <p class="xs">論文用 rank 32；這個例子只有 3 個 outlier channel，r = 3 就夠了。</p>
+          </article>
+          <article class="sq-cap" data-cap="branch">
+            <p class="kicker">Stop 04 — Two branches</p>
+            <h2>16-bit 低秩 + 4-bit 殘差</h2>
+            <p><code>X·W ≈ X̂·L₁L₂ + Q(X̂)·Q(R)</code>。上面是 4-bit GEMM，下面是 16-bit 的低秩分支，先降到 r 維再升回來，最後相加。</p>
+            <p class="xs"><b>為什麼要讓 R 小</b>把誤差拆開：<code>X̂R − Q(X̂)Q(R) = X̂(R − Q(R)) + (X̂ − Q(X̂))Q(R)</code>，上限跟 ‖R − Q(R)‖、‖Q(R)‖ 成正比。R 越小、越平，兩項都越小。</p>
+            <p class="hl"><b>SVD 剛好是最佳解</b>Eckart–Young：在所有 rank r 的矩陣裡，截斷 SVD 讓 ‖R‖ 最小。r = 32、d = 3072 時，低秩分支只多 2.1% 的乘加。</p>
+          </article>
+          <article class="sq-cap" data-cap="compare">
+            <p class="kicker">Stop 05 — Compare</p>
+            <h2>兩件事要一起做</h2>
+            <p>只做低秩、不 smooth：X 的 outlier 還在，誤差只從 0.254 降到 0.141。只 smooth：0.083。兩個一起做（SVDQuant）：0.056。</p>
+            <p class="hl"><b>α 可以推得更高</b>右邊把 α 從 0 掃到 1。只 smooth 時，α 太大權重會壞，最好的 α 停在中間；有低秩分支接住權重那邊的 outlier，最好的 α 往右移，誤差也更低。</p>
+            <p class="nt">deepcompressor 的設定是對每一層 grid search α；這裡為了畫面固定用 α = 0.5，右邊另外掃。</p>
+          </article>
+          <article class="sq-cap" data-cap="engine">
+            <p class="kicker">Stop 06 — Nunchaku</p>
+            <h2>低秩分支不能自己跑</h2>
+            <p>低秩分支的計算很少，但它要讀一次 16-bit 的 X̂（Down Proj），還要讀寫一次 16-bit 的輸出（Up Proj）。論文量到：rank 32 直接跑，延遲多 57%。</p>
+            <p class="hl"><b>Fusion</b>Down Proj 跟 Quantize 讀同一份 X̂，合成一個 kernel；Up Proj 跟 4-bit GEMM 寫同一份輸出，也合成一個。多出來的讀寫幾乎都消失了。</p>
+            <p class="nt">右邊的讀寫量是用 4096 token、3072 → 3072、rank 32 推算的，不含 scale，不是量測值。</p>
+          </article>
+          <article class="sq-cap" data-cap="lora">
+            <p class="kicker">Stop 07 — LoRA</p>
+            <h2>LoRA 直接插上去</h2>
+            <p>LoRA 本身就是一個低秩的 A·B。把 A 接在 L₁ 旁邊、B 接在 L₂ 下面，<code>[L₁ A]·[L₂; B] = L₁L₂ + A·B</code>，低秩分支只是變寬一點。</p>
+            <p class="hl"><b>不用重新量化</b>4-bit 的殘差 Q(R) 完全不動，換 LoRA 只要換 16-bit 的那一小塊。</p>
+          </article>
+          <article class="sq-cap" data-cap="results">
+            <p class="kicker">Stop 08 — Results</p>
+            <h2>FLUX.1：小 3.6 倍，快 3 倍</h2>
+            <p>LPIPS 越低，跟 BF16 產生的圖越像。FLUX.1-dev 上，INT4 直接量化是 0.322，加上 SVDQuant 降到 0.256，再加 GPTQ 是 0.223；NVFP4 從 0.242 降到 0.203。</p>
+            <p class="hl"><b>Nunchaku</b>12B 的 FLUX.1 模型縮小 3.6 倍；在 4090 上比 NF4 W4A16 快 3.0 倍。laptop 4090 只有 16 GB，BF16 要 CPU offload，換成 4-bit 之後快 10.1 倍。</p>
+          </article>
+        </div>
+        <dl class="sq-facts" data-facts></dl>
+      </aside>
+      <p class="sq-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+    </div>
+  </section>
+
+  <section class="sq-outro wrap">
+    <p class="kicker">§ Summary</p>
+    <h2>三件事</h2>
+    <ol class="sq-take">
+      <li><b>Smoothing 只是搬家。</b>W4A4 時兩邊都只有 4 bit，outlier 推到哪一邊，哪一邊就壞。要有地方把 outlier 真的接走。</li>
+      <li><b>低秩分支就是那個地方。</b>outlier 集中在少數 channel，所以 Ŵ 的能量集中在前幾個奇異值。用 16-bit 存前 32 個，剩下的殘差又小又平，4 bit 就夠了；SVD 在 rank 固定時是最佳切法。</li>
+      <li><b>演算法跟 kernel 要一起設計。</b>低秩分支計算量只有 2%，但直接跑多 57% 延遲，因為瓶頸是讀寫 16-bit 的 activation。Nunchaku 把它跟主幹 fuse 在一起，順便讓 LoRA 可以直接插上去。</li>
+    </ol>
+
+    <div class="table-wrap">
+      <table class="sq-table">
+        <caption>MJHQ-30K · 5,000 張 · 數字取自 deepcompressor 的 README（IR = ImageReward）</caption>
+        <thead><tr><th>Model</th><th>Precision</th><th>Method</th><th>FID ↓</th><th>IR ↑</th><th>LPIPS ↓</th><th>PSNR ↑</th></tr></thead>
+        <tbody>
+          <tr><td>FLUX.1-dev · 50 步</td><td class="m">BF16</td><td class="m">—</td><td>20.3</td><td>0.953</td><td>—</td><td>—</td></tr>
+          <tr><td></td><td>W4A16</td><td>NF4</td><td>20.6</td><td>0.910</td><td>0.272</td><td>19.5</td></tr>
+          <tr><td></td><td>INT W4A4</td><td class="m">—</td><td>20.2</td><td>0.908</td><td>0.322</td><td>18.5</td></tr>
+          <tr><td></td><td>INT W4A4</td><td>SVDQ</td><td>20.1</td><td>0.926</td><td>0.256</td><td>20.1</td></tr>
+          <tr class="is-us"><td></td><td>INT W4A4</td><td>SVDQ + GPTQ</td><td>19.9</td><td>0.935</td><td>0.223</td><td>21.0</td></tr>
+          <tr><td></td><td>NVFP4</td><td class="m">—</td><td>20.3</td><td>0.926</td><td>0.242</td><td>20.4</td></tr>
+          <tr><td></td><td>NVFP4</td><td>SVDQ</td><td>20.3</td><td>0.944</td><td>0.224</td><td>20.8</td></tr>
+          <tr class="is-us"><td></td><td>NVFP4</td><td>SVDQ + GPTQ</td><td>20.3</td><td>0.945</td><td>0.203</td><td>21.5</td></tr>
+          <tr><td>FLUX.1-schnell · 4 步</td><td class="m">BF16</td><td class="m">—</td><td>19.2</td><td>0.938</td><td>—</td><td>—</td></tr>
+          <tr><td></td><td>W4A16</td><td>NF4</td><td>18.9</td><td>0.943</td><td>0.257</td><td>18.2</td></tr>
+          <tr><td></td><td>INT W4A4</td><td class="m">—</td><td>18.1</td><td>0.962</td><td>0.345</td><td>16.3</td></tr>
+          <tr class="is-us"><td></td><td>INT W4A4</td><td>SVDQ + GPTQ</td><td>18.3</td><td>0.951</td><td>0.257</td><td>18.3</td></tr>
+          <tr><td></td><td>NVFP4</td><td class="m">—</td><td>17.6</td><td>0.956</td><td>0.277</td><td>17.6</td></tr>
+          <tr class="is-us"><td></td><td>NVFP4</td><td>SVDQ + GPTQ</td><td>18.9</td><td>0.966</td><td>0.228</td><td>19.0</td></tr>
+          <tr><td>SANA-1.6B · 20 步</td><td class="m">BF16</td><td class="m">—</td><td>20.6</td><td>0.952</td><td>—</td><td>—</td></tr>
+          <tr><td></td><td>INT W4A4</td><td class="m">—</td><td>20.5</td><td>0.894</td><td>0.339</td><td>15.3</td></tr>
+          <tr class="is-us"><td></td><td>INT W4A4</td><td>SVDQ + GPTQ</td><td>19.3</td><td>0.935</td><td>0.220</td><td>17.8</td></tr>
+          <tr><td></td><td>NVFP4</td><td class="m">—</td><td>19.7</td><td>0.929</td><td>0.236</td><td>17.4</td></tr>
+          <tr class="is-us"><td></td><td>NVFP4</td><td>SVDQ + GPTQ</td><td>20.2</td><td>0.941</td><td>0.176</td><td>19.0</td></tr>
+          <tr><td>PixArt-Σ · 20 步</td><td class="m">FP16</td><td class="m">—</td><td>16.6</td><td>0.944</td><td>—</td><td>—</td></tr>
+          <tr><td></td><td>INT W4A8</td><td>ViDiT-Q</td><td>37.3</td><td>0.573</td><td>0.611</td><td>12.0</td></tr>
+          <tr class="is-us"><td></td><td>INT W4A4</td><td>SVDQ + GPTQ</td><td>19.2</td><td>0.878</td><td>0.323</td><td>17.6</td></tr>
+          <tr><td></td><td>NVFP4</td><td class="m">—</td><td>31.8</td><td>0.660</td><td>0.517</td><td>14.8</td></tr>
+          <tr class="is-us"><td></td><td>NVFP4</td><td>SVDQ + GPTQ</td><td>16.6</td><td>0.940</td><td>0.271</td><td>18.5</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sq-cols">
+      <div>
+        <h3>設定（deepcompressor 的 config）</h3>
+        <ul>
+          <li>INT4：權重和 activation 都是每 64 個值一組；NVFP4：FP4 E2M1，每 16 個值一組，scale 是 FP8 E4M3。</li>
+          <li>Smoothing 的 α 從 0.5 開始，對每一層用輸出誤差做 grid search；低秩分支 rank 32。</li>
+          <li>embedding、resblock、norm、proj_in / proj_out 這些層不做 smoothing 和低秩。</li>
+          <li>Calibration：從 COCO Captions 隨機抽 128 個 prompt 產生 activation。</li>
+          <li>另一頁圖解的 <a href="/lab/kroquant/">KroQuant</a> 在實驗裡拿「Smooth + SVDQuant」當 baseline，把前端的 smoothing 換成學出來的 32×32 轉換。</li>
+        </ul>
+      </div>
+      <div>
+        <h3>資料來源與數字怎麼算的</h3>
+        <ul>
+          <li>方法、57% 的延遲、kernel fusion 的方式、3.6× / 3.5× / 3.0× / 10.1× / 3.1× 取自官方實作 <a href="https://github.com/mit-han-lab/nunchaku" target="_blank" rel="noopener">Nunchaku</a> 和 <a href="https://github.com/mit-han-lab/deepcompressor" target="_blank" rel="noopener">deepcompressor</a> 的 README；上面的表也是。論文本文見 <a href="https://arxiv.org/abs/2411.05007" target="_blank" rel="noopener">Li et al., SVDQuant (arXiv 2411.05007)</a>。</li>
+          <li>Stop 01–05 是合成資料（固定種子，64 個 token × 64 個 channel，3 個 activation outlier channel、2 列權重 outlier），用對稱 INT4、每 64 個值一組（scale = max/7）、α = 0.5、r = 3，在頁面上現算。</li>
+          <li>Stop 04 的誤差拆解是三角不等式，Eckart–Young 是線性代數的標準結果；「多 2.1% 的乘加」是 r(d + n) / (dn)，d = n = 3072、r = 32 推算。</li>
+          <li>Stop 06 的讀寫量是推算：16-bit 的 X̂ 和輸出都是 4096 × 3072 × 2 bytes，4-bit 的 Q(X̂) 是它的四分之一，Q(R) 是 3072 × 3072 × 0.5 bytes，L₁、L₂ 是 3072 × 32 × 2 bytes；各自跑時 Up Proj 要讀寫一次輸出。不含 scale 和 cache 效應。</li>
+          <li>Stop 07 的 LoRA rank 16 是示意。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
