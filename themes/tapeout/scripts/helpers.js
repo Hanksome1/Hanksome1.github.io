@@ -101,6 +101,21 @@ hexo.extend.helper.register('note_course', function (post) {
   return course ? Object.assign({}, course, { isHub: trimSlash(course.hub) === trimSlash(post.path) }) : null;
 });
 
+// 課程的動畫導覽（notes.courses 的 tour 指到 source/lab/ 的頁面，頁面 front-matter 的 tour.stops 是站點）。
+// 回傳導覽頁的網址、站點，以及這篇筆記在哪一站（hot）；沒有設定 tour 就回傳 null
+hexo.extend.helper.register('course_tour', function (course, post) {
+  if (!course || !course.tour) return null;
+  const page = this.site.pages.toArray().find(p => trimSlash(p.path).replace(/\/?index\.html$/, '') === trimSlash(course.tour));
+  if (!page || !page.tour || !page.tour.stops) {
+    hexo.log.warn(`[notes] 課程 ${course.tag} 的 tour ${course.tour} 找不到頁面，或頁面沒有 tour.stops`);
+    return null;
+  }
+  const slug = post ? trimSlash(post.path).split('/').pop() : '';
+  const stops = page.tour.stops;
+  const hot = slug ? stops.find(s => (s.notes || []).includes(slug)) || null : null;
+  return { url: course.tour, title: page.title, tagline: page.tour.tagline, stops, hot };
+});
+
 // ── Floorplan ────────────────────────────────────────────────
 // 以標題當種子，產生一張確定性的晶片佈局圖（沒有封面圖的專案會用它當插圖）
 

@@ -1,0 +1,17 @@
+<%
+  // 課程動畫導覽的入口：筆記標頭（variant 空白）和 /notes/ 的課程卡片（variant: 'card'）共用。
+  // tour 來自 course_tour()；這篇筆記屬於某一站時，連結直接跳到那一站，小地圖上那一站會亮。
+  var stops = tour.stops, k = tour.hot ? stops.indexOf(tour.hot) : -1;
+  var fill = k > 0 ? (k / (stops.length - 1) * 100).toFixed(1) : 0;
+%>
+<a class="tour-banner<%= variant ? ' tour-banner--' + variant : '' %>" href="<%- url_for(tour.url) %><%= tour.hot ? '#' + tour.hot.id : '' %>">
+  <span class="tour-copy">
+    <span class="tour-kicker"><span class="tour-play" aria-hidden="true"></span>動畫導覽 · <%= course.tag %></span>
+    <span class="tour-title"><% if (tour.hot) { %>這篇是 design flow 的第 <%= tour.hot.n %> 站：<%= tour.hot.label %><% } else if (variant === 'card') { %>用一條 design flow 走完這門課<% } else { %>整門課的筆記，畫成一條 design flow<% } %></span>
+    <% if (tour.tagline && variant !== 'card') { %><span class="tour-sub"><%= tour.tagline %></span><% } %>
+  </span>
+  <span class="tour-strip" style="--fill: <%= fill %>%" aria-hidden="true">
+    <% stops.forEach(function (s, i) { %><span class="tour-st<%= i < k ? ' is-past' : i === k ? ' is-hot' : '' %>"><i></i><b><%= s.label %></b></span><% }) %>
+  </span>
+  <span class="tour-go"><%= tour.hot ? '看這一站' : '開始看' %> →</span>
+</a>

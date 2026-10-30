@@ -46,7 +46,9 @@
       return '<li><a href="' + n.href + '" title="' + attr(n.title) + '"><span class="k">' + n.kind + '</span><span class="s">' + attr(n.short) + '</span><span class="l">' + attr(n.title) + '</span></a></li>';
     }).join('') + '</ul>';
   }
-  var cfg = JSON.stringify({ notes: notes, count: count }).replace(/</g, '\\u003c');
+  // 開場地圖的每一格：站點來自 front-matter 的 tour.stops
+  var stops = ((page.tour || {}).stops || []).map(function (st) { return { id: st.id, n: st.n, label: st.label, weeks: st.weeks, sub: st.sub, count: (st.notes || []).length }; });
+  var cfg = JSON.stringify({ notes: notes, count: count, stops: stops }).replace(/</g, '\\u003c');
 %>
 <div class="ic" data-ic>
   <header class="ic-hero wrap">
@@ -89,9 +91,9 @@
         <div class="ic-caps">
           <article class="ic-cap is-on" data-cap="intro">
             <p class="kicker">Overview</p>
-            <h2>一條 flow 走完一學期</h2>
-            <p>上面那條線是一顆數位晶片從規格到封裝的流程。ICLAB 負責中間那一段：從 logic design 做到 physical design，每一週往右推一站。</p>
-            <p class="hl"><b>怎麼看</b>往下捲，同一個小電路會一站一站換成新的樣子。畫面上標著 NOTE 的卡片可以點，會連到那一站的筆記。</p>
+            <h2>一張地圖，八站</h2>
+            <p>ICLAB 整學期就是一條 cell-based design flow：寫 Verilog、驗證、合成，一路做到 APR 的 layout。每一格是一站，標著第幾週教、有幾篇筆記。</p>
+            <p class="hl"><b>怎麼看</b>點任一格直接跳到那一站，或往下捲從 01 開始走。走到每一站時，畫面上標 NOTE 的卡片可以點，會連到那篇筆記。</p>
             <%- links(['intro', 'hub']) %>
           </article>
           <article class="ic-cap" data-cap="rtl">

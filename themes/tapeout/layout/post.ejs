@@ -10,7 +10,6 @@
         <a href="<%- url_for('/notes/') %>">§ Note</a>
         <% if (course) { %>
           <span>/</span><% if (course.isHub) { %><span><%= course.tag %></span><% } else { %><a href="<%- url_for(course.hub) %>" title="<%= course.name || course.tag %>"><%= course.tag %></a><% } %>
-          <% if (course.tour) { %><span>·</span><a href="<%- url_for(course.tour) %>">▶ 動畫導覽</a><% } %>
         <% } %>
         <span>·</span>tended <time datetime="<%= date_xml(page.updated) %>"><%= date(page.updated, 'YYYY.MM.DD') %></time>
       <% } else { %>
@@ -21,6 +20,7 @@
     </p>
     <h1 class="article-title"><%= page.title %></h1>
     <% if (page.summary) { %><p class="article-lede"><%= page.summary %></p><% } %>
+    <% var tour = course ? course_tour(course, page) : null; if (tour) { %><%- partial('_partial/course-tour', { tour: tour, course: course, variant: '' }) %><% } %>
     <% if (isNote && page.aliases) { %>
       <p class="note-aliases"><span class="label">aka</span><% [].concat(page.aliases).forEach(function (a) { %><span><%= a %></span><% }) %></p>
     <% } %>

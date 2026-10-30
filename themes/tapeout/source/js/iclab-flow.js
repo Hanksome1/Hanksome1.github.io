@@ -80,7 +80,6 @@
     el('path', { d: 'M' + END_X + ' ' + LINE_Y + ' H11700', class: 'flow-d' }, g);
     W.flowH = el('path', { d: 'M0 ' + LINE_Y + ' H0', class: 'flow-h' }, g);
     // 場景的虛線框：拉遠時看得出每一站佔哪一塊
-    Object.keys(OX).forEach(function (k) { el('rect', { x: OX[k], y: 0, width: 1200, height: k === 'synth' ? 800 : 760, class: 'frame-d' }, g); });
 
     // 拉遠才看得到的大字、大點
     var far = G(g);
@@ -113,7 +112,14 @@
     W.tok = el('circle', { cx: 0, cy: LINE_Y, r: 7, class: 'tok' }, g);
     W.tokFar = el('circle', { cx: 0, cy: LINE_Y, r: 60, class: 'tok', opacity: 0 }, far);
   })();
-  function scene(k) { return G(world, { transform: 'translate(' + OX[k] + ' 0)' }); }
+  // 每一站的場景：開場時藏起來，推近第一站時才出現（拉遠時半成品的縮圖不好看）
+  W.scenes = [];
+  function scene(k) {
+    var g = G(world, { transform: 'translate(' + OX[k] + ' 0)' });
+    el('rect', { x: 0, y: 0, width: 1200, height: k === 'synth' ? 800 : 760, class: 'frame-d' }, g);
+    W.scenes.push(g);
+    return g;
+  }
 
   // ================= 01 RTL：11 行 code 與它描述的電路 =================
   var CW = 10.2; // IBM Plex Mono 17px 的字寬（0.6 em）
@@ -677,8 +683,108 @@
     PJ.span = wire(g, 'M0 960 V900 H' + END_X + ' V960', 'brace');
   })();
 
+  // 每一格的小圖：畫在 (x, y, w, h) 的框裡，用 tile 的座標
+  var ICON = {};
+  function bar(g, x, y, w, hot) { return el('rect', { x: x, y: y, width: w, height: 26, rx: 13, class: hot ? 'ico-fh' : 'ico-f' }, g); }
+  ICON.rtl = function (g, x, y) {
+    [[0, 520], [70, 380], [140, 600, 1], [70, 300], [0, 200]].forEach(function (b, i) { bar(g, x + b[0], y + 6 + i * 46, b[1], b[2]); });
+  };
+  ICON.fsm = function (g, x, y, w) {
+    var c = [[x + 110, y + 115], [x + w / 2, y + 115], [x + w - 110, y + 115]];
+    el('path', { d: 'M' + (c[0][0] + 80) + ' ' + (c[0][1] - 30) + ' Q' + ((c[0][0] + c[1][0]) / 2) + ' ' + (y - 10) + ' ' + (c[1][0] - 80) + ' ' + (c[1][1] - 30), class: 'ico' }, g);
+    el('path', { d: 'M' + (c[1][0] + 80) + ' ' + (c[1][1] - 30) + ' Q' + ((c[1][0] + c[2][0]) / 2) + ' ' + (y - 10) + ' ' + (c[2][0] - 80) + ' ' + (c[2][1] - 30), class: 'ico' }, g);
+    el('path', { d: 'M' + (c[2][0] - 70) + ' ' + (c[2][1] + 50) + ' Q' + (x + w / 2) + ' ' + (y + 290) + ' ' + (c[0][0] + 70) + ' ' + (c[0][1] + 50), class: 'ico' }, g);
+    c.forEach(function (p, i) { el('circle', { cx: p[0], cy: p[1], r: 80, class: i === 1 ? 'ico-h' : 'ico-o' }, g); });
+  };
+  ICON.lint = function (g, x, y) {
+    [[0, 460], [70, 340], [70, 520, 1], [0, 260]].forEach(function (b, i) { bar(g, x + b[0], y + 20 + i * 52, b[1], b[2]); });
+    el('rect', { x: x - 10, y: y + 112, width: 620, height: 48, class: 'ico-scan' }, g);
+    el('path', { d: 'M' + (x + 760) + ' ' + (y + 30) + ' L' + (x + 880) + ' ' + (y + 230) + ' L' + (x + 640) + ' ' + (y + 230) + ' Z', class: 'ico-h' }, g);
+    T(g, x + 760, y + 210, '!', 't-mi mid');
+  };
+  ICON.sim = function (g, x, y, w) {
+    var d = 'M' + x + ' ' + (y + 90), p = w / 8;
+    for (var i = 0; i < 8; i++) d += ' V' + (y + 20) + ' H' + r1(x + i * p + p / 2) + ' V' + (y + 90) + ' H' + r1(x + (i + 1) * p);
+    el('path', { d: d, class: 'ico' }, g);
+    var b = '';
+    for (i = 0; i < 4; i++) { var a0 = x + i * p * 2 + 4, a1 = a0 + p * 2 - 8; b += 'M' + a0 + ' ' + (y + 175) + ' L' + (a0 + 18) + ' ' + (y + 140) + ' H' + (a1 - 18) + ' L' + a1 + ' ' + (y + 175) + ' L' + (a1 - 18) + ' ' + (y + 210) + ' H' + (a0 + 18) + ' Z '; }
+    el('path', { d: b, class: 'ico-h' }, g);
+  };
+  ICON.synth = function (g, x, y) {
+    [0, 1, 2].forEach(function (i) { bar(g, x, y + 50 + i * 52, [240, 180, 280][i]); });
+    el('path', { d: 'M' + (x + 330) + ' ' + (y + 115) + ' H' + (x + 430), class: 'ico', 'marker-end': 'url(#ic-arr)' }, g);
+    [[480, 20], [480, 130], [700, 75]].forEach(function (q, i) {
+      var gx = x + q[0], gy = y + q[1];
+      el('path', { d: 'M' + gx + ' ' + gy + ' H' + (gx + 70) + ' A50 50 0 0 1 ' + (gx + 70) + ' ' + (gy + 100) + ' H' + gx + ' Z', class: i === 2 ? 'ico-h' : 'ico-o' }, g);
+    });
+    el('path', { d: 'M' + (x + 600) + ' ' + (y + 70) + ' H' + (x + 650) + ' V' + (y + 110) + ' H' + (x + 700) + ' M' + (x + 600) + ' ' + (y + 180) + ' H' + (x + 650) + ' V' + (y + 140) + ' H' + (x + 700), class: 'ico' }, g);
+  };
+  ICON.lec = function (g, x, y, w) {
+    for (var i = 0; i < 4; i++) {
+      var yy = y + 10 + i * 56;
+      el('rect', { x: x + 120, y: yy, width: 160, height: 40, rx: 6, class: 'ico-o' }, g);
+      el('rect', { x: x + w - 280, y: yy, width: 160, height: 40, rx: 6, class: 'ico-o' }, g);
+      el('path', { d: 'M' + (x + 280) + ' ' + (yy + 20) + ' H' + (x + w - 280), class: 'ico-l' }, g);
+      T(g, x + w / 2, yy + 34, '✓', 't-mc mid');
+    }
+  };
+  ICON.floorplan = function (g, x, y, w) {
+    var s = 230, x0 = x + w / 2 - s / 2;
+    el('rect', { x: x0, y: y, width: s, height: s, class: 'ico-o' }, g);
+    el('rect', { x: x0 + 22, y: y + 22, width: s - 44, height: s - 44, class: 'ico-ring' }, g);
+    for (var r = 0; r < 6; r++) for (var c = 0; c < 5; c++) if ((r * 7 + c * 3) % 4) el('rect', { x: x0 + 44 + c * 30, y: y + 44 + r * 25, width: 24, height: 18, class: (r + c) % 5 ? 'ico-f' : 'ico-fh' }, g);
+    el('path', { d: 'M' + (x0 - 220) + ' ' + (y + s / 2) + ' H' + (x0 - 30), class: 'ico', 'marker-end': 'url(#ic-arr)' }, g);
+    T(g, x0 - 125, y + s / 2 - 24, 'netlist', 't-mf mid');
+    el('path', { d: 'M' + (x0 + s + 30) + ' ' + (y + s / 2) + ' H' + (x0 + s + 220), class: 'ico', 'marker-end': 'url(#ic-arr)' }, g);
+    T(g, x0 + s + 125, y + s / 2 - 24, 'GDSII', 't-mf mid');
+  };
+  ICON.projects = function (g, x, y, w) {
+    for (var i = 0; i < 6; i++) el('rect', { x: x + i * 100, y: y + 30 + (i % 2) * 20, width: 80, height: 150, rx: 8, class: 'ico-o' }, g);
+    el('rect', { x: x + 640, y: y + 10, width: w - 640, height: 210, rx: 10, class: 'ico-h' }, g);
+    T(g, x + 640 + (w - 640) / 2, y + 132, '3DGS', 't-mi mid');
+  };
+
+  // ================= 開場地圖：八站排成兩列的蛇形，每一格可以點，直接跳到那一站 =================
+  // 放在流程線上方很遠的地方（y ≈ −6000），開場鏡頭停在這裡，往下捲再拉到流程線
+  var MAP = { cx: 4950, cy: -6000, w: 6400 };
+  (function () {
+    var MX = MAP.cx - 2640, MY = MAP.cy - 1380, TW = 1100, TH = 900, GAP = 266;
+    var g = G(world, { transform: 'translate(' + MX + ' ' + MY + ')' });
+    W.map = g;
+    T(g, 0, 110, 'DESIGN FLOW MAP · ICLAB EE4292', 't-mk');
+    T(g, 0, 330, cfg.count + ' 篇筆記，排成一條 flow', 't-mh');
+    T(g, 5198, 330, '點一格跳過去 · 往下捲從 01 開始', 't-mw end');
+    var Y1 = 560, Y2 = 1860, M1 = Y1 + TH / 2, M2 = Y2 + TH / 2;
+    var d = 'M-300 ' + M1 + ' H5400 C5720 ' + M1 + ' 5720 ' + M2 + ' 5400 ' + M2 + ' H-300';
+    el('path', { d: d, class: 'map-path' }, g);
+    var tok = el('circle', { r: 24, class: 'tok' }, g);
+    if (!reduceMotion) el('animateMotion', { dur: '14s', repeatCount: 'indefinite', path: d }, tok);
+    else tok.setAttribute('opacity', 0);
+    [[M1, 'Spec'], [M2, 'Fab']].forEach(function (q) {
+      el('circle', { cx: -300, cy: q[0], r: 30, class: 'dot is-ghost' }, g);
+      T(g, -300, q[0] - 70, q[1], 't-mw mid');
+    });
+    var stops = cfg.stops || [];
+    W.tiles = stops.map(function (s, i) {
+      var row = i < 4 ? 0 : 1, col = row ? 7 - i : i, x = col * (TW + GAP), y = row ? Y2 : Y1;
+      var a = el('a', { href: '#' + s.id, class: 'tile', 'data-jump': s.id }, g);
+      el('title', {}, a, s.n + ' ' + s.label + '：' + s.sub);
+      el('rect', { x: x, y: y, width: TW, height: TH, rx: 20, class: 'tile-box' }, a);
+      T(a, x + 70, y + 130, s.n, 't-mn');
+      T(a, x + TW - 70, y + 130, s.weeks, 't-mw end');
+      T(a, x + 70, y + 330, s.label, 't-mt');
+      T(a, x + 70, y + 430, s.sub, 't-ms');
+      ICON[s.id] && ICON[s.id](G(a), x + 70, y + 490, TW - 140, 230);
+      el('path', { d: 'M' + (x + 70) + ' ' + (y + 790) + ' H' + (x + TW - 70), class: 'tile-rule' }, a);
+      T(a, x + 70, y + 858, s.count + ' 篇筆記', 't-mf');
+      T(a, x + TW - 70, y + 858, '→', 't-mf t-ma end');
+      return a;
+    });
+  })();
+
+
   // ================= 段落與鏡頭 =================
-  var BEATS = [['intro', 1.0], ['rtl', 2.0], ['fsm', 1.6], ['lint', 1.3], ['sim', 1.8], ['synth', 2.2], ['lec', 1.6],
+  var BEATS = [['intro', 1.8], ['rtl', 2.0], ['fsm', 1.6], ['lint', 1.3], ['sim', 1.8], ['synth', 2.2], ['lec', 1.6],
     ['floorplan', 1.4], ['power', 1.4], ['place', 1.3], ['cts', 1.1], ['route', 1.2], ['signoff', 1.0], ['projects', 1.6]];
   var HOLD = 0.35, STOPS = BEATS.slice(1).map(function (b) { return b[0]; });
   var total = BEATS.reduce(function (s, b) { return s + b[1]; }, HOLD), spans = {}, acc = 0;
@@ -690,7 +796,7 @@
   var NEAR = 1340, APX = OX.apr + 600;
   function at(k) { return OX[k] + 600; }
   var SHOTS = [
-    ['intro', 0, 4950, -300, 15500], ['intro', 0.5, 4950, -300, 11400],
+    ['intro', 0, MAP.cx, MAP.cy, MAP.w], ['intro', 0.22, MAP.cx, MAP.cy, MAP.w], ['intro', 0.6, 4950, -300, 11400], ['intro', 0.78, 4950, -300, 11400],
     ['rtl', 0.2, at('rtl'), 345, NEAR], ['rtl', 1, at('rtl'), 345, NEAR],
     ['fsm', 0.15, at('fsm'), 345, NEAR], ['fsm', 1, at('fsm'), 345, NEAR],
     ['lint', 0.15, at('lint'), 330, NEAR], ['lint', 1, at('lint'), 330, NEAR],
@@ -738,7 +844,7 @@
   function renderFlow(beat, p) {
     var i = ORDER.indexOf(beat), t = localT(beat, p);
     var from = i > 0 ? STX[ORDER[i - 1]] : -1100, x = lerp(from, STX[beat], ease(seg(t, 0, 0.3)));
-    if (beat === 'intro') x = lerp(-1100, 0, ease(seg(t, 0.5, 1)));
+    if (beat === 'intro') x = lerp(-1100, 0, ease(seg(t, 0.62, 0.9)));
     set(W.tok, 'cx', r1(x)); set(W.tokHalo, 'cx', r1(x)); set(W.tokFar, 'cx', r1(x));
     set(W.flowH, 'd', 'M0 ' + LINE_Y + ' H' + r1(Math.max(0, Math.min(END_X, x))));
     W.dots.forEach(function (d) {
@@ -929,7 +1035,9 @@
   };
   // 跨段的東西：兩段的進度相乘，每一幀都算
   function cross(p) {
-    show(W.brace, ease(seg(localT('intro', p), 0.2, 0.55)) * (1 - ease(seg(localT('projects', p), 0, 0.2))));
+    show(W.brace, ease(seg(localT('intro', p), 0.55, 0.72)) * (1 - ease(seg(localT('projects', p), 0, 0.2))));
+    var sc = ease(seg(localT('intro', p), 0.84, 1));
+    W.scenes.forEach(function (g) { show(g, sc); });
     show(AP.dim, ease(seg(localT('floorplan', p), 0.3, 0.42)) * (1 - ease(seg(localT('power', p), 0, 0.1))));
   }
   // APR 的說明欄：現在這一步亮，走過的變灰
@@ -1003,12 +1111,15 @@
   // p = 0 時的 scrollY：track 頂端碰到舞台釘住的位置
   function trackTop() { return track.getBoundingClientRect().top + window.scrollY - stickyTop(); }
   function stickyTop() { return parseFloat(getComputedStyle(stage).top) || headerH(); }
-  stopBtns.forEach(function (b) {
-    b.addEventListener('click', function () {
-      var s = spans[b.getAttribute('data-stop')];
-      window.scrollTo({ top: trackTop() + (track.offsetHeight - stage.offsetHeight) * (s.start + s.len * 0.3), behavior: reduceMotion ? 'auto' : 'smooth' });
-    });
-  });
+  // 跳到某一站：停靠站按鈕、開場地圖的格子、網址的 #id（筆記標頭的入口）共用
+  function jump(id, smooth) {
+    var s = spans[id];
+    if (!s || !root.classList.contains('is-live')) return false;
+    window.scrollTo({ top: trackTop() + (track.offsetHeight - stage.offsetHeight) * (s.start + s.len * 0.3), behavior: smooth && !reduceMotion ? 'smooth' : 'auto' });
+    return true;
+  }
+  stopBtns.forEach(function (b) { b.addEventListener('click', function () { jump(b.getAttribute('data-stop'), true); }); });
+  W.tiles.forEach(function (a) { a.addEventListener('click', function (e) { if (jump(a.getAttribute('data-jump'), true)) e.preventDefault(); }); });
 
   // ---- 自動播放：照固定速度把 p 推到 1，用 scrollTo 帶著頁面捲；使用者一碰就停 ----
   var autoplay = (function () {
@@ -1059,5 +1170,7 @@
   if ('ResizeObserver' in window) new ResizeObserver(function () { measure(); force = true; request(); }).observe(svg);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { measure(); force = true; request(); });
   render(progress());
+  var hashStop = decodeURIComponent(location.hash.slice(1));
+  if (spans[hashStop]) requestAnimationFrame(function () { jump(hashStop, false); });
   requestAnimationFrame(function () { requestAnimationFrame(function () { root.classList.add('is-ready'); }); });
 })();

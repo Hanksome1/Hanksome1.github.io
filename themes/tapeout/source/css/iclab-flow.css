@@ -158,6 +158,32 @@
 .ic-world .tok-halo { fill: color-mix(in srgb, var(--accent) 22%, transparent); }
 .ic-world .brace { fill: none; stroke: var(--accent); stroke-width: 2; }
 
+/* 開場地圖：字級是世界座標，鏡頭寬 6400 時大約是 0.16 倍 */
+.ic-world .t-mk { font-size: 84px; font-weight: 600; letter-spacing: 0.08em; fill: var(--accent); }
+.ic-world .t-mh { font-family: var(--font-sans); font-size: 170px; font-weight: 600; fill: var(--ink); letter-spacing: -0.02em; }
+.ic-world .t-mn { font-size: 84px; font-weight: 600; fill: var(--accent); }
+.ic-world .t-mw { font-size: 72px; fill: var(--ink-3); }
+.ic-world .t-mt { font-family: var(--font-sans); font-size: 190px; font-weight: 600; fill: var(--ink); letter-spacing: -0.02em; }
+.ic-world .t-ms { font-family: var(--font-sans); font-size: 70px; fill: var(--ink-2); }
+.ic-world .t-mf { font-size: 64px; fill: var(--ink-3); }
+.ic-world .t-ma { fill: var(--accent); font-weight: 600; }
+.ic-world .t-mi { font-family: var(--font-sans); font-size: 110px; font-weight: 700; fill: var(--surface); }
+.ic-world .t-mc { font-size: 50px; font-weight: 600; fill: var(--accent); }
+.ic-world .map-path { fill: none; stroke: var(--line-2); stroke-width: 3; }
+.ic-world a.tile { cursor: pointer; }
+.ic-world a.tile:focus { outline: none; }
+.ic-world .tile-box { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.2; transition: stroke 0.2s, fill 0.2s; }
+.ic-world a.tile:hover .tile-box, .ic-world a.tile:focus-visible .tile-box { stroke: var(--accent); stroke-width: 2; fill: color-mix(in srgb, var(--accent) 5%, var(--surface)); }
+.ic-world .tile-rule { stroke: var(--line); stroke-width: 1; }
+.ic-world .ico { fill: none; stroke: var(--ink-2); stroke-width: 1.6; stroke-linejoin: round; }
+.ic-world .ico-o { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.6; }
+.ic-world .ico-h { fill: var(--accent); stroke: var(--accent); stroke-width: 1.6; }
+.ic-world .ico-l { stroke: var(--accent); stroke-width: 1.4; }
+.ic-world .ico-f { fill: color-mix(in srgb, var(--ink) 18%, var(--surface)); }
+.ic-world .ico-fh { fill: color-mix(in srgb, var(--accent) 70%, var(--surface)); }
+.ic-world .ico-scan { fill: color-mix(in srgb, var(--accent) 14%, transparent); stroke: var(--accent); stroke-width: 1; }
+.ic-world .ico-ring { fill: none; stroke: var(--accent); stroke-width: 2.4; }
+
 /* 筆記入口：畫面上的卡片是真的連結 */
 .ic-world a.note { cursor: pointer; }
 .ic-world a.note[opacity="0"] { pointer-events: none; }

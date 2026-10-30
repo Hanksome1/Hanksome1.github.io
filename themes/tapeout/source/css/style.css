@@ -792,8 +792,6 @@ code, pre, kbd { font-family: var(--font-mono); }
 /* 課程入口（/notes/ 頂端）：沒有插圖的 chip card，一列兩張 */
 .course-grid .chip-card { grid-column: span 6; }
 .course-card .chip-title { font-size: clamp(22px, 2.2vw, 28px); line-height: 1.2; letter-spacing: -0.02em; }
-.course-tour { position: absolute; top: 0; right: 0; z-index: 1; font: 500 11px/14px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-3); text-decoration: none; }
-.course-tour:hover { color: var(--accent); }
 
 /* Floorplan illustration */
 .floorplan { display: block; }
@@ -1800,4 +1798,62 @@ details.note > summary + * { margin-top: 8px; }
 @media (max-width: 440px) {
   .brand-name { display: none; }
   .site-nav { gap: 16px; }
+}
+
+/* ==========================================================================
+   課程動畫導覽的入口（_partial/course-tour.ejs）：筆記標頭與 /notes/ 課程卡片
+   小地圖上走過的站填 accent，這篇所在的站亮起來；一顆點沿著線跑，提示這是動畫
+   ========================================================================== */
+.tour-banner {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto; align-items: center; gap: 28px;
+  margin-top: 28px; padding: 18px 22px; max-width: 980px;
+  border: 1px solid var(--accent); border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  color: inherit; text-decoration: none;
+  transition: transform 0.35s var(--ease), background 0.25s, box-shadow 0.35s var(--ease);
+}
+.tour-banner:hover, .tour-banner:focus-visible { transform: translateY(-2px); background: color-mix(in srgb, var(--accent) 11%, var(--surface)); box-shadow: var(--shadow); }
+.tour-copy { display: block; min-width: 0; }
+.tour-kicker { display: flex; align-items: center; gap: 8px; font: 600 11px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.tour-play { width: 0; height: 0; border-left: 8px solid currentColor; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+.tour-title { display: block; margin-top: 6px; font-size: 18px; line-height: 1.35; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; text-wrap: balance; }
+.tour-sub { display: block; margin-top: 4px; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+.tour-strip { position: relative; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); min-width: 0; }
+.tour-strip::before { /* 線：走過的那段是 accent */
+  content: ""; position: absolute; left: 6.25%; right: 6.25%; top: 6px; height: 2px;
+  background: linear-gradient(90deg, var(--accent) var(--fill, 0%), var(--line-2) var(--fill, 0%));
+}
+.tour-strip::after { /* 沿著線跑的 token */
+  content: ""; position: absolute; top: 3px; left: 6.25%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+  animation: tour-run 5.2s var(--ease) infinite;
+}
+@keyframes tour-run { 0% { left: 6.25%; opacity: 0; } 8% { opacity: 1; } 88% { opacity: 1; } 100% { left: 93.75%; opacity: 0; } }
+.tour-st { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; }
+.tour-st i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--ink-3); background: var(--surface); }
+.tour-st b { font: 500 10.5px var(--font-mono); letter-spacing: 0.02em; color: var(--ink-3); white-space: nowrap; }
+.tour-st.is-past i { border-color: var(--accent); background: var(--accent); }
+.tour-st.is-past b { color: var(--ink-2); }
+.tour-st.is-hot i { border-color: var(--accent); border-width: 3px; box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 22%, transparent); animation: tour-ping 1.8s ease-out infinite; }
+.tour-st.is-hot b { color: var(--accent); font-weight: 600; }
+@keyframes tour-ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); } 100% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent); } }
+.tour-go { padding: 8px 14px; border: 1px solid var(--accent); border-radius: 999px; font: 600 12px var(--font-mono); letter-spacing: 0.04em; color: var(--accent); white-space: nowrap; transition: background 0.2s, color 0.2s; }
+.tour-banner:hover .tour-go, .tour-banner:focus-visible .tour-go { background: var(--accent); color: var(--bg); }
+/* /notes/ 的課程卡片：接在卡片下面，線排第二行 */
+.course-grid .course-card { display: flex; flex-direction: column; }
+.course-grid .course-card > .chip-link { flex: 1; height: auto; }
+.tour-banner--card { grid-template-columns: minmax(0, 1fr) auto; gap: 14px 16px; margin-top: 22px; padding: 14px 18px 16px; }
+.tour-banner--card .tour-strip { grid-column: 1 / -1; grid-row: 2; }
+.tour-banner--card .tour-title { font-size: 15.5px; }
+@media (max-width: 760px) {
+  .tour-banner { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 16px; }
+  .tour-go { justify-self: start; }
+  .tour-banner--card { grid-template-columns: minmax(0, 1fr) auto; }
+  .tour-banner--card .tour-go { justify-self: end; }
+  .tour-st b { font-size: 9.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-strip::after { display: none; }
+  .tour-st.is-hot i { animation: none; }
+  .tour-banner { transition: none; }
 }
