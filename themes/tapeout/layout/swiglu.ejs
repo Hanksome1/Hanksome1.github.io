@@ -1,0 +1,147 @@
+<%
+  // SwiGLU 的捲動解說（js/swiglu.js）。說明文字寫在這裡，沒有 JS 時依序排好。
+%>
+<div class="sg" data-sg>
+  <header class="sg-hero wrap">
+    <p class="kicker">§ Explainer — Activation · arXiv 2002.05202 · Ideogram 4</p>
+    <h1 class="sg-title">SwiGLU：不是換一條曲線，是多一條投影來<em>開關</em></h1>
+    <p class="sg-lede">ReLU、GELU、SiLU 都是同一種東西：一個數字進去，一個數字出來。SwiGLU 把 MLP 的第一層拆成兩條投影 <code>a = W₁x</code>、<code>b = W₃x</code>，輸出是 <code>silu(a) · b</code>：一條決定開多大，一條決定送什麼。多了一個矩陣，參數和 FLOPs 卻跟原本一樣。往下捲，用 Ideogram 4 的 MLP 把每一個數字算一次。</p>
+    <dl class="sg-meta">
+      <div><dt>論文</dt><dd><a href="https://arxiv.org/abs/2002.05202" target="_blank" rel="noopener">Shazeer, arXiv 2002.05202</a>（2020）</dd></div>
+      <div><dt>誰在用</dt><dd>PaLM、LLaMA、Ideogram 4</dd></div>
+      <div><dt>Ideogram 4 的 MLP</dt><dd>4608 → 12288 → 4608 · 34 層</dd></div>
+      <div><dt>頁面上的例子</dt><dd>1 個 token、8 個 hidden 單元</dd></div>
+    </dl>
+    <p class="sg-hint">往下捲，或按 Auto-play ↓</p>
+  </header>
+
+  <section class="sg-track">
+    <div class="sg-stage">
+      <svg class="sg-world" data-world role="img" aria-label="SwiGLU 的動畫解說：ReLU、GELU、SiLU 的曲線、SwiGLU 的閘門、GLU 家族、參數預算、FLOPs、記憶體搬運與 Ideogram 4 的 34 層 MLP"></svg>
+      <aside class="sg-panel">
+        <div class="sg-top">
+          <p class="sg-status"><i></i><span data-status>Overview</span></p>
+          <button type="button" class="sg-play" data-play aria-label="自動播放"><span class="sg-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+        </div>
+        <ol class="sg-stops">
+          <li><button type="button" data-stop="curves"><span>01</span>Curves<i></i></button></li>
+          <li><button type="button" data-stop="gate"><span>02</span>Gate<i></i></button></li>
+          <li><button type="button" data-stop="family"><span>03</span>Family<i></i></button></li>
+          <li><button type="button" data-stop="width"><span>04</span>Width<i></i></button></li>
+          <li><button type="button" data-stop="flops"><span>05</span>FLOPs<i></i></button></li>
+          <li><button type="button" data-stop="memory"><span>06</span>Memory<i></i></button></li>
+          <li><button type="button" data-stop="ideogram"><span>07</span>Ideogram 4<i></i></button></li>
+        </ol>
+        <!-- 說明文字寫在 HTML 裡：沒有 JS 時就是依序排好的內容 -->
+        <div class="sg-caps">
+          <article class="sg-cap is-on" data-cap="intro">
+            <p class="kicker">Overview</p>
+            <h2>每個 token 都要過的 MLP</h2>
+            <p>Transformer 的每一層是 attention 加一個 MLP（也叫 FFN）。MLP 對每個 token 各算一次：先放大到 hidden 維度，過一個啟動函數，再壓回原本的寬度。</p>
+            <p class="hl"><b>Ideogram 4</b>一層 264M 參數，MLP 就佔 64%。啟動函數放在這裡，它的設計直接決定了模型最大的一塊長什麼樣子。</p>
+          </article>
+          <article class="sg-cap" data-cap="curves">
+            <p class="kicker">Stop 01 — 以往的啟動函數</p>
+            <h2>三條曲線，都是 f(x)</h2>
+            <p><b class="in">ReLU</b> 把負數直接變 0，在 0 折一下。原始的 Transformer（2017）用它。負的那半邊梯度永遠是 0。</p>
+            <p><b class="in">GELU</b> = x·Φ(x)、<b class="in">SiLU</b>（Swish）= x·σ(x)：都是平滑版的 ReLU，負數不會整個砍掉，還有一個小凹陷。BERT、GPT-2、SD 3.5 用 GELU。</p>
+            <p class="hl"><b>共通點</b>都是一個數字進、一個數字出，hidden 的每一格只看自己。換哪一條，參數和 FLOPs 都不變。</p>
+          </article>
+          <article class="sg-cap" data-cap="gate">
+            <p class="kicker">Stop 02 — Gate</p>
+            <h2>兩條投影，一條開關另一條</h2>
+            <p>SwiGLU 的第一層有兩個矩陣：<code>a = W₁x</code>、<code>b = W₃x</code>。silu(a) 決定這一格開多大，b 決定送出去的值，兩個逐格相乘。</p>
+            <p>右邊兩張圖的橫軸是 a、縱軸是 b。GELU 只看 a，所以是一條一條直紋；silu(a)·b 是兩個輸入相乘的曲面，b = 0 那條線整排都是 0。</p>
+            <p class="hl"><b>差在哪</b>以往的 f(x) 是固定的形狀；SwiGLU 的輸出是兩條投影的乘積（二次項），哪一格要放行由輸入自己決定。</p>
+          </article>
+          <article class="sg-cap" data-cap="family">
+            <p class="kicker">Stop 03 — GLU family</p>
+            <h2>同一個結構，換閘門函數</h2>
+            <p>Dauphin 等人（2017）在卷積語言模型裡提出 GLU：<code>σ(xW) ⊙ xV</code>。Shazeer（2020）把它放進 Transformer 的 FFN，閘門換成不同函數：沒有函數是 Bilinear，換 ReLU、GELU、Swish 就是 ReGLU、GEGLU、SwiGLU。</p>
+            <p>同樣的參數量和 FLOPs 下，GLU 系列的 perplexity 都比 ReLU、GELU 低，GEGLU 和 SwiGLU 最好。</p>
+            <p class="hl"><b>之後</b>PaLM（2022）、LLaMA（2023）都用 SwiGLU，Ideogram 4 的 DiT 也是。</p>
+            <p class="nt">長條圖的數字來自論文 Table 1，頁面上的值還沒有跟原文逐字核對過。</p>
+          </article>
+          <article class="sg-cap" data-cap="width">
+            <p class="kicker">Stop 04 — 參數預算</p>
+            <h2>多一個矩陣，hidden 縮成 2/3</h2>
+            <p>GELU 的 MLP 兩個矩陣，hidden = 4d：<code>2 · d · 4d = 8d²</code>。SwiGLU 有三個矩陣，hidden 也用 4d 的話是 12d²，參數和 FLOPs 都變 1.5 倍。</p>
+            <p>所以 hidden 改成 4d 的 2/3，也就是 8/3·d：<code>3 · d · 8/3·d = 8d²</code>，跟 GELU 一模一樣。</p>
+            <p class="hl"><b>Ideogram 4</b>d = 4608，hidden = 12288 = 8/3 × 4608，一點不差。LLaMA-7B 是 4096 → 11008，取到 256 的倍數。</p>
+          </article>
+          <article class="sg-cap" data-cap="flops">
+            <p class="kicker">Stop 05 — 運算量</p>
+            <h2>啟動函數本身幾乎免費</h2>
+            <p>一個 token 過一層 MLP，矩陣乘法是 <code>2 · 3 · d · h = 16d²</code> FLOPs。Ideogram 4 是 3.4 億。</p>
+            <p>啟動函數是逐格的小運算：GELU 每格約 8 個 op × 4d 格，SwiGLU 每格約 5 個 op × 8/3·d 格。長條圖用對數軸：兩者都比矩陣乘法小三到四個數量級。</p>
+            <p class="hl"><b>結論</b>FLOPs 上，換成 SwiGLU 的差別是 0.03% 以下。計算量幾乎全在矩陣乘法，而兩邊的矩陣乘法一樣大。</p>
+          </article>
+          <article class="sg-cap" data-cap="memory">
+            <p class="kicker">Stop 06 — 記憶體</p>
+            <h2>逐點運算的成本在搬資料</h2>
+            <p>逐點運算的時間花在 HBM 讀寫，不是在算。沒有融合時，GEMM 寫出 hidden、逐點運算讀進來再寫回去。SwiGLU 要搬 a、b 兩份，總量比 GELU 多一點。</p>
+            <p>實作上 W₁、W₃ 併成一次 d → 2h 的 GEMM，silu·乘法放在 GEMM 的 epilogue：a、b 不落地，只寫出 h 格，而且 h 比 4d 窄。</p>
+            <p class="hl"><b>訓練</b>反向傳播要存的張量變多：PyTorch 預設存 a、b、silu(a)、乘積，比 GELU 多 33%；silu(a) 在反向時重算就打平。</p>
+          </article>
+          <article class="sg-cap" data-cap="ideogram">
+            <p class="kicker">Stop 07 — Ideogram 4</p>
+            <h2>34 層，5.78B 參數在 MLP</h2>
+            <p>每一層的 MLP 都是同一個 SwiGLU：4608 → 2 × 12288 → 4608，沒有 bias。34 層加起來 5.78B 參數，一張 1024² 的圖（4096 個圖片 token）每一步光 MLP 就要 47 TFLOPs。</p>
+            <p class="hl"><b>對照 SD 3.5</b>SD 3.5 Large 的 GELU MLP 每條流每層 47.3M，一個圖片 token 過一層是 94.6M FLOPs；Ideogram 4 是 339.7M，貴 3.6 倍。原因是寬度 4608 / 2432 的平方，不是 SwiGLU。</p>
+          </article>
+        </div>
+        <dl class="sg-facts" data-facts></dl>
+      </aside>
+      <p class="sg-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+    </div>
+  </section>
+
+  <section class="sg-outro wrap">
+    <p class="kicker">§ Summary</p>
+    <h2>三件事</h2>
+    <ol class="sg-take">
+      <li><b>不是換曲線，是換結構。</b>ReLU、GELU、SiLU 都是 f(x)。SwiGLU 是 <code>silu(W₁x) ⊙ W₃x</code>：兩條投影相乘，一條當閘門，閘門開多大由輸入決定。</li>
+      <li><b>同樣的預算。</b>多一個矩陣，hidden 縮到 8/3·d，參數和矩陣乘法的 FLOPs 都是 8d² / 16d²，跟 4d 的 GELU 一樣。Ideogram 4 的 12288 就是這樣來的。</li>
+      <li><b>差的只有逐點運算和訓練記憶體。</b>啟動函數本身佔 FLOPs 不到 0.05%；融合進 GEMM 之後連搬資料都比 GELU 少。代價是訓練時要多存一份 hidden，或在反向時重算。</li>
+    </ol>
+
+    <div class="table-wrap">
+      <table class="sg-table">
+        <caption>每個 token、每一層 MLP · d = 寬度</caption>
+        <thead><tr><th>項目</th><th>ReLU / GELU FFN</th><th>SwiGLU（h = 4d）</th><th>SwiGLU（h = 8/3·d）</th></tr></thead>
+        <tbody>
+          <tr><td>公式</td><td>W₂ f(W₁x)</td><td>W₂ (silu(W₁x) ⊙ W₃x)</td><td class="us">W₂ (silu(W₁x) ⊙ W₃x)</td></tr>
+          <tr><td>矩陣</td><td>2</td><td>3</td><td class="us">3</td></tr>
+          <tr><td>hidden 寬度</td><td>4d</td><td>4d</td><td class="us">8/3·d</td></tr>
+          <tr><td>參數</td><td>8d²</td><td>12d²</td><td class="us">8d²</td></tr>
+          <tr><td>矩陣乘法 FLOPs</td><td>16d²</td><td>24d²</td><td class="us">16d²</td></tr>
+          <tr><td>逐點運算（約）</td><td>ReLU 4d · GELU 32d</td><td>20d</td><td class="us">13.3d</td></tr>
+          <tr><td>訓練要存的 hidden</td><td>8d</td><td>16d</td><td class="us">10.7d（重算 silu 時 8d）</td></tr>
+          <tr><td>Ideogram 4 每層參數</td><td>169.9M</td><td>254.8M</td><td class="us">169.9M</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sg-cols">
+      <div>
+        <h3>實際用的時候</h3>
+        <ul>
+          <li>PyTorch 一行：<code>w2(F.silu(w1(x)) * w3(x))</code>，Ideogram 4 的 <code>Ideogram4MLP</code> 就是這樣寫的，三個 Linear 都 <code>bias=False</code>。</li>
+          <li>推論框架通常把 W₁、W₃ 接成一個 <code>gate_up_proj</code>（d → 2h），一次 GEMM 算完，再用一個融合 kernel 做 silu·乘法。</li>
+          <li>hidden 常會取整到 64 或 256 的倍數讓 GEMM 好切。Ideogram 4 剛好整除：12288 = 48 × 256。</li>
+          <li>想看 SwiGLU 在整個模型裡的位置，可以接著看 <a href="<%- url_for('/lab/ideogram4-vs-sd35-tower/') %>">Ideogram 4 vs SD 3.5 的塔</a>，第 1 層拆開後最大的那一塊就是它。</li>
+        </ul>
+      </div>
+      <div>
+        <h3>資料來源與數字怎麼算的</h3>
+        <ul>
+          <li>Ideogram 4 的結構（4608、12288、34 層、18 heads、<code>w2(silu(w1 x) * w3 x)</code>、沒有 bias）來自 <a href="https://github.com/ideogram-oss/ideogram4" target="_blank" rel="noopener">ideogram-oss/ideogram4</a> 的 <code>modeling_ideogram4.py</code>。SD 3.5 的 2432 → 9728 來自 <a href="https://github.com/Stability-AI/sd3.5" target="_blank" rel="noopener">Stability-AI/sd3.5</a>。</li>
+          <li>GLU 變體的定義與 Stop 03 的 perplexity 來自 <a href="https://arxiv.org/abs/2002.05202" target="_blank" rel="noopener">Shazeer, GLU Variants Improve Transformer</a> Table 1（T5-base 大小、524,288 步）；GLU 原始定義來自 <a href="https://arxiv.org/abs/1612.08083" target="_blank" rel="noopener">Dauphin et al.</a>。<b>這幾個數字還沒有跟原文逐字核對。</b></li>
+          <li>逐點運算的 op 數是估計：ReLU 1、GELU（tanh 近似）約 8、SiLU 約 4（取負、exp、加 1、除）、SwiGLU 再加 1 次乘法。實際成本看 kernel 和硬體。</li>
+          <li>Stop 06 的搬運量以元素數計，只算 W_in 輸出到 W_out 輸入之間的 hidden，不含 x 和權重。訓練要存的張量照 PyTorch autograd 預設推算：GELU 存 u 與 GELU(u)；SwiGLU 存 a、silu(a)、b 與乘積。</li>
+          <li>一層的參數：attention 4d²（qkv 3d² + o d²）、調變 512 × 4d + 4d、MLP 3dh，norm 忽略不計。每一步的 FLOPs 只算 4096 個圖片 token 過 MLP，不含文字 token 與 attention。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>

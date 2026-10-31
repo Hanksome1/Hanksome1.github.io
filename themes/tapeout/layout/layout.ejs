@@ -22,6 +22,7 @@
   <% if (page.layout === 'flash-attention') { %><%- js('js/flash-attention') %><% } %>
   <% if (page.layout === 'iclab-flow') { %><%- js('js/iclab-flow') %><% } %>
   <% if (page.layout === 'svdquant') { %><%- js('js/svdquant') %><% } %>
+  <% if (page.layout === 'swiglu') { %><%- js('js/swiglu') %><% } %>
   <%- js('js/graph') %>
   <% if (page.content && page.content.indexOf('type="WaveDrom"') > -1) { %>
   <script src="<%- theme.wavedrom.skin %>"></script>
