@@ -1,0 +1,162 @@
+<%
+  // FlashAttention 的捲動解說（js/flash-attention.js）。說明文字寫在這裡，沒有 JS 時依序排好。
+%>
+<div class="fa" data-fa>
+  <header class="fa-hero wrap">
+    <p class="kicker">§ Explainer — Paper · arXiv 2205.14135 · 2307.08691</p>
+    <h1 class="fa-title">FlashAttention：一樣的答案，但 <em>S</em> 從來不落地</h1>
+    <p class="fa-lede">Attention 的公式只有一行，<code>softmax(QKᵀ)V</code>，貴的是中間那個 N×N 的 S。FlashAttention 沒有改公式，算出來的數字跟原本一樣，FLOPs 甚至變多了，但時間少了 5 倍。它改的是資料在 HBM 和晶片之間怎麼走。往下捲，用一個 12 個 token 的例子，把每一個數字算一次。</p>
+    <dl class="fa-meta">
+      <div><dt>作者</dt><dd>Dao, Fu, Ermon, Rudra, Ré</dd></div>
+      <div><dt>FlashAttention</dt><dd><a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener">arXiv 2205.14135</a>（2022）</dd></div>
+      <div><dt>FlashAttention-2</dt><dd><a href="https://arxiv.org/abs/2307.08691" target="_blank" rel="noopener">arXiv 2307.08691</a>（2023）</dd></div>
+      <div><dt>頁面上的例子</dt><dd>N = 12、d = 4、3 × 3 塊</dd></div>
+    </dl>
+    <p class="fa-hint">往下捲，或按 Auto-play ↓</p>
+  </header>
+
+  <section class="fa-track">
+    <div class="fa-stage">
+      <svg class="fa-world" data-world role="img" aria-label="FlashAttention 的動畫解說：attention 的計算流程、S 在 HBM 和 SRAM 之間的搬動、切成 tile、online softmax、輸出累加、FlashAttention-1 與 2 的迴圈順序、反向傳播、causal mask 與實驗結果"></svg>
+      <aside class="fa-panel">
+        <div class="fa-top">
+          <p class="fa-status"><i></i><span data-status>Overview</span></p>
+          <button type="button" class="fa-play" data-play aria-label="自動播放"><span class="fa-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+        </div>
+        <ol class="fa-stops">
+          <li><button type="button" data-stop="standard"><span>01</span>Standard<i></i></button></li>
+          <li><button type="button" data-stop="tiles"><span>02</span>Tiles<i></i></button></li>
+          <li><button type="button" data-stop="softmax"><span>03</span>Softmax<i></i></button></li>
+          <li><button type="button" data-stop="output"><span>04</span>Output<i></i></button></li>
+          <li><button type="button" data-stop="fa1"><span>05</span>FA-1<i></i></button></li>
+          <li><button type="button" data-stop="fa2"><span>06</span>FA-2<i></i></button></li>
+          <li><button type="button" data-stop="backward"><span>07</span>Backward<i></i></button></li>
+          <li><button type="button" data-stop="causal"><span>08</span>Causal<i></i></button></li>
+          <li><button type="button" data-stop="results"><span>09</span>Results<i></i></button></li>
+        </ol>
+        <!-- 說明文字寫在 HTML 裡：沒有 JS 時就是依序排好的內容 -->
+        <div class="fa-caps">
+          <article class="fa-cap is-on" data-cap="intro">
+            <p class="kicker">Overview</p>
+            <h2>一行公式，三個步驟</h2>
+            <p>Q、K、V 都是 N×d。第一步 <code>S = QKᵀ</code>，每個 token 跟每個 token 算一個分數。第二步每一列做 softmax，得到 P。第三步 <code>O = PV</code>，每個 token 的輸出是所有 V 的加權平均。</p>
+            <p class="hl"><b>重點</b>輸入輸出都是 N×d，只有中間的 S 和 P 是 N×N。</p>
+          </article>
+          <article class="fa-cap" data-cap="standard">
+            <p class="kicker">Stop 01 — Standard attention</p>
+            <h2>S 比 SRAM 大太多</h2>
+            <p>GPU 的運算單元旁邊只有很小的 SRAM，其他資料都在 HBM，要過一條相對慢的 bus。Softmax 和 dropout 大部分時間都在等記憶體，不是在算。</p>
+            <p>標準實作每一步都是獨立的 op，所以 S 要寫回 HBM、讀出來做 softmax、寫回 P、再讀出來乘 V，一共搬四趟。</p>
+            <p class="hl"><b>N 放大</b>S 是平方成長。N 從 1024 變 4096，一次 attention 的 S 從 2 GiB 變 32 GiB，而兩邊的 Q、K、V 只變 4 倍。</p>
+          </article>
+          <article class="fa-cap" data-cap="tiles">
+            <p class="kicker">Stop 02 — Tiling</p>
+            <h2>切成塊，一塊一塊算</h2>
+            <p>把 Q 切成每塊 B_r 列、K 和 V 切成每塊 B_c 列。S 就變成一格一格的 tile，每一塊 <code>S_ij = Q_i K_jᵀ</code> 都放得進 SRAM。</p>
+            <p>同一個 kernel 裡做完 matmul、softmax、dropout、再一次 matmul（kernel fusion），中間結果留在晶片上，用完就丟。</p>
+            <p class="hl"><b>問題</b>Softmax 的分母要加總整列。一列 12 個值分在三塊 tile，手上一次只看得到 4 個。</p>
+          </article>
+          <article class="fa-cap" data-cap="softmax">
+            <p class="kicker">Stop 03 — Online softmax</p>
+            <h2>每列只記兩個數</h2>
+            <p>分數一段一段進來，每一列只留兩個數：<b class="in">m</b> 目前看過的最大值，<b class="in">ℓ</b> 目前的 Σ e^(s − m)。減掉 m 之後最大的是 e⁰ = 1，所有值都落在 (0, 1]，指數不會溢位。</p>
+            <p>第二段出現新的最大值時，m 變了，之前的值全部要改成對新的 m 算。只要乘上同一個數 <code>e^(m_舊 − m_新)</code>：舊的 ℓ 整個乘一次就好，不用回頭看舊分數。</p>
+            <p class="hl"><b>結果</b>三段都走完，f / ℓ 跟直接算 softmax 完全一樣。這不是近似。</p>
+          </article>
+          <article class="fa-cap" data-cap="output">
+            <p class="kicker">Stop 04 — Output</p>
+            <h2>O 也能邊走邊加</h2>
+            <p>輸出是 P 的每一列乘上 V，所以每進來一段，就把這段的 <code>P̃·V_j</code> 加進累加器 Ô。m 變大時，Ô 跟 ℓ 乘上同一個 rescale，尺度才對得上。</p>
+            <p class="hl"><b>最後</b>三段加完，<code>Ô / ℓ</code> 就是這個 token 的輸出。第 6 列的 S 和 P 從頭到尾都不需要完整存在任何地方。</p>
+          </article>
+          <article class="fa-cap" data-cap="fa1">
+            <p class="kicker">Stop 05 — FlashAttention</p>
+            <h2>外圈 K/V，內圈 Q</h2>
+            <p>FA-1 一次載入一塊 K_j、V_j，掃過所有 Q 區塊，一欄一欄往右走。走完一欄才換下一塊 K/V。</p>
+            <p>一列的進度散在每一格，所以 O_i、ℓ_i、m_i 都要放在 HBM。每走一格：讀出來、更新、再寫回去，而且 O 每次都重新除以 ℓ，保持是正規化好的樣子。</p>
+            <p class="hl"><b>代價</b>O_i 被寫回 T_c 次，除法也做 T_c 次。</p>
+          </article>
+          <article class="fa-cap" data-cap="fa2">
+            <p class="kicker">Stop 06 — FlashAttention-2</p>
+            <h2>迴圈對調，狀態留在晶片上</h2>
+            <p>FA-2 外圈改成 Q，一列一列往右走。O、ℓ、m 在內圈全程留在晶片上，這一列走完才除以 ℓ、寫回 HBM 一次。</p>
+            <p class="xs">原因是成本不對稱：A100 的 FP16 matmul 有 312 TFLOPs/s，FP32 的 non-matmul 只有 19.5，一個 non-matmul FLOP 貴 16 倍。</p>
+            <p class="hl"><b>平行</b>每一列只碰自己的 O_i，彼此不用溝通，所以序列維度也能分給不同 thread block。FA-1 只在 batch 和 head 維度平行。</p>
+          </article>
+          <article class="fa-cap" data-cap="backward">
+            <p class="kicker">Stop 07 — Backward</p>
+            <h2>每列留一個 L 就夠</h2>
+            <p>反向傳播要用到 P，但 P 是 N×N，不能存。把前面的公式合起來：</p>
+            <p class="hl"><b>L = m + log ℓ</b>softmax 的第 t 個值 = e^(s_t − m) / ℓ = <code>e^(s_t − L)</code>。</p>
+            <p>所以前向結束時每列只存一個數。反向時重算 tile <code>S_ij = Q_i K_jᵀ</code>，用 <code>exp(S_ij − L_i)</code> 直接得到 P 的那一塊，不用再做一次 online softmax。</p>
+          </article>
+          <article class="fa-cap" data-cap="causal">
+            <p class="kicker">Stop 08 — Causal mask · Dropout</p>
+            <h2>整塊被遮住就不算</h2>
+            <p>Causal mask 下，第 i 列看不到 i 之後的 token。S 分成 tile 之後，右上角一整塊都是 −∞，直接跳過。論文量到 1.7–1.8 倍的加速。</p>
+            <p>只有對角線上的 tile 要真的看 mask：被遮的格子在 exp 之前設成 −∞。Dropout 在同一個 kernel 裡，乘 V 之前把 P̃ 的部分格子清成 0；ℓ 用的是 dropout 之前的值。</p>
+            <p class="nt">右邊的小圖是例子裡的對角 tile，dropout 的位置是隨機挑的示意。</p>
+          </article>
+          <article class="fa-cap" data-cap="results">
+            <p class="kicker">Stop 09 — Results</p>
+            <h2>FLOPs 變多，時間變少</h2>
+            <p>論文 Fig. 2：GPT-2 medium 一次 forward + backward。FlashAttention 多算了 13% 的 FLOPs（要重算 tile、要算 rescale），HBM 存取少 9 倍，時間少 5.7 倍。</p>
+            <p class="hl"><b>IO 複雜度</b>Standard Θ(Nd + N²)，FlashAttention Θ(N²d²/M)，M 是 SRAM 大小。論文也證明，在所有 M 上，沒有 exact attention 能在漸進上再更好。</p>
+          </article>
+        </div>
+        <dl class="fa-facts" data-facts></dl>
+      </aside>
+      <p class="fa-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+    </div>
+  </section>
+
+  <section class="fa-outro wrap">
+    <p class="kicker">§ Summary</p>
+    <h2>三件事</h2>
+    <ol class="fa-take">
+      <li><b>數字完全一樣。</b>FlashAttention 不是近似，也沒有改模型。它只是把 <code>softmax(QKᵀ)V</code> 換一個順序算，輸出跟標準實作相同。</li>
+      <li><b>每列兩個數就能跨 tile 做 softmax。</b>m 和 ℓ 加上 rescale 就是全部的技巧。O 用同一個 rescale 累加，所以 S 和 P 不用存。</li>
+      <li><b>省的是 IO，不是 FLOPs。</b>Attention 的瓶頸是搬資料和 non-matmul 運算。FA-1 不再把 S 搬來搬去，FA-2 再把昂貴的除法和 O 的讀寫降到每列一次。</li>
+    </ol>
+
+    <div class="table-wrap">
+      <table class="fa-table">
+        <caption>三種算法逐項對照</caption>
+        <thead><tr><th>項目</th><th>Standard</th><th>FlashAttention</th><th>FlashAttention-2</th></tr></thead>
+        <tbody>
+          <tr><td>迴圈</td><td>不分塊，三個獨立 op</td><td>外 K/V、內 Q</td><td class="us">外 Q、內 K/V</td></tr>
+          <tr><td>S 和 P</td><td>整個放在 HBM</td><td>一次一塊在晶片上</td><td class="us">一次一塊在晶片上</td></tr>
+          <tr><td>額外記憶體</td><td>N²</td><td>O(N)：每列 ℓ、m</td><td class="us">O(N)：每列 L</td></tr>
+          <tr><td>O_i 寫回 HBM</td><td>O 寫一次</td><td>每列 T_c 次</td><td class="us">每列 1 次</td></tr>
+          <tr><td>除以 ℓ</td><td>softmax 裡每列一次</td><td>每列 T_c 次</td><td class="us">每列 1 次</td></tr>
+          <tr><td>HBM 存取</td><td>Θ(Nd + N²)</td><td>Θ(N²d²/M)</td><td class="us">論文沒有另外分析</td></tr>
+          <tr><td>平行</td><td>batch、head</td><td>batch、head</td><td class="us">再加上序列長度</td></tr>
+          <tr><td>反向用到的資料</td><td>存下來的 P</td><td>ℓ、m</td><td class="us">L = m + log ℓ</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="fa-cols">
+      <div>
+        <h3>實際用的時候</h3>
+        <ul>
+          <li>PyTorch 的 <code>F.scaled_dot_product_attention</code> 就有 FlashAttention-2 這個 backend，條件符合時會自動選，不用另外裝。</li>
+          <li><code>flash-attn</code> 函式庫在 head dim 64、沒有 dropout 時用 128×128 的 tile，有 dropout 時改成 128×64，所以 N = 1024 是 8 × 8 塊。</li>
+          <li>論文在序列長度 128 到 2K 量到比標準實作快最多 3 倍；FA-2 比 FA-1 再快 1.7–3.0 倍。</li>
+          <li>Block size 不是越大越好。論文 Fig. 2 中間那張圖，超過 256 之後時間就不再下降，更大的 block 也放不進 SRAM。</li>
+        </ul>
+      </div>
+      <div>
+        <h3>資料來源與數字怎麼算的</h3>
+        <ul>
+          <li>演算法、定理與 Fig. 2 的數字來自 <a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener">Dao et al., FlashAttention</a>；迴圈對調、312 / 19.5 TFLOPs/s、1.7–1.8 倍來自 <a href="https://arxiv.org/abs/2307.08691" target="_blank" rel="noopener">Dao, FlashAttention-2</a>。Tile 大小來自 <a href="https://github.com/Dao-AILab/flash-attention" target="_blank" rel="noopener">Dao-AILab/flash-attention</a> 的 <code>flash_fwd_launch_template.h</code>。</li>
+          <li>頁面上的 Q、K、V 是固定種子產生的合成資料（N = 12、d = 4、B = 4、S = QKᵀ/√d）。每個數字都是頁面載入時當場算的，Stop 03、04 的結果跟直接算 softmax 的誤差顯示在說明欄。</li>
+          <li>Stop 01 的 S 大小是推算：N² × 2 bytes（FP16），一次 attention 再乘 batch 64 × 16 heads，也就是 Fig. 2 的設定。四趟搬運不含 dropout，也沒有算反向傳播。</li>
+          <li>Stop 05、06 的 N = 1024 欄位是推算：d = 64、B_r = B_c = 128，所以 T = 8。O_i 寫回次數算的是 tile 數，除法算的是 O 的元素數。</li>
+          <li>Stop 08 的 64 塊、36 塊是 N = 1024、B = 128 的推算，64 / 36 = 1.78，跟論文量到的 1.7–1.8 倍一致。</li>
+          <li>FA-2 Algorithm 1 第 10 行印成 <code>diag(e^(m⁽ʲ⁻¹⁾ − m⁽ʲ⁾))⁻¹ O</code>，多了一個反矩陣：m 變大時 O 應該縮小，這裡用的是 <code>e^(m⁽ʲ⁻¹⁾ − m⁽ʲ⁾) · O</code>，跟 FA-1 第 12 行一致，也才對得上直接算的結果。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>

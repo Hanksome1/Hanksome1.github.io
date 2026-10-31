@@ -80,7 +80,13 @@
       </div>
       <a class="to-skip" href="#sec-projects">Skip intro <span aria-hidden="true">↓</span></a>
       <% /* 按一下自己捲完整段開場（js/tapeout.js 的 autoplay）；沒有 JS 或 reduced-motion 就不顯示 */ %>
-      <button class="to-play" type="button" data-to-play data-state="idle"><i class="to-play-ic" aria-hidden="true"></i><span data-to-play-label>Auto-play</span></button>
+      <button class="to-play" type="button" role="switch" aria-checked="false" aria-label="Auto-play the intro, 24 seconds" data-to-play data-state="idle">
+        <span class="to-play-text" aria-hidden="true">
+          <span class="to-play-sig"><span class="to-play-name"><span data-to-play-name>run</span><span class="to-play-tail">_tapeout</span></span><span class="to-play-tail"> =</span> 1'b<em data-to-play-bit>0</em></span>
+          <span class="to-play-hint"></span>
+        </span>
+        <span class="to-play-track" aria-hidden="true"><i class="to-play-knob"></i></span>
+      </button>
 
       <% /* 開場那一屏，跟原本首頁的 hero 一樣；內容左邊一欄都有，所以對輔助科技藏起來，語言切換也不進 tab 順序 */ %>
       <div class="to-hero" aria-hidden="true">

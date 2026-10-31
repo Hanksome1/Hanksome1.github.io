@@ -111,7 +111,13 @@ notes:
   #   name  卡片上的課名（預設用總覽的標題）  code、term  課號、學期
   #   summary  總覽筆記沒有 summary 時，卡片用這段
   #   tour  這門課的動畫導覽頁（source/lab/）：/notes/ 的課程卡片先連到這裡，總覽筆記的標頭也會放一個入口連過去
+  #   topics  卡片上的主題（預設取成員筆記最常用的標籤）
+  # hub 也可以是 source/lab/ 的頁面：章節寫在那一頁的 front-matter chapters，tag 只是卡片上的分類名稱
   courses:
+    - hub: /lab/diffusion-papers/
+      tag: Paper Reading
+      name: Diffusion 相關論文閱讀
+      topics: [DiT, Attention, Quantization, SD 3.5, FLUX.1]
     - { hub: /notes/iclab/, tag: ICLAB, name: ICLAB 積體電路設計實驗, code: EE4292, term: 114 學年度上學期, tour: /lab/iclab/ }
     - { hub: /notes/vlsi/, tag: VLSI, name: 積體電路設計導論, code: EE3230, term: 113 學年度上學期 }
     - { hub: /notes/aic/, tag: AIC, name: 電子學（二）, code: EE2260, term: 113 學年度上學期 }

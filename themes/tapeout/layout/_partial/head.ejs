@@ -68,8 +68,10 @@
 <% if (page.layout === 'dit-compare' || page.layout === 'dit-tower') { %><%- css('css/dit-compare') %><% } %>
 <% if (page.layout === 'dit-tower') { %><%- css('css/dit-tower') %><% } %>
 <% if (page.layout === 'kroquant') { %><%- css('css/kroquant') %><% } %>
+<% if (page.layout === 'flash-attention') { %><%- css('css/flash-attention') %><% } %>
 <% if (page.layout === 'iclab-flow') { %><%- css('css/iclab-flow') %><% } %>
 <% if (page.layout === 'svdquant') { %><%- css('css/svdquant') %><% } %>
+<% if (page.layout === 'cfg') { %><%- css('css/cfg') %><% } %>
 <% if (page.content && page.content.indexOf('class="katex') > -1) { %><%- css('katex/katex.min') %><% } %>
 <% var ga = theme.analytics && theme.analytics.google; if (ga) { %>
 <script async src="https://www.googletagmanager.com/gtag/js?id=<%= ga %>"></script>
