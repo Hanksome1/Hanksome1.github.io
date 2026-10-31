@@ -36,7 +36,7 @@
 .sg:not(.is-live) .sg-track { max-width: calc(var(--wrap) + var(--gutter) * 2); margin: 0 auto; padding: 0 var(--gutter) 48px; }
 .sg:not(.is-live) .sg-cap { max-width: 40em; }
 
-.sg.is-live .sg-track { height: 1400svh; }
+.sg.is-live .sg-track { height: 1480svh; }
 .sg.is-live .sg-stage {
   position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h));
   display: grid; grid-template-columns: calc(var(--panel-w) + max(0px, (100vw - var(--wrap)) / 2 - var(--gutter))) minmax(0, 1fr);
@@ -145,7 +145,7 @@
 
 /* ---------- 窄螢幕：SVG 佔滿舞台，說明疊在下面 ---------- */
 @media (max-width: 900px) {
-  .sg.is-live .sg-track { height: 980svh; }
+  .sg.is-live .sg-track { height: 1040svh; }
   .sg.is-live .sg-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
   .sg.is-live .sg-world { grid-row: 1 / -1; }
   .sg.is-live .sg-panel {

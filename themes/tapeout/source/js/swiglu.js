@@ -89,50 +89,82 @@ var SG = (function () {
   // 一段一個 <g>，鏡頭離開時淡掉，才不會跟下一段疊在一起
   function region(cy) { var g = el('g', {}, svg); regions.push({ g: g, cy: cy }); return g; }
 
-  // ---- R0：FFN 的骨架、Ideogram 4 一層的參數 ----
+  // ---- R0：兩種 FFN 上下並排：以往的 f(W₁x) 和 SwiGLU；柱子的高度照寬度畫（d = 40、4d = 160、8/3·d ≈ 107）----
+  var U = 40;
   (function () {
-    var g = region(0), cy = -102;
-    T(g, 0, -244, 'FFN(x) = W₂ · f(W₁ x)', 't-serif');
-    T(g, 1000, -244, '每個 token 各算一次', 't-d end');
-    W.pipe = [];
-    function step(fn) { var gg = hide(el('g', {}, g)); fn(gg); W.pipe.push(gg); return gg; }
-    function col(gg, x, h, cls) { el('rect', { x: x, y: cy - h / 2, width: 24, height: h, rx: 2, class: cls }, gg); }
-    function trap(gg, x0, x1, h0, h1, label, sub) {
-      el('path', { d: 'M' + x0 + ' ' + (cy - h0 / 2) + ' L' + x1 + ' ' + (cy - h1 / 2) + ' L' + x1 + ' ' + (cy + h1 / 2) + ' L' + x0 + ' ' + (cy + h0 / 2) + ' Z', class: 'card' }, gg);
+    var g = region(0);
+    function col(gg, x, cy, h, cls) { el('rect', { x: x, y: r1(cy - h / 2), width: 24, height: r1(h), rx: 2, class: cls }, gg); }
+    function trap(gg, x0, x1, cy, h0, h1, label, cls) {
+      el('path', { d: 'M' + x0 + ' ' + r1(cy - h0 / 2) + ' L' + x1 + ' ' + r1(cy - h1 / 2) + ' L' + x1 + ' ' + r1(cy + h1 / 2) + ' L' + x0 + ' ' + r1(cy + h0 / 2) + ' Z', class: cls || 'card' }, gg);
       T(gg, (x0 + x1) / 2, cy + 5, label, 't-b mid');
-      T(gg, (x0 + x1) / 2, cy + Math.max(h0, h1) / 2 + 24, sub, 't-s mid');
     }
-    step(function (gg) { var lc = el('g', { class: 'lane-c' }, gg); col(lc, 40, 40, 'f-l'); T(gg, 52, cy - 32, 'x', 't-b mid'); T(gg, 52, cy + 44, 'd', 't-s mid'); });
-    step(function (gg) { trap(gg, 84, 250, 40, 160, 'W₁', 'd → 4d'); });
-    step(function (gg) {
-      var lc = el('g', { class: 'lane-c' }, gg); col(lc, 266, 160, 'f-l'); T(gg, 278, cy - 92, 'u', 't-b mid'); T(gg, 278, cy + 104, '4d', 't-s mid');
-      var la = el('g', { class: 'lane-a' }, gg);
-      el('circle', { cx: 345, cy: cy, r: 30, class: 'box is-on' }, la);
-      T(la, 345, cy + 6, 'f', 't-l mid');
-      el('path', { d: 'M290 ' + cy + ' H315 M375 ' + cy + ' H400', class: 'wire' }, gg);
-      T(gg, 345, cy + 60, 'ReLU / GELU', 't-s mid');
-    });
-    step(function (gg) { var la = el('g', { class: 'lane-a' }, gg); col(la, 404, 160, 'f-l'); T(gg, 416, cy - 92, 'f(u)', 't-b mid'); T(gg, 416, cy + 104, '4d', 't-s mid'); });
-    step(function (gg) {
-      trap(gg, 444, 610, 160, 40, 'W₂', '4d → d');
-      var lc = el('g', { class: 'lane-c' }, gg); col(lc, 626, 40, 'f-l'); T(gg, 638, cy - 32, 'y', 't-b mid'); T(gg, 638, cy + 44, 'd', 't-s mid');
-    });
-    W.introNote = hide(el('g', {}, g));
-    T(W.introNote, 700, cy - 50, '中間那格 f 就是啟動函數。', 't-b');
-    T(W.introNote, 700, cy - 24, '它逐格作用：u 的每一格', 't-d');
-    T(W.introNote, 700, cy - 4, '只看自己，算出 f(u) 的同一格。', 't-d');
-    T(W.introNote, 700, cy + 30, 'SwiGLU 要改的就是這一段。', 't-h');
+    function Lane(key, title, sub) {
+      var lg = el('g', { class: 'lane-' + key }, g), steps = [];
+      return { g: lg, steps: steps, step: function (fn) { var gg = hide(el('g', {}, lg)); fn(gg); steps.push(gg); } };
+    }
 
-    // 一層的參數，寬度照比例
-    var y = 120, w = 1000, parts = [['s-mod', P.mod, '調變'], ['s-attn', P.attn, 'Attention'], ['s-mlp', P.mlp, 'MLP · SwiGLU']];
-    T(g, 0, y - 22, 'Ideogram 4 的一層 · ' + big(P.layer) + ' 參數', 't-b');
-    W.layerBar = []; var x = 0;
-    parts.forEach(function (p) {
-      var pw = p[1] / P.layer * w, r = el('rect', { x: x, y: y, width: 0, height: 44, class: 'slab ' + p[0] + (p[0] === 's-mlp' ? ' is-on' : '') }, g);
-      var lbl = hide(T(g, p[0] === 's-mod' ? x : x + pw / 2, y + (p[0] === 's-mod' ? 94 : 72), p[2] + ' · ' + big(p[1]) + ' · ' + pct(p[1] / P.layer), p[0] === 's-mlp' ? 't-h mid' : p[0] === 's-mod' ? 't-s' : 't-d mid'));
-      W.layerBar.push({ r: r, x: x, w: pw, lbl: lbl });
-      x += pw;
+    // 上：以往的 FFN
+    var A = Lane('a'), ya = -150, h4 = 4 * U;
+    T(A.g, 0, -296, 'ReLU / GELU 的 FFN', 't-l');
+    T(A.g, 210, -296, 'W₂ · f(W₁x)', 't-b');
+    A.step(function (gg) { var c = el('g', { class: 'lane-c' }, gg); col(c, 40, ya, U, 'f-l'); T(gg, 52, ya - 30, 'x', 't-b mid'); T(gg, 52, ya + 40, 'd', 't-s mid'); });
+    A.step(function (gg) { trap(gg, 84, 250, ya, U, h4, 'W₁'); T(gg, 167, ya + h4 / 2 + 20, 'd → 4d', 't-s mid'); });
+    A.step(function (gg) {
+      var c = el('g', { class: 'lane-c' }, gg); col(c, 266, ya, h4, 'f-l');
+      T(gg, 278, ya - h4 / 2 - 10, 'u', 't-b mid'); T(gg, 278, ya + h4 / 2 + 20, '4d', 't-s mid');
+      el('path', { d: 'M290 ' + ya + ' H319 M371 ' + ya + ' H404', class: 'wire' }, gg);
+      el('circle', { cx: 345, cy: ya, r: 26, class: 'box is-on' }, gg); T(gg, 345, ya + 6, 'f', 't-l mid');
     });
+    A.step(function (gg) { col(gg, 404, ya, h4, 'f-l'); T(gg, 416, ya - h4 / 2 - 10, 'f(u)', 't-b mid'); T(gg, 416, ya + h4 / 2 + 20, '4d', 't-s mid'); });
+    A.step(function (gg) {
+      trap(gg, 444, 610, ya, h4, U, 'W₂'); T(gg, 527, ya + h4 / 2 + 20, '4d → d', 't-s mid');
+      var c = el('g', { class: 'lane-c' }, gg); col(c, 626, ya, U, 'f-l'); T(gg, 638, ya - 30, 'y', 't-b mid'); T(gg, 638, ya + 40, 'd', 't-s mid');
+    });
+    W.noteA = hide(el('g', {}, A.g));
+    T(W.noteA, 780, ya - 36, '2 個矩陣 · hidden 4d', 't-l');
+    T(W.noteA, 780, ya - 10, 'f 逐格作用：u 的每一格', 't-d');
+    T(W.noteA, 780, ya + 10, '只看自己。', 't-d');
+    T(W.noteA, 780, ya + 42, '參數 2 · d · 4d = 8d²', 't-b');
+
+    // 下：SwiGLU，多一個 W₃，兩條投影 a、b 各 8/3·d
+    var B = Lane('b'), yb = 150, hh = 8 / 3 * U, off = 62, ytop = yb - off, ybot = yb + off;
+    T(B.g, 0, -16, 'SwiGLU 的 FFN', 't-l');
+    T(B.g, 210, -16, 'W₂ · (silu(W₁x) ⊙ W₃x)', 't-b');
+    B.step(function (gg) {
+      var c = el('g', { class: 'lane-c' }, gg); col(c, 40, yb, U, 'f-l'); T(gg, 52, yb - 30, 'x', 't-b mid'); T(gg, 52, yb + 40, 'd', 't-s mid');
+      el('path', { d: 'M64 ' + yb + ' H72 V' + ytop + ' H84 M72 ' + yb + ' V' + ybot + ' H84', class: 'wire' }, gg);
+    });
+    B.step(function (gg) {
+      trap(gg, 84, 250, ytop, U, hh, 'W₁');
+      trap(gg, 84, 250, ybot, U, hh, 'W₃', 'box is-on');
+      T(gg, 167, ybot + hh / 2 + 20, 'd → 8/3·d（兩個）', 't-s mid');
+    });
+    B.step(function (gg) {
+      var c = el('g', { class: 'lane-c' }, gg); col(c, 266, ytop, hh, 'f-l'); col(c, 266, ybot, hh, 'f-l');
+      T(gg, 278, ytop - hh / 2 - 10, 'a', 't-b mid'); T(gg, 278, ybot + hh / 2 + 20, 'b', 't-b mid');
+    });
+    B.step(function (gg) {
+      el('path', { d: 'M290 ' + ytop + ' H319 M371 ' + ytop + ' H380', class: 'wire' }, gg);
+      el('circle', { cx: 345, cy: ytop, r: 26, class: 'box is-on' }, gg); T(gg, 345, ytop + 5, 'silu', 't-l mid');
+      col(gg, 380, ytop, hh, 'f-l'); T(gg, 392, ytop - hh / 2 - 10, 'silu(a)', 't-b mid');
+    });
+    B.step(function (gg) {
+      el('path', { d: 'M404 ' + ytop + ' H440 V' + (yb - 18) + ' M290 ' + ybot + ' H440 V' + (yb + 18), class: 'wire' }, gg);
+      el('circle', { cx: 440, cy: yb, r: 18, class: 'box is-on' }, gg); T(gg, 440, yb + 6, '⊙', 't-l mid');
+      el('path', { d: 'M458 ' + yb + ' H476', class: 'wire' }, gg);
+      col(gg, 476, yb, hh, 'f-l'); T(gg, 488, yb - hh / 2 - 10, 'h', 't-b mid'); T(gg, 488, yb + hh / 2 + 20, '8/3·d', 't-s mid');
+    });
+    B.step(function (gg) {
+      trap(gg, 516, 682, yb, hh, U, 'W₂'); T(gg, 599, yb + hh / 2 + 20, '8/3·d → d', 't-s mid');
+      var c = el('g', { class: 'lane-c' }, gg); col(c, 698, yb, U, 'f-l'); T(gg, 710, yb - 30, 'y', 't-b mid'); T(gg, 710, yb + 40, 'd', 't-s mid');
+    });
+    W.noteB = hide(el('g', {}, B.g));
+    T(W.noteB, 780, yb - 56, '3 個矩陣 · hidden 8/3·d', 't-l');
+    T(W.noteB, 780, yb - 30, '多一個梯形 W₃。silu(a) 當閘門，', 't-d');
+    T(W.noteB, 780, yb - 10, '逐格乘上 b。', 't-d');
+    T(W.noteB, 780, yb + 22, '參數 3 · d · 8/3·d = 8d²', 't-b');
+    T(W.noteB, 780, yb + 48, '跟上面一樣大', 't-h');
+    W.pipeA = A.steps; W.pipeB = B.steps;
   })();
 
   // ---- R1：ReLU、GELU、SiLU ----
@@ -422,7 +454,7 @@ var SG = (function () {
   })();
 
   // ================= 段落與鏡頭 =================
-  var BEATS = [['intro', 0.8], ['curves', 2.0], ['gate', 2.4], ['family', 1.4], ['width', 2.0], ['flops', 2.0], ['memory', 1.6], ['ideogram', 1.4]];
+  var BEATS = [['intro', 1.6], ['curves', 2.0], ['gate', 2.4], ['family', 1.4], ['width', 2.0], ['flops', 2.0], ['memory', 1.6], ['ideogram', 1.4]];
   var HOLD = 0.35, STOPS = BEATS.slice(1).map(function (b) { return b[0]; });
   var total = BEATS.reduce(function (s, b) { return s + b[1]; }, HOLD), spans = {}, acc = 0;
   BEATS.forEach(function (b) { spans[b[0]] = { start: acc / total, len: b[1] / total }; acc += b[1]; });
@@ -431,7 +463,7 @@ var SG = (function () {
 
   // 每格 [beat, t, 中心 x, 中心 y, 寬]：同一個位置放兩格 = 鏡頭停住
   var SHOTS = [
-    ['intro', 0, 500, 0, 1120], ['intro', 0.85, 500, 0, 1120],
+    ['intro', 0, 500, 0, 1120], ['intro', 0.9, 500, 0, 1120],
     ['curves', 0.12, 500, 700, 1120], ['curves', 1, 500, 700, 1120],
     ['gate', 0.1, 500, 1310, 1120], ['gate', 1, 500, 1310, 1120],
     ['family', 0.12, 500, 2030, 1120], ['family', 1, 500, 2030, 1120],
@@ -481,12 +513,10 @@ var SG = (function () {
   var live = {};
   var R = {
     intro: function (t) {
-      W.pipe.forEach(function (g, i) { show(g, ease(seg(t, 0.02 + i * 0.1, 0.12 + i * 0.1))); });
-      show(W.introNote, ease(seg(t, 0.5, 0.6)));
-      W.layerBar.forEach(function (b, i) {
-        var k = ease(seg(t, 0.6 + i * 0.08, 0.72 + i * 0.08));
-        set(b.r, 'width', r1(b.w * k)); show(b.lbl, k > 0.6 ? 1 : 0);
-      });
+      W.pipeA.forEach(function (g, i) { show(g, ease(seg(t, 0.02 + i * 0.07, 0.1 + i * 0.07))); });
+      show(W.noteA, ease(seg(t, 0.36, 0.42)));
+      W.pipeB.forEach(function (g, i) { show(g, ease(seg(t, 0.46 + i * 0.065, 0.54 + i * 0.065))); });
+      show(W.noteB, ease(seg(t, 0.86, 0.92)));
     },
     curves: function (t) {
       var on = -1;
@@ -580,7 +610,7 @@ var SG = (function () {
   var stopBtns = [].slice.call(root.querySelectorAll('[data-stop]'));
   var h3 = H / D;
   var FACTS = {
-    intro: [['Ideogram 4 一層', big(P.layer)], ['MLP', big(P.mlp) + ' · ' + pct(P.mlp / P.layer), 'hl'], ['Attention', big(P.attn) + ' · ' + pct(P.attn / P.layer)], ['調變', big(P.mod) + ' · ' + pct(P.mod / P.layer)]],
+    intro: [['矩陣', '2 → 3'], ['hidden', '4d → 8/3·d', 'hl'], ['參數', '8d² = 8d²', 'hl'], ['Ideogram 4 一層', big(P.layer)], ['其中 MLP', big(P.mlp) + ' · ' + pct(P.mlp / P.layer), 'hl']],
     gate: [['GELU 一格看', 'u', 'ng'], ['SwiGLU 一格看', 'a 和 b', 'hl'], ['b = 0', '輸出 0'], ['a、b 都負', '輸出 > 0', 'hl'], ['#3 · GELU vs SwiGLU', fmt(SG.gelu(A[2]), 2) + ' vs ' + fmt(PR[2], 2)]],
     family: [['ReLU', fmt(PPL[0][1], 3)], ['GELU', fmt(PPL[1][1], 3), 'ng'], ['GEGLU', fmt(PPL[6][1], 3), 'hl'], ['SwiGLU', fmt(PPL[7][1], 3), 'hl'], ['d_ff', '3072 · GLU 2048']],
     memory: [['GELU · 未融合', '12d', 'ng'], ['SwiGLU · 未融合', fmt(5 * h3, 1) + 'd', 'ng'], ['GELU · 融合', '4d'], ['SwiGLU · 融合', fmt(h3, 1) + 'd', 'hl'], ['訓練多存', '+' + pct(4 * h3 / 8 - 1, 0) + ' · 重算 0']]

@@ -36,9 +36,10 @@
         <div class="sg-caps">
           <article class="sg-cap is-on" data-cap="intro">
             <p class="kicker">Overview</p>
-            <h2>每個 token 都要過的 MLP</h2>
-            <p>Transformer 的每一層是 attention 加一個 MLP（也叫 FFN）。MLP 對每個 token 各算一次：先放大到 hidden 維度，過一個啟動函數，再壓回原本的寬度。</p>
-            <p class="hl"><b>Ideogram 4</b>一層 264M 參數，MLP 就佔 64%。啟動函數放在這裡，它的設計直接決定了模型最大的一塊長什麼樣子。</p>
+            <h2>同一個 MLP，兩種接法</h2>
+            <p>Transformer 的每一層是 attention 加一個 MLP（也叫 FFN），每個 token 各算一次。上面是以往的接法：W₁ 放大到 4d，逐格過一個啟動函數 f，再用 W₂ 壓回 d。</p>
+            <p>下面是 SwiGLU：多一個梯形 <b class="in">W₃</b>，x 同時投影成 a、b 兩條，各 8/3·d 寬。silu(a) 當閘門，逐格乘上 b，再用 W₂ 壓回 d。</p>
+            <p class="hl"><b>重點</b>多一個矩陣，但 hidden 變窄，參數一樣是 8d²。Ideogram 4 一層 264M 參數，MLP 就佔 64%。</p>
           </article>
           <article class="sg-cap" data-cap="curves">
             <p class="kicker">Stop 01 — 以往的啟動函數</p>
