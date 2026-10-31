@@ -23,7 +23,8 @@
     <% courses.forEach(function (c, i) { %>
       <article class="chip-card course-card reveal">
         <span class="chip-designator" aria-hidden="true">J<%= i + 1 %></span>
-        <a class="chip-link" href="<%- url_for(c.hub.path) %>">
+        <%# 有動畫導覽（notes.courses 的 tour）的課程，卡片先進動畫，動畫裡再連到總覽 %>
+        <a class="chip-link" href="<%- url_for(c.tour || c.hub.path) %>">
           <div class="chip-body">
             <div class="chip-meta"><span><%= [c.code || c.tag, c.term].filter(Boolean).join(' · ') %></span></div>
             <h3 class="chip-title"><%= c.name || c.hub.title %></h3>

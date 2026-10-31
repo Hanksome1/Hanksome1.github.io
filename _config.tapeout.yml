@@ -110,7 +110,7 @@ notes:
   #   hub   課程總覽筆記的網址          tag   這門課的筆記共用的標籤，決定哪些筆記算在這門課
   #   name  卡片上的課名（預設用總覽的標題）  code、term  課號、學期
   #   summary  總覽筆記沒有 summary 時，卡片用這段
-  #   tour  這門課的動畫導覽頁（source/lab/），總覽筆記的標頭會放一個入口連過去
+  #   tour  這門課的動畫導覽頁（source/lab/）：/notes/ 的課程卡片先連到這裡，總覽筆記的標頭也會放一個入口連過去
   courses:
     - { hub: /notes/iclab/, tag: ICLAB, name: ICLAB 積體電路設計實驗, code: EE4292, term: 114 學年度上學期, tour: /lab/iclab/ }
     - { hub: /notes/vlsi/, tag: VLSI, name: 積體電路設計導論, code: EE3230, term: 113 學年度上學期 }
