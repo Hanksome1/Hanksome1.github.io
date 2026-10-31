@@ -1877,3 +1877,113 @@ details.note > summary + * { margin-top: 8px; }
   .tour-thumb .k { display: none; }
   .tour-entry { transition: none; }
 }
+
+/* ==========================================================================
+   論文閱讀課程（layout: paper-course）與章節頁的導覽（_partial/course-chapter.ejs）
+   路徑圖上的 on-N 是第 N 章會講到的部分，游標移到第 N 章或圖上的編號時亮起來；
+   加一章要在下面的 :has() 多寫一組
+   ========================================================================== */
+.pc .page-title { word-break: keep-all; }
+.pc-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 32px 0 0; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); }
+.pc-meta > div { padding: 12px 16px 14px 0; min-width: 0; }
+.pc-meta dt { font: 500 10.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.pc-meta dd { margin: 5px 0 0; font-size: 14.5px; line-height: 1.5; color: var(--ink); }
+.pc-meta .more-link { position: static; font-size: 14.5px; }
+
+/* ---------- 路徑圖 ---------- */
+.pc-map { margin: 0; padding: clamp(16px, 2.4vw, 26px); border: 1px solid var(--line-2); border-radius: 3px; background: var(--surface); }
+.pc-span { display: flex; align-items: center; gap: 10px; margin: 0 0 18px; font: 500 12.5px var(--font-mono); color: var(--ink-3); transition: color 0.2s; }
+.pc-span::after { content: ""; flex: 1; border-top: 1px dashed var(--line-2); }
+.pc-path { position: relative; display: flex; align-items: center; gap: 22px; }
+/* 訊號線：一條細線穿過所有方塊，一顆點沿線跑 */
+.pc-path::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid var(--line-2); }
+.pc-path::after { content: ""; position: absolute; top: 50%; left: 0; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--accent); animation: pc-run 8s linear infinite; }
+@keyframes pc-run { from { left: 0; } to { left: calc(100% - 6px); } }
+.pc-node, .pc-block { position: relative; z-index: 1; background: var(--surface); transition: border-color 0.2s, color 0.2s, opacity 0.2s; }
+.pc-node { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: 1 1 0; min-height: 44px; padding: 6px 10px; border: 1px solid var(--ink-3); border-radius: 2px; font: 500 13px/1.3 var(--font-mono); color: var(--ink); text-align: center; }
+.pc-block { flex: 3.4 1 0; min-width: 0; padding: 10px 12px 12px; border: 1px dashed var(--ink-3); border-radius: 3px; }
+.pc-block-head, .pc-bits { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 400 11.5px/1.4 var(--font-mono); color: var(--ink-3); }
+.pc-block-head { margin: 0 0 10px; white-space: nowrap; }
+.pc-loop { display: inline-flex; align-items: center; gap: 8px; transition: color 0.2s; }
+.pc-block-row { display: flex; gap: 10px; }
+.pc-bits { margin: 10px 0 0; transition: color 0.2s; }
+.pc-pins { display: inline-flex; gap: 6px; flex: none; }
+.pc-pin { position: relative; z-index: 2; display: inline-block; padding: 1px 5px; border: 1px solid var(--accent); border-radius: 2px; background: var(--surface); font: 600 11px/1.4 var(--font-mono); color: var(--accent); text-decoration: none; transition: background 0.2s, color 0.2s; }
+.pc-pin:hover, .pc-pin:focus-visible { background: var(--accent); color: var(--bg); }
+
+/* 第 N 章亮起來時，圖上其他部分退到後面 */
+.pc:has(.pc-ch:is(:hover, :focus-within)) .pc-node,
+.pc:has(.pc-pin:is(:hover, :focus-visible)) .pc-node { opacity: 0.4; }
+.pc:has([data-ch="1"]:is(:hover, :focus-within)) .on-1,
+.pc:has([data-ch="2"]:is(:hover, :focus-within)) .on-2,
+.pc:has([data-ch="3"]:is(:hover, :focus-within)) .on-3,
+.pc:has([data-ch="4"]:is(:hover, :focus-within)) .on-4,
+.pc:has([data-ch="5"]:is(:hover, :focus-within)) .on-5,
+.pc:has([data-ch="6"]:is(:hover, :focus-within)) .on-6 { border-color: var(--accent); color: var(--accent); opacity: 1; }
+.pc:has(.pc-pin[data-ch="1"]:is(:hover, :focus-visible)) .pc-ch[data-ch="1"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="2"]:is(:hover, :focus-visible)) .pc-ch[data-ch="2"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="3"]:is(:hover, :focus-visible)) .pc-ch[data-ch="3"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="4"]:is(:hover, :focus-visible)) .pc-ch[data-ch="4"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="5"]:is(:hover, :focus-visible)) .pc-ch[data-ch="5"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="6"]:is(:hover, :focus-visible)) .pc-ch[data-ch="6"] .pc-ch-title { color: var(--accent); }
+
+/* ---------- 章節 ---------- */
+.pc-chapters { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line-2); }
+.pc-ch { position: relative; display: grid; grid-template-columns: 76px minmax(0, 1fr); border-bottom: 1px solid var(--line); }
+/* 章節之間的走線，接起每一章的編號 */
+.pc-ch::before { content: ""; position: absolute; left: 17px; top: 0; bottom: -1px; border-left: 1px solid var(--line-2); }
+.pc-ch:first-child::before { top: 28px; }
+.pc-ch:last-child::before { bottom: auto; height: 28px; }
+.pc-ch-n { position: relative; align-self: start; justify-self: start; margin-top: 18px; padding: 2px 6px; border: 1px solid var(--ink-3); border-radius: 2px; background: var(--bg); font: 600 12px/1.4 var(--font-mono); color: var(--ink); transition: border-color 0.2s, color 0.2s; }
+.pc-ch:hover .pc-ch-n { border-color: var(--accent); color: var(--accent); }
+.pc-ch-body { min-width: 0; padding: 18px 0 20px; }
+.pc-ch-link { position: relative; display: block; padding-right: 44px; color: inherit; text-decoration: none; }
+.pc-ch-kicker { display: block; font: 500 11px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-3); }
+.pc-ch-title { display: block; margin-top: 7px; font-size: clamp(21px, 2.3vw, 27px); line-height: 1.25; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; transition: color 0.2s; }
+.pc-ch-link:hover .pc-ch-title, .pc-ch-link:focus-visible .pc-ch-title { color: var(--accent); }
+.pc-ch-sub { display: block; max-width: 44em; margin-top: 9px; font-size: 15.5px; line-height: 1.75; color: var(--ink-2); text-wrap: pretty; }
+.pc-ch-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 11px; font: 400 12px var(--font-mono); color: var(--ink-3); }
+.pc-ch-arrow { position: absolute; right: 4px; top: 50%; margin-top: -13px; font: 500 18px var(--font-mono); color: var(--ink-3); transition: color 0.2s, transform 0.25s var(--ease); }
+.pc-ch-link:hover .pc-ch-arrow, .pc-ch-link:focus-visible .pc-ch-arrow { color: var(--accent); transform: translateX(4px); }
+.pc-ch-also { display: inline-block; margin-top: 11px; font: 400 12.5px var(--font-mono); color: var(--ink-2); text-decoration: none; }
+.pc-ch-also:hover, .pc-ch-also:focus-visible { color: var(--accent); }
+
+/* ---------- 章節頁的導覽 ---------- */
+.cc-bar { display: flex; align-items: center; gap: 14px; padding-top: 18px; font: 400 12px/1.5 var(--font-mono); color: var(--ink-3); }
+.cc-bar a { color: var(--ink-2); text-decoration: none; }
+.cc-bar a:hover, .cc-bar a:focus-visible { color: var(--accent); }
+.cc-dots { display: inline-flex; gap: 5px; margin-left: auto; }
+.cc-dots i { width: 6px; height: 6px; border: 1px solid var(--ink-3); border-radius: 50%; }
+.cc-dots i.is-on { border-color: var(--accent); background: var(--accent); }
+.cc-foot { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-top: 28px; padding-bottom: 56px; }
+.cc-link { display: block; min-width: 0; padding: 13px 16px 15px; border: 1px solid var(--line-2); border-radius: 3px; background: var(--surface); color: inherit; text-decoration: none; transition: border-color 0.25s, box-shadow 0.35s var(--ease), transform 0.35s var(--ease); }
+.cc-link:hover, .cc-link:focus-visible { border-color: var(--accent); box-shadow: var(--shadow); transform: translateY(-2px); }
+.cc-next { text-align: right; }
+.cc-label { display: block; font: 500 11px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-3); }
+.cc-title { display: block; margin-top: 4px; font-size: 16px; line-height: 1.4; font-weight: 600; color: var(--ink); }
+
+@media (max-width: 1000px) {
+  .pc-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* 路徑圖改成直的 */
+  .pc-path { flex-direction: column; align-items: stretch; gap: 14px; }
+  .pc-path::before { left: 50%; right: auto; top: 0; bottom: 0; border-top: 0; border-left: 1px solid var(--line-2); }
+  .pc-path::after { top: 0; left: 50%; margin: 0 0 0 -3px; animation-name: pc-run-v; }
+  .pc-node { flex: none; min-height: 36px; }
+  .pc-block { flex: none; }
+  .pc-block-row .pc-node { flex: 1 1 0; }
+}
+@keyframes pc-run-v { from { top: 0; } to { top: calc(100% - 6px); } }
+@media (max-width: 560px) {
+  .pc-ch { grid-template-columns: 52px minmax(0, 1fr); }
+  .pc-ch-link { padding-right: 0; }
+  .pc-ch-arrow { display: none; }
+  .pc-ch-sub { font-size: 15px; }
+  .cc-where { white-space: nowrap; }
+  .cc-dots { display: none; }
+  .cc-bar { justify-content: space-between; }
+  .cc-title { font-size: 14.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-path::after { display: none; }
+  .cc-link { transition: none; }
+}

@@ -46,5 +46,6 @@ push 到 `main` 就會由 `.github/workflows/pages.yml` 部署到 https://hankso
   - `source/lab/<slug>/index.md`：front-matter 寫 `layout: <slug>`；要列在 `/notes/` 就加 `kind: note` 和 `reading`（閱讀分鐘數）。
   - `themes/tapeout/layout/<slug>.ejs`、`source/css/<slug>.css`、`source/js/<slug>.js`（後兩個在主題資料夾底下）。
   - `themes/tapeout/layout/_partial/head.ejs` 加一行 CSS、`layout.ejs` 加一行 JS，都用 `page.layout === '<slug>'` 判斷。
+- 新的論文解說頁要加進 `source/lab/diffusion-papers/index.md` 的 `chapters`，章節頁的上一章、下一章和 `/notes/` 的課程卡片都從那裡算。
 - 文章放 `source/_posts/blog/`，筆記放 `source/_posts/notes/`。
 - front-matter 有 `synced: obsidian` 的筆記是 `npm run sync` 從 Obsidian vault 產生的，每次同步都會覆蓋，不要直接改。vault 只在使用者的 Mac 上，cloud session 跑不了同步。
