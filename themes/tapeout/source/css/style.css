@@ -1904,6 +1904,7 @@ details.note > summary + * { margin-top: 8px; }
 .pc-block { flex: 3.4 1 0; min-width: 0; padding: 10px 12px 12px; border: 1px dashed var(--ink-3); border-radius: 3px; }
 .pc-block-head, .pc-bits { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 400 11.5px/1.4 var(--font-mono); color: var(--ink-3); }
 .pc-block-head { margin: 0 0 10px; white-space: nowrap; }
+.pc-loop { display: inline-flex; align-items: center; gap: 8px; transition: color 0.2s; }
 .pc-block-row { display: flex; gap: 10px; }
 .pc-bits { margin: 10px 0 0; transition: color 0.2s; }
 .pc-pins { display: inline-flex; gap: 6px; flex: none; }
@@ -1916,11 +1917,13 @@ details.note > summary + * { margin-top: 8px; }
 .pc:has([data-ch="1"]:is(:hover, :focus-within)) .on-1,
 .pc:has([data-ch="2"]:is(:hover, :focus-within)) .on-2,
 .pc:has([data-ch="3"]:is(:hover, :focus-within)) .on-3,
-.pc:has([data-ch="4"]:is(:hover, :focus-within)) .on-4 { border-color: var(--accent); color: var(--accent); opacity: 1; }
+.pc:has([data-ch="4"]:is(:hover, :focus-within)) .on-4,
+.pc:has([data-ch="5"]:is(:hover, :focus-within)) .on-5 { border-color: var(--accent); color: var(--accent); opacity: 1; }
 .pc:has(.pc-pin[data-ch="1"]:is(:hover, :focus-visible)) .pc-ch[data-ch="1"] .pc-ch-title,
 .pc:has(.pc-pin[data-ch="2"]:is(:hover, :focus-visible)) .pc-ch[data-ch="2"] .pc-ch-title,
 .pc:has(.pc-pin[data-ch="3"]:is(:hover, :focus-visible)) .pc-ch[data-ch="3"] .pc-ch-title,
-.pc:has(.pc-pin[data-ch="4"]:is(:hover, :focus-visible)) .pc-ch[data-ch="4"] .pc-ch-title { color: var(--accent); }
+.pc:has(.pc-pin[data-ch="4"]:is(:hover, :focus-visible)) .pc-ch[data-ch="4"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="5"]:is(:hover, :focus-visible)) .pc-ch[data-ch="5"] .pc-ch-title { color: var(--accent); }
 
 /* ---------- 章節 ---------- */
 .pc-chapters { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line-2); }

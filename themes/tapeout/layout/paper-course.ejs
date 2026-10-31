@@ -32,13 +32,13 @@
         <span class="pc-node on-1">Prompt</span>
         <span class="pc-node on-1">Text encoder</span>
         <span class="pc-node on-1">Latent</span>
-        <div class="pc-block on-1 on-3 on-4">
-          <p class="pc-block-head"><span>DiT block × 34–38</span><span>重跑 20–40 步 ↻</span></p>
+        <div class="pc-block on-1 on-2 on-4 on-5">
+          <p class="pc-block-head"><span>DiT block × 34–38</span><span class="pc-loop on-2">每步 × 2 · 重跑 20–40 步 ↻<%- pin(1) %></span></p>
           <div class="pc-block-row">
-            <span class="pc-node on-1 on-2 on-3 on-4">Attention<%- pin(1) %></span>
-            <span class="pc-node on-1 on-3 on-4">MLP</span>
+            <span class="pc-node on-1 on-3 on-4 on-5">Attention<%- pin(2) %></span>
+            <span class="pc-node on-1 on-4 on-5">MLP</span>
           </div>
-          <p class="pc-bits on-3 on-4"><span>權重與 activation 壓到 4 bit</span><span class="pc-pins"><%- pin(2) %><%- pin(3) %></span></p>
+          <p class="pc-bits on-4 on-5"><span>權重與 activation 壓到 4 bit</span><span class="pc-pins"><%- pin(3) %><%- pin(4) %></span></p>
         </div>
         <span class="pc-node on-1">VAE decode</span>
         <span class="pc-node on-1">圖片</span>
