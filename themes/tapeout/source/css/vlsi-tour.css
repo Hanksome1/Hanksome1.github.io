@@ -95,8 +95,9 @@ html:has(body.is-vlsi-tour) { background: #0a0a09; }
 .vt-world .a-dot { fill: #b9b6ab; }
 .vt-world .a-bubble { fill: #0a0a09; stroke: #b9b6ab; stroke-width: 1.6; }
 .vt-world .a-gnd { fill: none; stroke: #8b887e; stroke-width: 1.6; }
-.vt-world .a-chan { fill: none; stroke: #b9b6ab; stroke-width: 2.4; }
-.vt-world .a-gate { fill: none; stroke: #b9b6ab; stroke-width: 3; }
+.vt-world .m-lead { fill: none; stroke: #b9b6ab; stroke-width: 1.6; }
+.vt-world .m-chan { fill: none; stroke: #e4e2d8; stroke-width: 2.6; }
+.vt-world .m-gate { fill: none; stroke: #e4e2d8; stroke-width: 2.2; }
 .vt-world .a-pin { font-size: 11px; fill: var(--ink-2); }
 .vt-world .a-lab { font-size: 12.5px; fill: var(--ink-2); } .vt-world .a-dim { fill: var(--ink-3); }
 .vt-world .a-tiny { font-size: 10px; fill: var(--ink-3); }
@@ -112,7 +113,8 @@ html:has(body.is-vlsi-tour) { background: #0a0a09; }
 .vt-world .c-big { font: 600 18px var(--font-sans); fill: var(--ink); } .vt-world .c-sub { font: 400 14px var(--font-sans); fill: var(--ink); }
 .vt-world .f-name { font: 600 13px var(--font-mono); fill: var(--ink); }
 .vt-world .a-fname { font: 600 12px var(--font-mono); fill: var(--ink); }
-.vt-world .a-fet.is-p .a-cell { stroke: var(--cool); }
+.vt-world .a-fet.is-p .m-chan, .vt-world .a-fet.is-p .m-gate { stroke: var(--cool); }
+.vt-world .a-fet.is-p .a-bubble { stroke: var(--cool); }
 .vt-world .k-name { font: 600 14px var(--font-mono); fill: var(--ink); }
 .vt-world .k-slow { fill: var(--accent); }
 /* 流程 */

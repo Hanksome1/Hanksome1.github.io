@@ -43,12 +43,23 @@ var ART = (function () {
     if (yl) TS(lab, x0 - 8, y0 - h + 4, yl, 'a-lab a-dim', 'end');
     return { axis: a, lab: lab };
   }
-  // 電晶體畫成開關：一個框、gate 的名字寫在框裡，PMOS 左邊多一個小圈
-  function fet(g, x, y, name, pmos, w) {
-    var f = el('g', { class: 'a-fet' + (pmos ? ' is-p' : ' is-n') }, g); w = w || 36;
-    el('rect', { x: x - w / 2, y: y - 14, width: w, height: 28, rx: 5, class: 'a-cell' }, f);
-    if (pmos) el('circle', { cx: x - w / 2 - 5, cy: y, r: 3.6, class: 'a-bubble' }, f);
-    T(f, x, y + 5, name, 'a-fname', 'middle');
+  // MOS 的電路符號：channel 和 gate 兩根平行線，PMOS 在 gate 前面多一個小圈。
+  // 預設直立：drain、source 的端點在 (x, y ∓ 14)，gate 從左邊 (x − 26, y) 接進來。
+  // o.rot 轉向（90：gate 朝上、端點在左右；−90：gate 朝下），o.s 放大，o.mx 左右鏡像（gate 從右邊接）；
+  // name 預設寫在 gate 那一端（輸入名），o.side = 'right' 時寫在右邊（元件名）
+  function fet(g, x, y, name, pmos, o) {
+    o = o || {}; var s = o.s || 1, f = el('g', { class: 'a-fet' + (pmos ? ' is-p' : ' is-n') }, g);
+    var sym = el('g', { transform: 'translate(' + x + ' ' + y + ')' + (o.rot ? ' rotate(' + o.rot + ')' : '') + (s !== 1 ? ' scale(' + s + ')' : '') + (o.mx ? ' scale(-1 1)' : '') }, f);
+    el('path', { d: 'M0 -14 V-9 H-8 M0 14 V9 H-8', class: 'm-lead' }, sym);
+    el('path', { d: 'M-8 -13 V13', class: 'm-chan' }, sym);
+    el('path', { d: 'M-14 -11 V11', class: 'm-gate' }, sym);
+    if (pmos) { el('circle', { cx: -18.5, cy: 0, r: 3.5, class: 'a-bubble' }, sym); el('path', { d: 'M-22 0 H-26', class: 'm-lead' }, sym); }
+    else el('path', { d: 'M-14 0 H-26', class: 'm-lead' }, sym);
+    if (name) {
+      if (o.side === 'right') T(f, x + 8 * s, y + 4, name, 'a-fname');
+      else if (!o.rot) T(f, x - 30 * s, y + 4, name, 'a-fname', 'end');
+      else if (o.lx != null) T(f, x + o.lx, y + o.ly, name, 'a-fname', o.la);
+    }
     return f;
   }
 
@@ -108,11 +119,10 @@ var ART = (function () {
   function mos(g) {
     var sch = el('g', {}, g);
     T(sch, 20, 138, 'in', 'a-lab'); el('circle', { cx: 50, cy: 150, r: 3.5, class: 'a-dot' }, sch);
-    var w1 = wire(sch, 'M50 150 H96', 'a-wire'), w2 = wire(sch, 'M184 150 H240', 'a-wire');
-    el('path', { d: 'M96 150 V164 H184 V150', class: 'a-chan' }, sch);
-    el('path', { d: 'M100 176 H180', class: 'a-gate' }, sch);
-    var w3 = wire(sch, 'M140 176 V214', 'a-wire a-ctl');
-    TS(sch, 140, 232, ['G = V', ['DD', 'sub']], 'a-lab', 'middle'); T(sch, 140, 130, 'NMOS', 'a-lab a-dim', 'middle');
+    var w1 = wire(sch, 'M50 150 H119', 'a-wire'), w2 = wire(sch, 'M161 150 H240', 'a-wire');
+    fet(sch, 140, 150, '', false, { rot: -90, s: 1.5 });
+    var w3 = wire(sch, 'M140 189 V214', 'a-wire a-ctl');
+    TS(sch, 140, 232, ['G = V', ['DD', 'sub']], 'a-lab', 'middle'); T(sch, 140, 124, 'NMOS', 'a-lab a-dim', 'middle');
     el('circle', { cx: 240, cy: 150, r: 3.5, class: 'a-dot' }, sch); T(sch, 240, 136, 'out', 'a-lab', 'middle');
     var w4 = wire(sch, 'M240 150 V176 M228 176 H252 M228 184 H252 M240 184 V204', 'a-wire');
     ground(sch, 240, 204); TS(sch, 258, 186, ['C', ['L', 'sub']], 'a-lab a-dim');
@@ -141,9 +151,9 @@ var ART = (function () {
     var sch = el('g', {}, g);
     T(sch, 110, 16, 'VDD', 'a-lab a-dim', 'middle');
     var ws = [wire(sch, 'M80 24 H140', 'a-wire a-vddw'), wire(sch, 'M110 24 V66', 'a-wire'), wire(sch, 'M110 114 V226', 'a-wire'), wire(sch, 'M110 274 V300', 'a-wire'),
-      wire(sch, 'M110 170 H190', 'a-wire'), wire(sch, 'M20 170 H52 M52 90 V250 M52 90 H68 M52 250 H72', 'a-wire a-ctl')];
+      wire(sch, 'M110 170 H190', 'a-wire'), wire(sch, 'M20 170 H52 M52 90 V250 M52 90 H84 M52 250 H84', 'a-wire a-ctl')];
     ground(sch, 110, 300);
-    var P = fet(sch, 110, 90, 'P', true), N = fet(sch, 110, 250, 'N', false);
+    var P = fet(sch, 110, 90, 'PMOS', true, { side: 'right' }), N = fet(sch, 110, 250, 'NMOS', false, { side: 'right' });
     T(sch, 20, 158, 'in', 'a-lab'); T(sch, 190, 158, 'out', 'a-lab', 'end'); el('circle', { cx: 110, cy: 170, r: 3.5, class: 'a-dot' }, sch);
     var X0 = 260, Y0 = 320, W = 300, H = 300;
     var ax = axes(g, X0, Y0, W, H, [['V', ''], ['in', 'sub']], [['V', ''], ['out', 'sub']]);
@@ -247,9 +257,8 @@ var ART = (function () {
     ws.push(wire(sch, 'M80 16 H140 M110 16 V42 M110 70 V120 M110 196 V226 M110 254 V280', 'a-wire'));
     ws.push(wire(sch, 'M110 96 H170 M170 96 V112 M158 112 H182 M158 120 H182 M170 120 V134', 'a-wire'));
     ground(sch, 170, 134); ground(sch, 110, 280);
-    ws.push(wire(sch, 'M20 56 H66 M20 240 H86', 'a-wire a-clk'));
-    var mp = fet(sch, 110, 56, 'M', true), me = fet(sch, 110, 240, 'M', false);
-    mp.querySelector('text').textContent = 'Mp'; me.querySelector('text').textContent = 'Me';
+    ws.push(wire(sch, 'M20 56 H84 M20 240 H84', 'a-wire a-clk'));
+    var mp = fet(sch, 110, 56, 'Mp', true, { side: 'right' }), me = fet(sch, 110, 240, 'Me', false, { side: 'right' });
     el('rect', { x: 70, y: 120, width: 80, height: 76, rx: 8, class: 'a-cell d-pdn' }, sch); T(sch, 110, 163, 'PDN', 'f-name', 'middle');
     T(sch, 20, 48, 'CLK', 'a-lab a-clkt'); T(sch, 20, 232, 'CLK', 'a-lab a-clkt'); T(sch, 180, 90, 'out', 'a-lab');
     TS(sch, 190, 124, ['C', ['L', 'sub']], 'a-lab a-dim'); T(sch, 40, 162, 'A B C', 'a-lab a-dim', 'middle');
@@ -362,28 +371,32 @@ var ART = (function () {
   /* ---------- 10. 6T SRAM ---------- */
   function sram(g) {
     var ws = [], parts = [];
-    var wl = wire(g, 'M20 30 H580', 'a-wire a-wl'); T(g, 590, 35, 'WL', 'a-lab');
-    ws.push(wire(g, 'M60 20 V330', 'a-wire a-bl')); ws.push(wire(g, 'M540 20 V330', 'a-wire a-bl'));
+    var wl = wire(g, 'M20 20 H580', 'a-wire a-wl'); T(g, 590, 25, 'WL', 'a-lab');
+    ws.push(wire(g, 'M60 10 V330', 'a-wire a-bl')); ws.push(wire(g, 'M540 10 V330', 'a-wire a-bl'));
     T(g, 60, 350, 'BL', 'a-lab', 'middle'); T(g, 540, 350, 'BLB', 'a-lab', 'middle');
-    // 兩個交叉耦合的反相器
-    var i1 = el('g', {}, g), i2 = el('g', {}, g);
-    el('path', { d: 'M250 106 L310 136 L250 166 Z', class: 'a-cell' }, i1); el('circle', { cx: 315, cy: 136, r: 4, class: 'a-bubble' }, i1); T(i1, 268, 182, 'PU + PD', 'a-tiny', 'middle');
-    el('path', { d: 'M350 224 L290 254 L350 284 Z', class: 'a-cell' }, i2); el('circle', { cx: 285, cy: 254, r: 4, class: 'a-bubble' }, i2); T(i2, 332, 300, 'PU + PD', 'a-tiny', 'middle');
-    parts.push(i1, i2);
-    ws.push(wire(g, 'M200 136 H250 M200 136 V254 H280', 'a-wire'));
-    ws.push(wire(g, 'M320 136 H400 V254 H350', 'a-wire'));
-    var pg1 = fet(g, 130, 196, 'PG', false, 44), pg2 = fet(g, 470, 196, 'PG', false, 44); parts.push(pg1, pg2);
-    ws.push(wire(g, 'M60 196 H108 M152 196 H200 M130 182 V30', 'a-wire'));
-    ws.push(wire(g, 'M400 196 H448 M492 196 H540 M470 182 V30', 'a-wire'));
-    var q = el('g', {}, g); el('circle', { cx: 200, cy: 196, r: 4, class: 'a-dot' }, q); el('circle', { cx: 400, cy: 196, r: 4, class: 'a-dot' }, q);
-    var qv = T(q, 200, 226, 'Q', 'f-name', 'middle'), qbv = T(q, 400, 226, 'Q̄', 'f-name', 'middle');
-    var cnt = T(g, 300, 64, '6T = 2 個反相器 + 2 顆 access transistor', 'a-lab a-dim', 'middle');
+    // 兩個交叉耦合的反相器：左邊那組鏡像，gate 朝內；Q 接右邊的 gate、Q̄ 接左邊的 gate，中間交叉的線不相連
+    var inv1 = el('g', {}, g), inv2 = el('g', {}, g);
+    T(inv1, 300, 66, 'VDD', 'a-lab a-dim', 'middle'); el('path', { d: 'M200 74 H400', class: 'a-wire a-vddw' }, inv1);
+    parts.push(fet(inv1, 230, 110, '', true, { mx: true }), fet(inv1, 230, 250, '', false, { mx: true }));
+    parts.push(fet(inv2, 370, 110, '', true), fet(inv2, 370, 250, '', false));
+    T(inv1, 214, 114, 'PU', 'a-fname', 'end'); T(inv1, 214, 254, 'PD', 'a-fname', 'end');
+    T(inv2, 386, 114, 'PU', 'a-fname'); T(inv2, 386, 254, 'PD', 'a-fname');
+    ws.push(wire(g, 'M230 74 V96 M230 124 V236 M230 264 V292 M256 110 V250 M370 74 V96 M370 124 V236 M370 264 V292 M344 110 V250', 'a-wire'));
+    ground(g, 230, 292); ground(g, 370, 292);
+    ws.push(wire(g, 'M230 160 H344 M370 200 H256', 'a-wire a-xc'));
+    var pg1 = fet(g, 130, 180, 'PG', false, { rot: 90, lx: 0, ly: 26, la: 'middle' }), pg2 = fet(g, 470, 180, 'PG', false, { rot: 90, lx: 0, ly: 26, la: 'middle' }); parts.push(pg1, pg2);
+    ws.push(wire(g, 'M60 180 H116 M144 180 H230 M130 154 V20', 'a-wire'));
+    ws.push(wire(g, 'M370 180 H456 M484 180 H540 M470 154 V20', 'a-wire'));
+    var q = el('g', {}, g);
+    [[230, 160], [344, 160], [370, 200], [256, 200], [230, 180], [370, 180]].forEach(function (d) { el('circle', { cx: d[0], cy: d[1], r: 3.5, class: 'a-dot' }, q); });
+    var qv = T(q, 222, 200, 'Q', 'f-name', 'end'), qbv = T(q, 378, 172, 'Q̄', 'f-name');
+    var cnt = T(g, 300, 44, '6T = PU、PD 兩組反相器 + 2 顆 PG', 'a-lab a-dim', 'middle');
     var rd = el('g', {}, g);
     var blv = T(rd, 76, 300, '', 'a-tiny k-slow'), blbv = T(rd, 524, 300, '', 'a-tiny', 'end');
     return { set: function (t) {
       draw(wl, seg(t, 0, 0.15)); draw(ws[0], seg(t, 0.05, 0.2)); draw(ws[1], seg(t, 0.05, 0.2));
-      show(i1, seg(t, 0.15, 0.27), 6); show(i2, seg(t, 0.2, 0.32), 6); draw(ws[2], seg(t, 0.25, 0.4)); draw(ws[3], seg(t, 0.28, 0.43));
-      show(pg1, seg(t, 0.38, 0.48), 6); show(pg2, seg(t, 0.4, 0.5), 6); draw(ws[4], seg(t, 0.45, 0.6)); draw(ws[5], seg(t, 0.47, 0.62));
+      show(inv1, seg(t, 0.12, 0.25), 6); show(inv2, seg(t, 0.17, 0.3), 6); draw(ws[2], seg(t, 0.2, 0.4)); draw(ws[3], seg(t, 0.32, 0.47));
+      show(pg1, seg(t, 0.4, 0.5), 6); show(pg2, seg(t, 0.42, 0.52), 6); draw(ws[4], seg(t, 0.45, 0.6)); draw(ws[5], seg(t, 0.47, 0.62));
       show(q, seg(t, 0.55, 0.65)); show(cnt, seg(t, 0.55, 0.65));
       var r = seg(t, 0.7, 0.95);
       g.classList.toggle('is-read', r > 0);
