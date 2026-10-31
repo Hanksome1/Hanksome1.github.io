@@ -15,7 +15,7 @@
   </svg>
   <span class="tour-copy">
     <span class="tour-kicker"><span class="tour-play"></span>動畫導覽 · <%= tour.stops.length %> 站</span>
-    <span class="tour-title">把 <%= course.tag %> 整學期的筆記串成一條 design flow</span>
+    <span class="tour-title"><%= tour.heading || ('把 ' + course.tag + ' 整學期的筆記串成一條 design flow') %></span>
     <% if (tour.tagline) { %><span class="tour-sub"><%= tour.tagline %></span><% } %>
   </span>
   <span class="tour-arrow" aria-hidden="true">→</span>

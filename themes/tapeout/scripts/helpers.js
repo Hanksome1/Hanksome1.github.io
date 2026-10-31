@@ -148,7 +148,7 @@ hexo.extend.helper.register('course_tour', function (course) {
     hexo.log.warn(`[notes] 課程 ${course.tag} 的 tour ${course.tour} 找不到頁面，或頁面沒有 tour.stops`);
     return null;
   }
-  return { url: course.tour, title: page.title, tagline: page.tour.tagline, stops: page.tour.stops };
+  return { url: course.tour, title: page.title, heading: page.tour.title, tagline: page.tour.tagline, stops: page.tour.stops };
 });
 
 // ── Floorplan ────────────────────────────────────────────────

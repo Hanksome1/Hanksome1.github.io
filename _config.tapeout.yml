@@ -119,7 +119,7 @@ notes:
       name: Diffusion 相關論文閱讀
       topics: [DiT, Attention, Quantization, SD 3.5, FLUX.1]
     - { hub: /notes/iclab/, tag: ICLAB, name: ICLAB 積體電路設計實驗, code: EE4292, term: 114 學年度上學期, tour: /lab/iclab/ }
-    - { hub: /notes/vlsi/, tag: VLSI, name: 積體電路設計導論, code: EE3230, term: 113 學年度上學期 }
+    - { hub: /notes/vlsi/, tag: VLSI, name: 積體電路設計導論, code: EE3230, term: 113 學年度上學期, tour: /lab/vlsi/ }
     - { hub: /notes/aic/, tag: AIC, name: 電子學（二）, code: EE2260, term: 113 學年度上學期 }
     - { hub: /notes/electronics/, tag: Electronics, name: 電子學（一）, term: 112 學年度下學期 }
     - hub: /notes/quantumn-mechanics/

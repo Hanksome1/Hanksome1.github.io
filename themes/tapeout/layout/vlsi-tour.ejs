@@ -1,0 +1,171 @@
+<%
+  // 積體電路設計導論（VLSI）的捲動導覽（js/vlsi-tour.js），版型同 /lab/iclab/：黑底，一拍一句大標，畫面在正中間換。
+  // 每一拍寫成下面的 <article data-beat>，沒有 JS 時就是依序排好的內容；
+  // data-w 是這一拍佔多少捲動距離，data-ch 是章節，data-scene 是用哪個畫面，data-finale 是最後拉遠的那一拍。
+  // NOTES 是筆記入口：[網址, 短標題, 小標]，完整標題直接取自筆記。
+  var NOTES = {
+    hub:      ['/notes/vlsi/', '筆記總覽'],
+    intro:    ['/notes/vlsi-intro/', 'Full-custom 流程'],
+    corner:   ['/notes/vlsi-intro/', 'Process corner'],
+    process:  ['/notes/vlsi-process/', 'MOS 元件與製程'],
+    inverter: ['/notes/vlsi-inverter/', 'CMOS 反相器'],
+    chain:    ['/notes/vlsi-inverter/', 'Inverter chain'],
+    logic:    ['/notes/vlsi-logic/', '組合邏輯'],
+    rc:       ['/notes/vlsi-rc/', '寄生 RC 與導線'],
+    seq:      ['/notes/vlsi-sequential/', 'Latch 與 flip-flop'],
+    memory:   ['/notes/vlsi-memory/', '記憶體電路'],
+    power:    ['/notes/vlsi-power/', '晶片功耗'],
+    proj:     ['/projects/rom-macro/', 'ROM macro 期末專題', 'PROJECT'],
+    iclab:    ['/lab/iclab/', 'ICLAB 的 cell-based flow']
+  };
+  // 筆記的 path 開頭有 /（obsidian.js 的 permalink），專案和 lab 頁的沒有，所以比對前兩邊都去掉頭尾的 /
+  function trim(s) { return String(s || '').replace(/^\/+|\/+$/g, ''); }
+  var byPath = {}, count = 0;
+  site.posts.forEach(function (p) {
+    byPath[trim(p.path)] = p;
+    if (trim(p.path) !== 'notes/vlsi' && (p.tags ? p.tags.map(function (t) { return t.name; }) : []).indexOf('VLSI') > -1) count++;
+  });
+  site.pages.forEach(function (p) { byPath[trim(p.path).replace(/\/?index\.html$/, '')] = p; });
+  var notes = {};
+  Object.keys(NOTES).forEach(function (k) {
+    var n = NOTES[k], post = byPath[trim(n[0])];
+    notes[k] = { href: url_for(n[0]), title: post ? post.title : n[1], short: n[1], kind: n[2] || 'NOTE' };
+  });
+  function attr(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function reads(keys) {
+    return '<p class="vt-reads"><span>讀筆記</span>' + keys.map(function (k) {
+      var n = notes[k];
+      return '<a href="' + n.href + '" title="' + attr(n.title) + '">' + attr(n.short) + '</a>';
+    }).join('') + '</p>';
+  }
+%>
+<div class="vt" data-vt>
+  <header class="vt-hero">
+    <p class="vt-kick">VLSI · EE3230 · 清大電機</p>
+    <h1 class="vt-title">一顆電晶體，<br><span>長成</span>一塊 ROM。</h1>
+    <p class="vt-lede">積體電路設計導論一學期的 full-custom 設計：從 MOS 的特性往上疊，反相器、邏輯閘、導線、flip-flop、記憶體，最後是期末那顆 128 × 16 bit 的 ROM。每一站都接到那一站的筆記。</p>
+    <p class="vt-skip"><a href="<%- notes.hub.href %>">直接看筆記總覽（<%= count %> 篇）→</a></p>
+    <p class="vt-cue" aria-hidden="true">Scroll</p>
+  </header>
+
+  <section class="vt-track">
+    <div class="vt-stage">
+      <div class="vt-viz"><svg class="vt-world" data-world viewBox="-40 -30 680 470" role="img" aria-label="積體電路設計導論的動畫：full-custom 流程、process corner、MOS 的 strong 0 與 weak 1、反相器的 VTC、inverter chain、static CMOS 與 dynamic logic、導線的 distributed RC、setup 與 hold、6T SRAM，最後是期末 128 × 16 bit ROM macro 的 array、decoder、讀取和功耗"></svg></div>
+      <div class="vt-beats">
+      <article class="vt-beat" data-beat="flow" data-scene="flow" data-w="1.2" data-ch="0">
+        <header class="vt-head"><p class="vt-kick">01 — Flow · Ch1</p><h2>每一顆電晶體，<em>都自己畫</em>。</h2></header>
+        <div class="vt-cap"><p>Full-custom 沒有合成工具：自己決定 W/L、畫 schematic、拉 layout，DRC 和 LVS 都要 clean，再抽出寄生 RC 模擬一次。</p><%- reads(['intro', 'iclab']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="corner" data-scene="corner" data-w="1.2" data-ch="0">
+        <header class="vt-head"><p class="vt-kick">02 — Process corner · Ch1</p><h2>同一份設計，要過<em>五個 corner</em>。</h2></header>
+        <div class="vt-cap"><p>製程做出來的 threshold 會飄。第一個字母是 NMOS、第二個是 PMOS；期末的 ROM 五個 corner 都要在 5 ns 內，最慢的是 SS 的 1.98 ns。</p><%- reads(['corner', 'proj']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="mos" data-scene="mos" data-w="1.2" data-ch="1">
+        <header class="vt-head"><p class="vt-kick">03 — MOS · Ch2</p><h2>NMOS 傳得好 <em>0</em>，傳不好 1。</h2></header>
+        <div class="vt-cap"><p>NMOS 傳 1 時，輸出升到 <code>V<sub>DD</sub> − V<sub>Tn</sub></code> 就關掉了；PMOS 剛好相反。所以 static CMOS 用 PMOS 上拉、NMOS 下拉。</p><%- reads(['process', 'logic']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="inv" data-scene="inv" data-w="1.2" data-ch="1">
+        <header class="vt-head"><p class="vt-kick">04 — Inverter · Ch3</p><h2>兩顆電晶體，<em>一個反相器</em>。</h2></header>
+        <div class="vt-cap"><p>VTC 和 <code>V<sub>in</sub> = V<sub>out</sub></code> 的交點是切換點 V<sub>M</sub>，斜率 −1 的兩點定出 noise margin。NMOS 和 PMOS 一強一弱時，整條曲線左右平移。</p><%- reads(['inverter', 'corner']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="chain" data-scene="chain" data-w="1.2" data-ch="1">
+        <header class="vt-head"><p class="vt-kick">04 — Inverter · Ch3</p><h2>推大負載，<em>分三級</em>放大。</h2></header>
+        <div class="vt-cap"><p>延遲是 <code>0.69 R<sub>eq</sub>C<sub>L</sub></code>。要推 64 倍的負載，一級直接推是 65 t<sub>p0</sub>；每級放大 4 倍、串三級，只要 15 t<sub>p0</sub>。</p><%- reads(['chain', 'rc']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="cmos" data-scene="cmos" data-w="1.2" data-ch="2">
+        <header class="vt-head"><p class="vt-kick">05 — Logic · Ch4</p><h2>上拉和下拉，<em>互為對偶</em>。</h2></header>
+        <div class="vt-cap"><p><code>F = ¬(A·B + C)</code>：PDN 是 A、B 串聯再並上 C，PUN 把串並聯對調。N 個輸入的 static CMOS 要 2N 顆電晶體。</p><%- reads(['logic', 'process']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="dyn" data-scene="dyn" data-w="1.2" data-ch="2">
+        <header class="vt-head"><p class="vt-kick">05 — Logic · Ch4</p><h2>先充滿，<em>再決定要不要放</em>。</h2></header>
+        <div class="vt-cap"><p>Dynamic logic 在 CLK = 0 時 precharge，CLK = 1 時由 PDN 決定要不要放電，只要 N + 2 顆電晶體。沒放電的 1 只存在電容上，ROM 的 bit line 也是這樣讀的。</p><%- reads(['logic', 'memory']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="rc" data-scene="rc" data-w="1.2" data-ch="3">
+        <header class="vt-head"><p class="vt-kick">06 — RC · Ch5</p><h2>導線越長，延遲<em>平方</em>成長。</h2></header>
+        <div class="vt-cap"><p>把導線切成 N 段 RC，最末端的 Elmore delay 是 <code>RC·(N+1)/2N</code>，切到無限多段是 RC/2。R 和 C 都跟長度成正比，所以延遲跟 L² 成正比。</p><%- reads(['rc']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="timing" data-scene="timing" data-w="1.25" data-ch="3">
+        <header class="vt-head"><p class="vt-kick">07 — Sequential · Ch6</p><h2>Setup 怕慢，<em>hold 怕快</em>。</h2></header>
+        <div class="vt-cap"><p>最長路徑要在下一個 clock edge 的 setup time 之前到；最短路徑不能在 hold time 結束前就到。Hold 跟週期無關，降頻也救不了。</p><%- reads(['seq']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="sram" data-scene="sram" data-w="1.2" data-ch="4">
+        <header class="vt-head"><p class="vt-kick">08 — Memory · Ch7</p><h2><em>6 顆</em>電晶體，存一個 bit。</h2></header>
+        <div class="vt-cap"><p>兩個交叉耦合的反相器存 Q 和 Q̄，兩顆 access transistor 由 word line 打開。讀和寫都要看電晶體的相對強弱：cell ratio 和 pull-up ratio。</p><%- reads(['memory', 'inverter']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="array" data-scene="rom" data-w="1.0" data-ch="4">
+        <header class="vt-head"><p class="vt-kick">08 — ROM · 期末專題</p><h2>ROM 的 0 和 1，<em>由 contact 決定</em>。</h2></header>
+        <div class="vt-cap"><p>期末做的是一顆 contact ROM：128 條 word line × 16 條 bit line，共 2,048 bits。cell 和 bit line 之間有 contact 存 0，沒有存 1。</p><%- reads(['memory', 'proj']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="decode" data-scene="rom" data-w="0.95" data-ch="4">
+        <header class="vt-head"><p class="vt-kick">08 — ROM · 期末專題</p><h2>7 個位址 bit，<em>打開一條 word line</em>。</h2></header>
+        <div class="vt-cap"><p>X decoder 把 7 bits 拆成 4 + 3 先 pre-decode，再用 128 個 NOR2 組回來，比 128 個 7-input AND 小得多。</p><%- reads(['logic', 'proj']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="read" data-scene="rom" data-w="1.2" data-ch="4">
+        <header class="vt-head"><p class="vt-kick">08 — ROM · 期末專題</p><h2>只要掉 <em>50 mV</em>，就讀得出 0。</h2></header>
+        <div class="vt-cap"><p>CLK 低時 bit line 先 precharge 到 V<sub>DD</sub>，CLK 高時有 contact 的 cell 開始放電。<code>VREF</code> 設在 1.75 V，sense amplifier 不用等 bit line 放完。</p><%- reads(['memory', 'proj']) %></div>
+      </article>
+      <article class="vt-beat" data-beat="power" data-scene="power" data-w="1.2" data-ch="5">
+        <header class="vt-head"><p class="vt-kick">09 — Power · Ch8</p><h2>Layout 之後，功耗<em>幾乎翻倍</em>。</h2></header>
+        <div class="vt-cap"><p>Switching power 跟負載電容成正比。為了壓面積，平行的線靠得很近，coupling capacitance 變大：post-sim 的 access time 多 16%，功耗多 86%。</p><%- reads(['power', 'rc', 'proj']) %></div>
+      </article>
+      <article class="vt-beat vt-final" data-beat="final" data-scene="rom" data-finale data-w="1.1" data-ch="5">
+        <header class="vt-head"><p class="vt-kick">VLSI · EE3230</p><h2>這就是 VLSI 的<em>一學期</em>。</h2></header>
+        <div class="vt-cap">
+          <p>期末的 ROM macro 把整條 full-custom 流程走完一次：7,818 µm²、DRC / LVS clean，TT corner 平均 access time 1.56 ns。</p>
+          <p class="vt-cta"><a class="vt-btn is-pri" href="<%- notes.hub.href %>">看全部 <%= count %> 篇筆記 →</a><a class="vt-btn" href="<%- notes.proj.href %>">期末專題</a></p>
+        </div>
+      </article>
+      </div>
+      <nav class="vt-rail" data-rail data-names="Flow|Device|Logic|Timing|Memory|Chip" aria-label="章節"></nav>
+      <button type="button" class="vt-play" data-play aria-label="自動播放"><span class="vt-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+    </div>
+  </section>
+
+  <section class="vt-outro wrap">
+    <p class="kicker">§ Summary</p>
+    <h2>三件事</h2>
+    <ol class="vt-take">
+      <li><b>看的是相對強弱。</b>NMOS 傳 strong 0、PMOS 傳 strong 1，所以有 static CMOS、level restorer；反相器的切換點、SRAM 的讀寫、ROM 在 SF corner 變慢，都是兩顆電晶體在比力氣。</li>
+      <li><b>延遲幾乎就是 RC。</b>反相器是 <code>0.69 R<sub>eq</sub>C<sub>L</sub></code>，加大 W/L 讓 R 變小、C 卻變大，導線的延遲跟長度平方成正比。ROM 做完 layout，access time 多了 16%。</li>
+      <li><b>存在電容上的值會漏。</b>Dynamic logic 有最低操作頻率、DRAM 要 refresh；ROM 的 bit line 只在一個 cycle 裡 precharge 再讀，所以時序要靠 CLK 和兩級反相器排好。</li>
+    </ol>
+
+    <div class="table-wrap">
+      <table class="vt-table">
+        <caption>課程內容（取自筆記總覽）</caption>
+        <thead><tr><th>章</th><th>主題</th><th>筆記</th><th>這頁的哪一站</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>課程介紹、full-custom 設計流程、process corner</td><td><a href="<%- notes.intro.href %>">設計流程</a></td><td>01–02 Flow</td></tr>
+          <tr><td>2</td><td>MOS 元件特性與 CMOS 製程</td><td><a href="<%- notes.process.href %>">MOS 元件</a></td><td>03 MOS</td></tr>
+          <tr><td>3</td><td>CMOS 反相器</td><td><a href="<%- notes.inverter.href %>">反相器</a></td><td>04 Inverter</td></tr>
+          <tr><td>4</td><td>組合邏輯：static CMOS、pass transistor、dynamic logic</td><td><a href="<%- notes.logic.href %>">組合邏輯</a></td><td>05 Logic</td></tr>
+          <tr><td>5</td><td>寄生電阻、電容與導線模型</td><td><a href="<%- notes.rc.href %>">寄生 RC</a></td><td>06 RC</td></tr>
+          <tr><td>6</td><td>時序電路：latch 與 flip-flop</td><td><a href="<%- notes.seq.href %>">時序電路</a></td><td>07 Sequential</td></tr>
+          <tr><td>7</td><td>記憶體：SRAM、DRAM、ROM、Flash、新興記憶體</td><td><a href="<%- notes.memory.href %>">記憶體</a></td><td>08 Memory · ROM</td></tr>
+          <tr><td>8</td><td>晶片：設計流程、I/O、timing、功耗</td><td><a href="<%- notes.power.href %>">功耗</a></td><td>09 Power</td></tr>
+          <tr><td>期末</td><td>128 × 16 bit contact ROM，schematic 到 post-layout sim</td><td><a href="<%- notes.proj.href %>">ROM macro</a></td><td>08 ROM · Final</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="vt-cols">
+      <div>
+        <h3>這頁連到的筆記</h3>
+        <ul>
+          <li>流程：<a href="<%- notes.intro.href %>"><%= notes.intro.title %></a></li>
+          <li>元件與基本電路：<a href="<%- notes.process.href %>">MOS 元件</a>、<a href="<%- notes.inverter.href %>">反相器</a>、<a href="<%- notes.logic.href %>">組合邏輯</a>、<a href="<%- notes.rc.href %>">寄生 RC</a></li>
+          <li>時序與記憶體：<a href="<%- notes.seq.href %>">時序電路</a>、<a href="<%- notes.memory.href %>">記憶體電路</a></li>
+          <li>晶片：<a href="<%- notes.power.href %>">功耗</a>；期末：<a href="<%- notes.proj.href %>">ROM macro 全客製化設計</a></li>
+          <li>另一條路：<a href="<%- notes.iclab.href %>">ICLAB 的 cell-based flow</a>（寫 RTL、交給工具合成和 APR）</li>
+        </ul>
+      </div>
+      <div>
+        <h3>資料來源與畫面怎麼來的</h3>
+        <ul>
+          <li>公式和數字取自上面的筆記：inverter chain 的 65、18、15 是 F = 64、γ = 1 的例子；ROM 的五個 corner、pre-sim 與 post-sim 的 access time 和功耗，都取自期末專題頁。</li>
+          <li>電路圖畫成方塊加開關，只保留連接關係。VTC、RC 曲線和波形是照公式畫的示意圖；ROM array 只畫了 128 條 word line 裡的 12 條，存的 0 和 1 是固定種子產生的，不是實際的 code。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>

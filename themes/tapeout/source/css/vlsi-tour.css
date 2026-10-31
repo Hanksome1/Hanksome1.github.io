@@ -1,0 +1,194 @@
+/* ==========================================================================
+   VLSI 導覽（layout: vlsi-tour，js/vlsi-tour.js）
+   黑底發表會式：一拍一句大標、畫面在正中間換、下面是說明和筆記入口。
+   不管網站是淺色還是深色，這一頁都用深色；.is-live 之後 .vt-track 才拉長、舞台才釘住，
+   沒有 JS 時每一拍依序排好，減少動態（.is-static）時畫面停在完成的 ROM macro。
+   ========================================================================== */
+
+body.is-vlsi-tour {
+  --bg: #0a0a09; --bg-2: #121310; --surface: #141512; --ink: #f2f1ea; --ink-2: #a9a69c; --ink-3: #6d6b62;
+  --line: #24251f; --line-2: #36382f; --grid-dot: rgba(236, 235, 228, 0.05);
+  --accent: #ff6a2c; --accent-ink: #0a0a09; --accent-soft: rgba(255, 106, 44, 0.16);
+  --header-bg: rgba(10, 10, 9, 0.78); --cool: #7ea6ff; --clk: #ffd166;
+  color-scheme: dark; background: var(--bg); color: var(--ink);
+}
+html:has(body.is-vlsi-tour) { background: #0a0a09; }
+.is-vlsi-tour .statusbar { display: none; }
+
+/* ---------- hero ---------- */
+.vt-hero { position: relative; min-height: calc(100svh - var(--header-h)); display: grid; place-content: center; padding: 48px var(--gutter) 96px; text-align: center; }
+.vt-kick { margin: 0; font: 500 12.5px var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.vt-title { margin: 22px 0 0; font-size: clamp(42px, 7.6vw, 108px); line-height: 1.03; font-weight: 600; letter-spacing: -0.045em; }
+.vt-title span { color: var(--ink-3); }
+.vt-lede { margin: 26px auto 0; max-width: 30em; font-size: clamp(16.5px, 1.6vw, 20px); line-height: 1.65; color: var(--ink-2); text-wrap: balance; }
+.vt-skip { margin: 22px 0 0; font-size: 14.5px; }
+.vt-skip a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--line-2); padding-bottom: 2px; transition: color 0.2s, border-color 0.2s; }
+.vt-skip a:hover { color: var(--accent); border-color: var(--accent); }
+.vt-cue { position: absolute; left: 50%; bottom: 28px; margin: 0; translate: -50% 0; font: 500 11.5px var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.vt-cue::after { content: ""; display: block; width: 1px; height: 40px; margin: 12px auto 0; background: linear-gradient(var(--ink-3), transparent); transform-origin: top; animation: vt-drip 2s ease-in-out infinite; }
+@keyframes vt-drip { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+.vt:not(.is-live) .vt-cue { display: none; }
+
+/* ---------- 每一拍的文字 ---------- */
+.vt-beat h2 { margin: 12px 0 0; font-size: clamp(28px, 4.4vw, 62px); line-height: 1.08; font-weight: 600; letter-spacing: -0.035em; text-wrap: balance; }
+.vt-beat h2 em { font-style: normal; color: var(--accent); }
+.vt-cap p { margin: 0 auto; max-width: 36em; font-size: 16px; line-height: 1.7; color: var(--ink-2); text-wrap: pretty; }
+.vt-cap code { font: 500 0.92em var(--font-mono); color: var(--ink); }
+.vt-reads { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 4px 14px; margin-top: 10px !important; font-size: 14px !important; }
+.vt-reads span { color: var(--ink-3); }
+.vt-reads a { color: var(--ink); text-decoration: none; border-bottom: 1px solid #45433c; padding-bottom: 1px; transition: color 0.2s, border-color 0.2s; }
+.vt-reads a::after { content: " ↗"; font-size: 0.85em; color: var(--ink-3); }
+.vt-reads a:hover { color: var(--accent); border-color: var(--accent); }
+.vt-cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 18px !important; }
+.vt-btn { display: inline-flex; align-items: center; padding: 12px 22px; border: 1px solid #3a3b35; border-radius: 999px; font-size: 15px; font-weight: 500; color: var(--ink); text-decoration: none; transition: opacity 0.2s; }
+.vt-btn.is-pri { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.vt-btn:hover { opacity: 0.85; }
+
+/* 沒有 JS：每一拍依序排好 */
+.vt-world, .vt-rail, .vt-play { display: none; }
+.vt:not(.is-live) .vt-cap { margin-top: 18px; }
+.vt:not(.is-live) .vt-beats { display: grid; gap: 56px; max-width: 760px; margin: 0 auto; padding: 0 var(--gutter) 64px; text-align: center; }
+.vt.is-static .vt-world { display: block; width: 100%; max-width: 900px; height: min(64svh, 560px); margin: 0 auto 48px; }
+
+/* ---------- 舞台：.is-live 才拉長、才釘住 ---------- */
+.vt.is-live .vt-track { height: 1700svh; }
+.vt.is-live .vt-stage { position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h)); overflow: hidden; }
+.vt.is-live .vt-viz { position: absolute; left: var(--gutter); right: var(--gutter); top: clamp(128px, 22vh, 190px); bottom: clamp(150px, 23vh, 200px); }
+.vt.is-live .vt-viz::before { content: ""; position: absolute; left: 50%; top: 50%; width: min(72vw, 900px); aspect-ratio: 1.6; translate: -50% -50%; background: radial-gradient(closest-side, rgba(255, 106, 44, var(--glow, 0)), transparent); filter: blur(30px); pointer-events: none; }
+.vt.is-live .vt-world { display: block; position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.vt.is-live .vt-beat { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: clamp(28px, 6vh, 64px) var(--gutter) clamp(78px, 11vh, 96px); text-align: center; pointer-events: none; }
+.vt.is-live .vt-head, .vt.is-live .vt-cap { opacity: 0; translate: 0 12px; }
+.vt.is-ready .vt-head, .vt.is-ready .vt-cap { transition: opacity 0.45s, translate 0.6s var(--ease); }
+.vt.is-live .vt-beat.is-on .vt-head, .vt.is-live .vt-beat.is-on .vt-cap { opacity: 1; translate: none; }
+.vt.is-live .vt-beat.is-on .vt-cap { pointer-events: auto; }
+.vt.is-live .vt-final .vt-cap { transition-delay: 0.1s; }
+
+.vt.is-live .vt-rail { display: flex; position: absolute; left: 50%; bottom: clamp(20px, 3.4vh, 30px); translate: -50% 0; gap: 6px; }
+.vt-rail button { display: grid; gap: 7px; width: clamp(54px, 8vw, 110px); padding: 0; border: 0; background: none; cursor: pointer; font: 500 10.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; text-align: left; color: var(--ink-3); }
+.vt-rail button i { position: relative; height: 2px; background: var(--line-2); overflow: hidden; }
+.vt-rail button i::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: left; transform: scaleX(var(--p, 0)); }
+.vt-rail button.is-on, .vt-rail button:hover { color: var(--ink); }
+.vt.is-live .vt-play { display: inline-flex; position: absolute; right: max(var(--gutter), calc((100vw - var(--wrap)) / 2)); bottom: clamp(16px, 3vh, 26px); align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--line-2); border-radius: 999px; background: none; cursor: pointer; font: 500 11px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-2); transition: opacity 0.3s; }
+.vt-play:hover { border-color: var(--ink); color: var(--ink); }
+.vt-play-icon { width: 0; height: 0; border-left: 7px solid currentColor; border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
+.vt-play[data-state="run"] .vt-play-icon { width: 7px; height: 9px; border: 0; border-left: 2.5px solid currentColor; border-right: 2.5px solid currentColor; }
+.vt.is-end .vt-play { opacity: 0; pointer-events: none; }
+@media (max-width: 760px) {
+  .vt.is-live .vt-viz { top: 150px; bottom: 210px; }
+  .vt-cap p { font-size: 14.5px; }
+  .vt-reads { font-size: 13px !important; gap: 2px 10px; }
+  .vt.is-live .vt-play { display: none; }
+  .vt-rail button { font-size: 9px; letter-spacing: 0.04em; }
+}
+
+/* ---------- SVG：顏色全部吃變數 ---------- */
+.vt-world text { font-family: var(--font-mono); }
+.vt-world > g { transform-box: view-box; transform-origin: 300px 210px; }
+.vt-world .win { fill: #121310; stroke: #2a2b25; }
+.vt-world .win-bar { stroke: #2a2b25; }
+.vt-world .a-sub { font-size: 0.72em; }
+.vt-world .a-wire { fill: none; stroke: #8b887e; stroke-width: 1.6; }
+.vt-world .a-ctl { stroke: var(--cool); } .vt-world .a-fb { stroke: #3a3b35; } .vt-world .a-clk { stroke: var(--clk); }
+.vt-world .a-vddw { stroke: #ff7a3d; stroke-width: 2.4; }
+.vt-world .a-cell { fill: #161713; stroke: #b9b6ab; stroke-width: 1.6; }
+.vt-world .a-ff { stroke: var(--accent); fill: rgba(255, 106, 44, 0.08); }
+.vt-world .a-dot { fill: #b9b6ab; }
+.vt-world .a-bubble { fill: #0a0a09; stroke: #b9b6ab; stroke-width: 1.6; }
+.vt-world .a-gnd { fill: none; stroke: #8b887e; stroke-width: 1.6; }
+.vt-world .a-chan { fill: none; stroke: #b9b6ab; stroke-width: 2.4; }
+.vt-world .a-gate { fill: none; stroke: #b9b6ab; stroke-width: 3; }
+.vt-world .a-pin { font-size: 11px; fill: var(--ink-2); }
+.vt-world .a-lab { font-size: 12.5px; fill: var(--ink-2); } .vt-world .a-dim { fill: var(--ink-3); }
+.vt-world .a-tiny { font-size: 10px; fill: var(--ink-3); }
+.vt-world .a-clkt { fill: var(--clk); }
+.vt-world .a-axis { fill: none; stroke: #55534b; stroke-width: 1.2; }
+.vt-world .a-ref { fill: none; stroke: #45433c; stroke-width: 1; stroke-dasharray: 4 4; }
+.vt-world .a-ref.is-hot { stroke: var(--accent); opacity: 0.7; }
+.vt-world .a-ref-w { fill: none; stroke: #45433c; stroke-width: 1; }
+.vt-world .a-range { fill: rgba(255, 255, 255, 0.02); stroke: #45433c; stroke-width: 1.2; }
+.vt-world .a-curve { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linejoin: round; }
+.vt-world .a-curve.is-hot { stroke: var(--accent); stroke-width: 2.6; }
+.vt-world .a-curve.is-ghost { stroke: #55534b; stroke-width: 1.4; stroke-dasharray: 1 1; }
+.vt-world .c-big { font: 600 18px var(--font-sans); fill: var(--ink); } .vt-world .c-sub { font: 400 14px var(--font-sans); fill: var(--ink); }
+.vt-world .f-name { font: 600 13px var(--font-mono); fill: var(--ink); }
+.vt-world .a-fname { font: 600 12px var(--font-mono); fill: var(--ink); }
+.vt-world .a-fet.is-p .a-cell { stroke: var(--cool); }
+.vt-world .k-name { font: 600 14px var(--font-mono); fill: var(--ink); }
+.vt-world .k-slow { fill: var(--accent); }
+/* 流程 */
+.vt-world .f-dot { fill: #0a0a09; stroke: #55534b; stroke-width: 1.6; transition: fill 0.2s, stroke 0.2s; }
+.vt-world .f-dot.on { fill: var(--accent); stroke: var(--accent); }
+.vt-world .f-ok { fill: #3ecf7e; } .vt-world .f-val { fill: var(--ink); }
+/* corner */
+.vt-world .k-dot { fill: #161713; stroke: #b9b6ab; stroke-width: 1.8; }
+.vt-world .is-hl .k-dot.is-slow, .vt-world .k-dot.is-slow { stroke: var(--accent); }
+.vt-world .is-hl .k-dot.is-slow { fill: var(--accent); }
+/* inverter chain、功耗的長條 */
+.vt-world .b-bar { fill: #3a3b35; } .vt-world .b-bar.is-hot { fill: var(--accent); }
+
+/* dynamic logic、時序 */
+.vt-world .d-pdn { stroke-dasharray: 5 4; }
+.vt-world .d-pre { fill: rgba(255, 255, 255, 0.025); } .vt-world .d-eval { fill: rgba(255, 106, 44, 0.06); }
+.vt-world .w-sig { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
+.vt-world .a-clkw { stroke: var(--clk); } .vt-world .d-out { stroke: var(--accent); stroke-width: 2.2; }
+.vt-world .w-bus { fill: #161713; stroke: #b9b6ab; stroke-width: 1.2; } .vt-world .w-sum { fill: rgba(255, 106, 44, 0.12); stroke: var(--accent); }
+.vt-world .m-x { fill: rgba(255, 255, 255, 0.06); stroke-dasharray: 3 3; }
+.vt-world .m-setup { fill: rgba(255, 106, 44, 0.16); } .vt-world .m-hold { fill: rgba(126, 166, 255, 0.18); } .vt-world .m-holdt { fill: var(--cool); }
+/* RC */
+.vt-world .r-res { stroke: var(--ink); stroke-width: 1.4; }
+/* SRAM */
+.vt-world .a-bl { stroke: #6d6b62; }
+.vt-world .a-wl { stroke: #6d6b62; transition: stroke 0.3s; }
+.vt-world .is-read .a-wl { stroke: var(--accent); stroke-width: 2.4; }
+/* ROM */
+.vt-world .r-arr { fill: rgba(255, 255, 255, 0.015); stroke: #2c2d28; }
+.vt-world .a-wl0 { stroke: #3a3b35; stroke-width: 1.2; }
+.vt-world .r-cell { fill: #23241f; stroke: #44453e; stroke-width: 0.8; transition: fill 0.25s, stroke 0.25s; }
+.vt-world .r-cell.is-c { fill: #b9b6ab; stroke: #b9b6ab; }
+.vt-world .r-cell.is-c.is-sel { fill: var(--accent); stroke: var(--accent); }
+.vt-world .r-pre { fill: var(--cool); opacity: 0.85; }
+.vt-world .r-blk { fill: #141512; }
+.vt-world .r-sub { fill: none; stroke: #44453e; stroke-dasharray: 3 3; }
+.vt-world .r-nor { fill: #161713; stroke: #8b887e; stroke-width: 1; }
+.vt-world .r-wlon { fill: none; stroke: var(--accent); stroke-width: 2.6; opacity: 0; filter: drop-shadow(0 0 4px rgba(255, 106, 44, 0.6)); }
+.vt-world .a-bl { transition: stroke 0.3s, opacity 0.3s; }
+.vt-world .is-pre .a-bl { stroke: var(--cool); }
+.vt-world .is-pre .a-bl.is-low { stroke: #3a3b35; }
+.vt-world .r-blsel { fill: none; stroke: var(--ink); stroke-width: 2.4; opacity: 0; }
+.vt-world .r-sa .a-cell, .vt-world .r-sa rect { transition: fill 0.3s, stroke 0.3s; }
+.vt-world .r-sa.is-on rect { fill: rgba(255, 106, 44, 0.18); stroke: var(--accent); }
+/* 功耗 */
+.vt-world .p-line { stroke: var(--ink); stroke-width: 2.4; } .vt-world .p-cc { stroke: var(--accent); stroke-width: 1.4; }
+.vt-world .glow { filter: drop-shadow(0 0 6px rgba(255, 140, 80, 0.35)); }
+
+/* ---------- outro ---------- */
+.vt-outro { padding-top: clamp(56px, 8vw, 96px); padding-bottom: clamp(64px, 9vw, 120px); }
+.vt-outro h2 { margin: 14px 0 0; font-size: clamp(28px, 3.6vw, 44px); line-height: 1.1; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance; }
+.vt-take { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 28px 0 0; padding: 0; list-style: none; border-top: 2px solid var(--ink); counter-reset: tk; }
+.vt-take li { counter-increment: tk; padding: 16px 20px 18px 0; font-size: 15px; line-height: 1.7; color: var(--ink-2); min-width: 0; }
+.vt-take li + li { padding-left: 20px; border-left: 1px solid var(--line); }
+.vt-take li::before { content: "0" counter(tk); display: block; margin-bottom: 6px; font: 500 12px var(--font-mono); color: var(--accent); }
+.vt-take b { color: var(--ink); font-weight: 600; }
+.vt-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; margin-top: 48px; }
+.vt-cols h3 { margin: 0 0 10px; font: 500 11px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.vt-cols ul { margin: 0; padding-left: 1.2em; font-size: 14.5px; line-height: 1.75; color: var(--ink-2); }
+.vt-cols li { margin: 4px 0; }
+.vt-cols li::marker { content: "▸  "; color: var(--accent); }
+.vt-cols a { text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.table-wrap { overflow-x: auto; margin-top: 40px; }
+.vt-table { width: 100%; min-width: 620px; border-collapse: collapse; font: 500 13px var(--font-mono); font-variant-numeric: tabular-nums; }
+.vt-table caption { text-align: left; padding-bottom: 10px; font: 500 11px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.vt-table th { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1.5px solid var(--ink); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+.vt-table td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+.vt-table td:last-child { color: var(--accent); }
+.vt-table td:nth-child(2), .vt-table td:nth-child(3) { font-family: var(--font-sans); }
+@media (max-width: 760px) {
+  .vt-take { grid-template-columns: minmax(0, 1fr); }
+  .vt-take li + li { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+  .vt-cols { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vt.is-ready .vt-head, .vt.is-ready .vt-cap { transition: none; }
+  .vt-cue::after { animation: none; }
+}
+.vt-take code { font: 500 0.92em var(--font-mono); color: var(--ink); }
