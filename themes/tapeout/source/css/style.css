@@ -1918,12 +1918,14 @@ details.note > summary + * { margin-top: 8px; }
 .pc:has([data-ch="2"]:is(:hover, :focus-within)) .on-2,
 .pc:has([data-ch="3"]:is(:hover, :focus-within)) .on-3,
 .pc:has([data-ch="4"]:is(:hover, :focus-within)) .on-4,
-.pc:has([data-ch="5"]:is(:hover, :focus-within)) .on-5 { border-color: var(--accent); color: var(--accent); opacity: 1; }
+.pc:has([data-ch="5"]:is(:hover, :focus-within)) .on-5,
+.pc:has([data-ch="6"]:is(:hover, :focus-within)) .on-6 { border-color: var(--accent); color: var(--accent); opacity: 1; }
 .pc:has(.pc-pin[data-ch="1"]:is(:hover, :focus-visible)) .pc-ch[data-ch="1"] .pc-ch-title,
 .pc:has(.pc-pin[data-ch="2"]:is(:hover, :focus-visible)) .pc-ch[data-ch="2"] .pc-ch-title,
 .pc:has(.pc-pin[data-ch="3"]:is(:hover, :focus-visible)) .pc-ch[data-ch="3"] .pc-ch-title,
 .pc:has(.pc-pin[data-ch="4"]:is(:hover, :focus-visible)) .pc-ch[data-ch="4"] .pc-ch-title,
-.pc:has(.pc-pin[data-ch="5"]:is(:hover, :focus-visible)) .pc-ch[data-ch="5"] .pc-ch-title { color: var(--accent); }
+.pc:has(.pc-pin[data-ch="5"]:is(:hover, :focus-visible)) .pc-ch[data-ch="5"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="6"]:is(:hover, :focus-visible)) .pc-ch[data-ch="6"] .pc-ch-title { color: var(--accent); }
 
 /* ---------- 章節 ---------- */
 .pc-chapters { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line-2); }
