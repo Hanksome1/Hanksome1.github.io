@@ -261,15 +261,14 @@ var SG = (function () {
 
     var TL = [['2016', 'GELU 論文', 'a'], ['2016', 'GLU · Dauphin', 'b'], ['2017', 'Transformer · ReLU', 'c'], ['2017', 'Swish', 'b'], ['2018', 'BERT · GELU', 'a'], ['2019', 'GPT-2 · GELU', 'a'],
       ['2020', 'SwiGLU · Shazeer', 'b'], ['2022', 'PaLM · SwiGLU', 'b'], ['2023', 'LLaMA · SwiGLU', 'b'], ['2024', 'SD 3 · GELU', 'a'], ['', 'Ideogram 4 · SwiGLU', 'b']];
-    var ty = 2250, sp = 960 / (TL.length - 1);
+    var ty = 2250, sp = 880 / (TL.length - 1); // 最後一個標籤置中也不會超出 1000
     el('line', { x1: 0, y1: ty, x2: 1000, y2: ty, class: 'axis' }, g);
     W.tl = TL.map(function (e, i) {
       var gg = hide(el('g', { class: 'lane-' + e[2] }, g)), x = 20 + i * sp, up = i % 2 === 0;
       el('circle', { cx: r1(x), cy: ty, r: 5, class: 'dot' }, gg);
       el('line', { x1: r1(x), y1: up ? ty - 8 : ty + 8, x2: r1(x), y2: up ? ty - 30 : ty + 30, class: 'lead' }, gg);
-      var anc = i === TL.length - 1 ? ' end' : ' mid', lx0 = i === TL.length - 1 ? x + 8 : x;
-      T(gg, r1(lx0), up ? ty - 54 : ty + 50, e[0], 't-s' + anc);
-      T(gg, r1(lx0), up ? ty - 36 : ty + 68, e[1], 't-l' + anc);
+      T(gg, r1(x), up ? ty - 54 : ty + 50, e[0], 't-s mid');
+      T(gg, r1(x), up ? ty - 36 : ty + 68, e[1], 't-l mid');
       return gg;
     });
   })();
