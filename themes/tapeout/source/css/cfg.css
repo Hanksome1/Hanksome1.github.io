@@ -1,0 +1,204 @@
+/* ==========================================================================
+   Classifier-Free Guidance 圖解（layout: cfg，js/cfg.js）
+   .is-live 之後 .cf-track 才拉長、舞台才釘住；沒有 JS 就只剩說明文字。
+   ========================================================================== */
+
+/* 三類各一個顏色：貓 = accent、狗 = 藍、車 = 綠；∅（無條件）一律是灰 */
+.cf { --neg: #2f67d0; --car: #23845a; --unc: var(--ink-3); --panel-w: 340px; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .cf { --neg: #7ea6ff; --car: #5cc59a; }
+}
+:root[data-theme="dark"] .cf { --neg: #7ea6ff; --car: #5cc59a; }
+.is-cfg .statusbar { display: none; }
+
+/* ---------- hero ---------- */
+.cf-hero { padding-top: clamp(40px, 7vw, 88px); padding-bottom: clamp(28px, 4vw, 44px); }
+.cf-title { margin: 18px 0 0; max-width: 16em; font-size: clamp(34px, 5.4vw, 68px); line-height: 1.06; font-weight: 600; letter-spacing: -0.035em; text-wrap: balance; }
+.cf-title em { font: italic 400 1.04em var(--font-serif); letter-spacing: -0.01em; color: var(--accent); }
+.cf-lede code, .cf-take code, .cf-cols code { font: 500 0.92em var(--font-mono); }
+.cf-lede { margin: 20px 0 0; max-width: 40em; font-size: clamp(16.5px, 1.5vw, 19px); line-height: 1.75; color: var(--ink-2); }
+.cf-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 28px 0 0; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2); }
+.cf-meta > div { padding: 12px 16px 14px 0; min-width: 0; }
+.cf-meta > div + div { padding-left: 16px; border-left: 1px solid var(--line); }
+.cf-meta dt { font: 500 10.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.cf-meta dd { margin: 4px 0 0; font-size: 14.5px; font-weight: 500; }
+.cf-meta a { text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.cf-hint { margin: 18px 0 0; font: 500 12px var(--font-mono); letter-spacing: 0.04em; color: var(--ink-3); }
+@media (max-width: 760px) {
+  .cf-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cf-meta > div:nth-child(3) { padding-left: 0; border-left: 0; }
+  .cf-meta > div:nth-child(n+3) { border-top: 1px solid var(--line); }
+}
+
+/* ---------- track 與舞台：.is-live 之後才拉長、才釘住 ---------- */
+.cf-track { position: relative; }
+.cf-world, .cf-more, .cf-stops, .cf-top, .cf-facts { display: none; }
+.cf-caps { display: grid; gap: 32px; }
+.cf:not(.is-live) .cf-track { max-width: calc(var(--wrap) + var(--gutter) * 2); margin: 0 auto; padding: 0 var(--gutter) 48px; }
+.cf:not(.is-live) .cf-cap { max-width: 40em; }
+
+.cf.is-live .cf-track { height: 1500svh; }
+.cf.is-live .cf-stage {
+  position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h));
+  display: grid; grid-template-columns: calc(var(--panel-w) + max(0px, (100vw - var(--wrap)) / 2 - var(--gutter))) minmax(0, 1fr);
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden;
+}
+.cf.is-live .cf-world { display: block; grid-column: 1 / -1; grid-row: 1; width: 100%; height: 100%; }
+.cf.is-live .cf-panel {
+  grid-column: 1; grid-row: 1; position: relative; z-index: 2; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 18px 22px 18px max(var(--gutter), calc((100vw - var(--wrap)) / 2));
+  background: linear-gradient(90deg, var(--bg) 82%, color-mix(in srgb, var(--bg) 0%, transparent));
+}
+.cf.is-live .cf-top { display: flex; align-items: center; gap: 10px; }
+.cf.is-live .cf-stops, .cf.is-live .cf-facts { display: grid; }
+.cf.is-live .cf-caps { gap: 0; flex: 1; min-height: 0; overflow: hidden; }
+.cf.is-live .cf-cap { grid-area: 1 / 1; align-self: start; opacity: 0; translate: 0 8px; pointer-events: none; }
+.cf.is-ready .cf-cap { transition: opacity 0.3s, translate 0.3s var(--ease); } /* 第一幀之後才開，載入時說明卡不會一起淡出 */
+.cf.is-live .cf-cap.is-on { opacity: 1; translate: none; pointer-events: auto; }
+
+/* 減少動態：不釘舞台，SVG 停在完成的樣子放在文字上面 */
+.cf.is-static .cf-world { display: block; width: 100%; height: min(70svh, 560px); margin: 0 0 32px; border-block: 1px solid var(--line); }
+
+.cf-status { display: flex; align-items: center; gap: 8px; margin: 0; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--bg) 80%, transparent); font: 500 11.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+.cf-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.cf-play { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; padding: 6px 12px; border: 1px solid var(--line-2); border-radius: 999px; background: none; cursor: pointer; font: 500 11.5px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-2); white-space: nowrap; }
+.cf-play:hover { border-color: var(--ink); color: var(--ink); }
+.cf-play-icon { width: 0; height: 0; border-left: 7px solid currentColor; border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
+.cf-play[data-state="run"] .cf-play-icon { width: 7px; height: 9px; border: 0; border-left: 2.5px solid currentColor; border-right: 2.5px solid currentColor; }
+
+.cf-stops { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px 6px; margin: 0; padding: 0; list-style: none; }
+.cf-stops button { position: relative; display: flex; flex-direction: column; gap: 1px; width: 100%; padding: 3px 0 7px; border: 0; background: none; cursor: pointer; text-align: left; font: 500 10.5px var(--font-mono); letter-spacing: 0.02em; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-stops button span { font-size: 10px; }
+.cf-stops button i { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--line); overflow: hidden; }
+.cf-stops button i::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+.cf-stops button.is-on, .cf-stops button:hover { color: var(--ink); }
+.cf-stops button.is-on span { color: var(--accent); }
+
+.cf-cap h2 { margin: 8px 0 0; font-size: clamp(21px, 2vw, 26px); line-height: 1.22; font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; }
+.cf-cap p:not(.kicker) { margin: 10px 0 0; padding-left: 12px; font-size: 14px; line-height: 1.7; color: var(--ink-2); border-left: 2px solid var(--line-2); }
+.cf-cap p b { display: block; font: 600 10.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.cf-cap p b.in { display: inline; font: 600 0.95em var(--font-mono); letter-spacing: 0; text-transform: none; color: var(--accent); }
+.cf-cap p b.in.c-cat, .cf-cap p b.in.c-dog, .cf-cap p b.in.c-car { color: var(--cls); }
+.cf-cap a { text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.cf-cap p.hl { border-left-color: var(--accent); }
+.cf-cap p.hl b { color: var(--accent); }
+.cf-cap p.nt { border-left: 1px dashed var(--line-2); font-size: 12.5px; color: var(--ink-3); }
+.cf-cap code, .cf-outro code { font: 500 0.92em var(--font-mono); }
+
+.cf-facts { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); margin: 0; border-top: 1px dashed var(--line-2); font: 500 12px var(--font-mono); }
+.cf-facts > * { margin: 0; padding: 6px 8px 5px 0; border-bottom: 1px dashed var(--line); min-width: 0; overflow-wrap: anywhere; }
+.cf-facts dt { color: var(--ink-3); font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; }
+.cf-facts dd { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.cf-facts .hl { color: var(--accent); }
+.cf-facts .ng { color: var(--neg); }
+
+.cf.is-live .cf-more { display: block; position: absolute; right: max(var(--gutter), calc((100vw - var(--wrap)) / 2)); bottom: 16px; z-index: 2; margin: 0; font: 500 11.5px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-3); transition: opacity 0.3s; }
+.cf-more span { display: inline-block; color: var(--accent); animation: bob 1.6s var(--ease) infinite; }
+.cf.is-end .cf-more { opacity: 0; }
+@keyframes bob { 50% { transform: translateY(3px); } }
+
+/* ---------- SVG 世界：顏色全部吃變數 ---------- */
+.cf-world text { font-family: var(--font-mono); font-size: 14px; font-weight: 500; fill: var(--ink-2); }
+.cf-world .t-b { fill: var(--ink); font-weight: 600; }
+.cf-world .t-d { fill: var(--ink-3); font-size: 12px; }
+.cf-world .t-s { font-size: 11px; fill: var(--ink-3); }
+.cf-world .t-h { fill: var(--accent); font-weight: 600; }
+.cf-world .t-n { fill: var(--neg); font-weight: 600; }
+.cf-world .t-u { fill: var(--unc); font-weight: 600; }
+.cf-world .t-big { font-family: var(--font-sans); font-size: 26px; font-weight: 600; fill: var(--ink); letter-spacing: -0.02em; }
+.cf-world .t-serif { font-family: var(--font-serif); font-style: italic; font-size: 24px; font-weight: 400; fill: var(--ink); }
+.cf-world .t-cls { font-family: var(--font-sans); font-size: 22px; font-weight: 600; fill: var(--cls); }
+.cf-world .mid { text-anchor: middle; } .cf-world .end { text-anchor: end; }
+.cf-world path, .cf-world rect, .cf-world line, .cf-world circle, .cf-world ellipse { vector-effect: non-scaling-stroke; }
+.cf .c-cat { --cls: var(--accent); } .cf .c-dog { --cls: var(--neg); } .cf .c-car { --cls: var(--car); }
+.cf-world .grid { stroke: var(--line); stroke-width: 1; }
+.cf-world .frame { fill: none; stroke: var(--line-2); stroke-width: 1; }
+.cf-world .heat { fill: var(--accent); fill-opacity: 0.24; }
+.cf-world .pt { fill: var(--cls); fill-opacity: 0.32; }
+.cf-world .f-cls { fill: var(--cls); }
+.cf-world .traj { fill: none; stroke: var(--ink-2); stroke-width: 1; stroke-opacity: 0.45; }
+.cf-world .st { fill: var(--ink-3); fill-opacity: 0.7; }
+.cf-world .end { fill: var(--cls); stroke: var(--bg); stroke-width: 1.2; }
+.cf-world .end.is-off { fill: var(--bg); stroke: var(--cls); stroke-width: 2; }
+.cf-world .arw { fill: none; stroke: var(--ink-3); stroke-width: 1.1; stroke-linecap: round; }
+.cf-world .ring-n { fill: none; stroke: var(--neg); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.cf-world .q { fill: var(--ink); stroke: var(--bg); stroke-width: 2; }
+.cf-world .vec-u { fill: none; stroke: var(--unc); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.cf-world .vec-c { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.cf-world .vec-g { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.cf-world .f-u { fill: var(--unc); } .cf-world .f-c { fill: var(--accent); }
+.cf-world .f-g { fill: var(--ink); stroke: var(--bg); stroke-width: 2; }
+.cf-world .f-x { fill: none; stroke: var(--unc); stroke-width: 1.2; stroke-dasharray: 3 2; }
+.cf-world .lead { fill: none; stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 4; }
+.cf-world .tick { stroke: var(--ink-3); stroke-width: 1.2; }
+.cf-world .wire { fill: none; stroke: var(--ink-2); stroke-width: 1.6; stroke-linecap: round; }
+.cf-world .box { fill: var(--surface); stroke: var(--line-2); stroke-width: 1; }
+.cf-world .card { fill: var(--surface); stroke: var(--line-2); stroke-width: 1; }
+.cf-world .card-h { fill: color-mix(in srgb, var(--accent) 12%, var(--surface)); stroke: var(--accent); stroke-width: 1.5; }
+.cf-world .card-u { fill: color-mix(in srgb, var(--unc) 14%, var(--surface)); stroke: var(--unc); stroke-width: 1.5; }
+.cf-world .cursor { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 3; }
+.cf-world .ln-c { fill: none; stroke: var(--accent); stroke-width: 2; }
+.cf-world .ln-s { fill: none; stroke: var(--ink-2); stroke-width: 2; }
+.cf-world .ln-o { fill: none; stroke: var(--neg); stroke-width: 2; stroke-dasharray: 5 3; }
+.cf-world .dot.ln-c { fill: var(--accent); } .cf-world .dot.ln-s { fill: var(--ink-2); } .cf-world .dot.ln-o { fill: var(--neg); stroke-dasharray: none; }
+.cf-world .dot { stroke: var(--bg); stroke-width: 1.5; }
+
+/* 矮的寬螢幕：說明欄收掉次要段落，對照表只留四列 */
+@media (min-width: 901px) and (max-height: 860px) {
+  .cf.is-live .cf-panel { gap: 10px; }
+  .cf.is-live .cf-cap h2 { font-size: 20px; }
+  .cf.is-live .cf-cap p:not(.kicker) { margin-top: 8px; font-size: 13px; line-height: 1.6; }
+  .cf.is-live .cf-cap p.xs, .cf.is-live .cf-cap p.nt { display: none; }
+  .cf.is-live .cf-facts > :nth-child(n+9) { display: none; }
+}
+
+/* ---------- 窄螢幕：SVG 佔滿舞台，說明疊在下面 ---------- */
+@media (max-width: 900px) {
+  .cf.is-live .cf-track { height: 1050svh; }
+  .cf.is-live .cf-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .cf.is-live .cf-world { grid-row: 1 / -1; }
+  .cf.is-live .cf-panel {
+    grid-row: 2; gap: 8px; padding: 10px var(--gutter) 12px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent); border-top: 1px solid var(--line-2);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .cf.is-live .cf-caps { flex: none; max-height: 34svh; }
+  .cf-stops { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .cf-stops button { font-size: 0; padding-bottom: 6px; }
+  .cf-stops button span { font-size: 10px; }
+  .cf-cap h2 { font-size: 18px; margin-top: 4px; }
+  .cf.is-live .cf-cap p:not(.kicker) { margin-top: 6px; font-size: 12.5px; line-height: 1.55; }
+  .cf.is-live .cf-cap p.nt, .cf.is-live .cf-cap p.xs { display: none; }
+  .cf.is-live .cf-facts, .cf.is-live .cf-more { display: none; }
+}
+
+/* ---------- outro ---------- */
+.cf-outro { padding-top: clamp(56px, 8vw, 96px); padding-bottom: clamp(64px, 9vw, 120px); }
+.cf-outro h2 { margin: 14px 0 0; font-size: clamp(28px, 3.6vw, 44px); line-height: 1.1; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance; }
+.cf-take { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 28px 0 0; padding: 0; list-style: none; border-top: 2px solid var(--ink); counter-reset: tk; }
+.cf-take li { counter-increment: tk; padding: 16px 20px 18px 0; font-size: 15px; line-height: 1.7; color: var(--ink-2); min-width: 0; }
+.cf-take li + li { padding-left: 20px; border-left: 1px solid var(--line); }
+.cf-take li::before { content: "0" counter(tk); display: block; margin-bottom: 6px; font: 500 12px var(--font-mono); color: var(--accent); }
+.cf-take b { color: var(--ink); font-weight: 600; }
+.cf-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; margin-top: 48px; }
+.cf-cols h3 { margin: 0 0 10px; font: 500 11px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.cf-cols ul { margin: 0; padding-left: 1.2em; font-size: 14.5px; line-height: 1.75; color: var(--ink-2); }
+.cf-cols li { margin: 4px 0; }
+.cf-cols li::marker { content: "▸  "; color: var(--accent); }
+.cf-cols a { text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.table-wrap { overflow-x: auto; margin-top: 40px; }
+.cf-table { width: 100%; min-width: 620px; border-collapse: collapse; font: 500 13px var(--font-mono); font-variant-numeric: tabular-nums; }
+.cf-table caption { text-align: left; padding-bottom: 10px; font: 500 11px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.cf-table th { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1.5px solid var(--ink); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+.cf-table td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+.cf-table td.us { color: var(--accent); font-weight: 600; }
+@media (max-width: 760px) {
+  .cf-take { grid-template-columns: minmax(0, 1fr); }
+  .cf-take li + li { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+  .cf-cols { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf.is-ready .cf-cap { transition: none; }
+  .cf-more span { animation: none; }
+}

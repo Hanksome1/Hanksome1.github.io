@@ -1,0 +1,149 @@
+<%
+  // Classifier-free guidance 的捲動解說（js/cfg.js）。說明文字寫在這裡，沒有 JS 時依序排好。
+  // 說明卡裡的百分比是 js/cfg.js 的玩具模型算出來的（300 個起點、64 步），改模型參數時要一起改。
+%>
+<div class="cf" data-cf>
+  <header class="cf-hero wrap">
+    <p class="kicker">§ Explainer — Diffusion · arXiv 2207.12598</p>
+    <h1 class="cf-title">Classifier-Free Guidance：多算一次，<em>更像</em> prompt</h1>
+    <p class="cf-lede">每一個文字生圖模型的設定裡都有一個 guidance scale：SD 3.5 用 4.5，Ideogram 用 7。它做的事只有一行，<code>ε_∅ + w(ε_c − ε_∅)</code>，但這一行讓每一步的計算量變成兩倍，也決定了圖有多「聽話」、有多單調。往下捲，用一個只有兩維、三類資料的例子，把每一條軌跡實際算一次。</p>
+    <dl class="cf-meta">
+      <div><dt>作者</dt><dd>Ho, Salimans</dd></div>
+      <div><dt>CFG</dt><dd><a href="https://arxiv.org/abs/2207.12598" target="_blank" rel="noopener">arXiv 2207.12598</a>（2022）</dd></div>
+      <div><dt>Classifier guidance</dt><dd><a href="https://arxiv.org/abs/2105.05233" target="_blank" rel="noopener">arXiv 2105.05233</a>（2021）</dd></div>
+      <div><dt>頁面上的例子</dt><dd>2 維、3 類、flow matching</dd></div>
+    </dl>
+    <p class="cf-hint">往下捲，或按 Auto-play ↓</p>
+  </header>
+
+  <section class="cf-track">
+    <div class="cf-stage">
+      <svg class="cf-world" data-world role="img" aria-label="Classifier-free guidance 的動畫解說：二維玩具資料上的取樣軌跡、classifier guidance 的兩支箭頭、訓練時把 prompt 換成空的、guidance 公式的外插、w 從 0 到 7 的軌跡與統計、各模型每一步的 forward 次數，以及 negative prompt 和 guidance interval"></svg>
+      <aside class="cf-panel">
+        <div class="cf-top">
+          <p class="cf-status"><i></i><span data-status>Overview</span></p>
+          <button type="button" class="cf-play" data-play aria-label="自動播放"><span class="cf-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+        </div>
+        <ol class="cf-stops">
+          <li><button type="button" data-stop="cond"><span>01</span>Condition<i></i></button></li>
+          <li><button type="button" data-stop="classifier"><span>02</span>Classifier<i></i></button></li>
+          <li><button type="button" data-stop="dropout"><span>03</span>Dropout<i></i></button></li>
+          <li><button type="button" data-stop="formula"><span>04</span>Formula<i></i></button></li>
+          <li><button type="button" data-stop="sweep"><span>05</span>Sweep w<i></i></button></li>
+          <li><button type="button" data-stop="cost"><span>06</span>Cost<i></i></button></li>
+          <li><button type="button" data-stop="fixes"><span>07</span>Fixes<i></i></button></li>
+        </ol>
+        <!-- 說明文字寫在 HTML 裡：沒有 JS 時就是依序排好的內容 -->
+        <div class="cf-caps">
+          <article class="cf-cap is-on" data-cap="intro">
+            <p class="kicker">Overview</p>
+            <h2>從雜訊走回資料</h2>
+            <p>平面上的三團點是一個玩具資料集，分別代表「<b class="in c-cat">貓</b>」「<b class="in c-dog">狗</b>」「<b class="in c-car">車</b>」三類圖片。真的圖片有幾百萬維，這裡只有 2 維，但取樣的方法完全一樣。</p>
+            <p>取樣從 t = 1 的純雜訊出發。模型每一步預測雜訊 ε，往乾淨的資料走一小段，走到 t = 0。這裡用 flow matching，也就是 SD 3.5 和 Ideogram 用的那一種：<code>x_t = (1 − t)·x₀ + t·ε</code>。</p>
+            <p class="hl"><b>無條件</b>不告訴模型要哪一類，48 條軌跡大約平均分到三團。</p>
+          </article>
+          <article class="cf-cap" data-cap="cond">
+            <p class="kicker">Stop 01 — Conditioning</p>
+            <h2>加上「貓」</h2>
+            <p>把 prompt「貓」也餵給模型，預測變成 <code>ε(x_t, 貓)</code>，軌跡就只會走到貓那一團。</p>
+            <p>但「貓」這一類本來就有一條寬的尾巴伸向中間，有些貓長得像狗。w = 1 等於照 p(x | 貓) 抽樣，這些模糊的樣本會照比例出現：大約一成的終點，classifier 會判成別的類。</p>
+            <p class="hl"><b>真實的模型</b>情況更糟。條件訊號在幾百萬維裡很弱，w = 1 的圖常常不太像 prompt。我們想要的是「更像貓」的貓。</p>
+          </article>
+          <article class="cf-cap" data-cap="classifier">
+            <p class="kicker">Stop 02 — Classifier guidance</p>
+            <h2>用 classifier 推一把</h2>
+            <p>Dhariwal &amp; Nichol（2021）用貝氏定理把條件拆開：<code>∇log p(x_t | c) = ∇log p(x_t) + ∇log p(c | x_t)</code>。第二項是一個 classifier 的梯度，乘上 s 就能推得更用力。</p>
+            <p>背景是 t = 0.6 時「這是貓」的機率。灰色箭頭是無條件的 score，橘色是 classifier 的梯度。這個點離貓和狗差不多遠，p(貓 | x_t) 只有 0.42。</p>
+            <p class="hl"><b>缺點</b>這個 classifier 要看得懂帶雜訊的 x_t，所以要另外訓練一個。ImageNet 的 1000 類還做得到，任意的文字 prompt 就沒辦法。</p>
+          </article>
+          <article class="cf-cap" data-cap="dropout">
+            <p class="kicker">Stop 03 — Condition dropout</p>
+            <h2>一個網路學兩件事</h2>
+            <p>Ho &amp; Salimans（2022）把 classifier 拿掉。訓練時以一定的機率（論文試了 0.1、0.2）把 prompt 換成空的 ∅，同一組權重就同時學會 <code>ε(x_t, c)</code> 和 <code>ε(x_t, ∅)</code>。</p>
+            <p>取樣時每一步呼叫兩次：一次帶 prompt、一次不帶，再把兩個預測合起來。</p>
+            <p class="nt">文字生圖模型的 ∅ 通常是空字串的 embedding，SD 3.5 的無條件分支就是空 prompt。</p>
+          </article>
+          <article class="cf-cap" data-cap="formula">
+            <p class="kicker">Stop 04 — Formula</p>
+            <h2>往差的方向多走 w 倍</h2>
+            <p><code>ε̃ = ε_∅ + w(ε_c − ε_∅)</code>。w = 0 是無條件，w = 1 是一般的條件模型，w &gt; 1 是往「有 prompt 比沒有 prompt 多出來的方向」外插。</p>
+            <p>右邊把雜訊的預測換算成乾淨圖的預測 <code>x̂₀ = (x_t − t·ε) / (1 − t)</code>。這是線性的，所以對 ε 做 CFG，等於對 x̂₀ 做同一個外插。</p>
+            <p class="hl"><b>隱式 classifier</b><code>ε_c − ε_∅ = −t·∇log p(c | x_t)</code>。差向量就是上一站 classifier 的梯度，只是不用另外訓練。CFG 就是 classifier guidance，classifier 由同一個模型免費附送。</p>
+            <p class="nt">論文把公式寫成 <code>(1 + w)ε_c − wε_∅</code>，它的 w 比這裡少 1。diffusers 的 guidance_scale 跟這裡的 w 一樣。</p>
+          </article>
+          <article class="cf-cap" data-cap="sweep">
+            <p class="kicker">Stop 05 — Sweep w</p>
+            <h2>越像，也越單調</h2>
+            <p>同樣 48 個起點，w 從 0 拉到 7。w = 0 三類都有；w = 1 只剩貓，但有些停在模糊的中間；w = 3 全部擠進貓的核心。</p>
+            <p>CFG 的 score 是 <code>∇log [p(x | c)·p(c | x)^(w−1)]</code>：classifier 越確定是貓的地方，權重放得越大。取樣的分佈大致往那裡縮，但不完全等於這個分佈，因為每個雜訊程度各自傾斜，合起來不是同一個東西。</p>
+            <p class="hl"><b>w = 7</b>散布只剩 w = 0 的 22%，而且 36% 的終點衝出資料範圍。在真的圖上，就是過飽和、過度銳利、顏色爆掉。</p>
+          </article>
+          <article class="cf-cap" data-cap="cost">
+            <p class="kicker">Stop 06 — Cost</p>
+            <h2>每一步兩次 forward</h2>
+            <p>CFG 的代價是每一步要跑兩次網路。通常把兩份疊成一個 batch 一起算，但計算量還是兩倍。SD 3.5 Large 預設 40 步，就是 80 次 forward。</p>
+            <p>Ideogram 4 的無條件那次只送圖片 token，而且跑的是另一組獨立的權重（見 <a href="/lab/ideogram4-vs-sd35/">Ideogram 4 vs SD 3.5</a>）。</p>
+            <p class="hl"><b>蒸餾</b>把這一次省掉。SD 3.5 Large Turbo 蒸餾到 4 步、CFG = 1；FLUX.1 [dev] 做 guidance distillation，把 guidance 當成輸入，一步只跑一次。</p>
+          </article>
+          <article class="cf-cap" data-cap="fixes">
+            <p class="kicker">Stop 07 — Fixes</p>
+            <h2>修過頭的方法</h2>
+            <p><b class="in">Negative prompt</b>把 ∅ 換成不想要的東西：<code>ε_neg + w(ε_c − ε_neg)</code>。外插的方向變成「遠離狗」，p(狗 | x) 從 0.008 降到 0，但同樣的 w 推得更遠，11% 的終點衝出範圍。</p>
+            <p><b class="in">Guidance interval</b>（Kynkäänniemi et al. 2024）只在中間的雜訊程度開 guidance。這個例子裡，衝出範圍的點都是在 t 很大時被推出去的，那一段關掉，36% 就回到 1%。</p>
+            <p class="xs"><b class="in">Rescale、thresholding</b>處理的是像素值爆掉：CFG rescale（Lin et al. 2023）把 guided 預測的標準差拉回 ε_c 的大小，Imagen 的 dynamic thresholding 把 x̂₀ 裁回合理範圍。二維的例子畫不出來。</p>
+            <p class="nt">Ideogram 最後 1–3 步把 guidance 從 7 降到 3。這個例子看不出差別：最後幾步 p(貓 | x) 已經接近 1，ε_c ≈ ε_∅。</p>
+          </article>
+        </div>
+        <dl class="cf-facts" data-facts></dl>
+      </aside>
+      <p class="cf-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+    </div>
+  </section>
+
+  <section class="cf-outro wrap">
+    <p class="kicker">§ Summary</p>
+    <h2>三件事</h2>
+    <ol class="cf-take">
+      <li><b>CFG 是不用另外訓練的 classifier guidance。</b>有 prompt 和沒有 prompt 的預測差，就是 classifier 的梯度。訓練時偶爾丟掉 prompt，同一個模型就兩種都會。</li>
+      <li><b>w 換到的是「像」，付出的是多樣性。</b>w 越大，樣本越往 classifier 最確定的地方擠；再大就衝出資料，變成過飽和的圖。</li>
+      <li><b>每一步多一次 forward。</b>這是 CFG 最實際的成本。蒸餾（Turbo、guidance distillation）把它拿掉，negative prompt 和 guidance interval 則是換一種方式用這一次。</li>
+    </ol>
+
+    <div class="table-wrap">
+      <table class="cf-table">
+        <caption>幾種 guidance 逐項對照</caption>
+        <thead><tr><th>方法</th><th>每步 forward</th><th>要另外訓練</th><th>往哪推</th></tr></thead>
+        <tbody>
+          <tr><td>不加 guidance（w = 1）</td><td>1</td><td>不用</td><td>ε(x_t, c) 本身</td></tr>
+          <tr><td>Classifier guidance</td><td>1 + classifier 的梯度</td><td>帶雜訊的 classifier</td><td>∇log p_φ(c | x_t)</td></tr>
+          <tr><td class="us">Classifier-free guidance</td><td class="us">2</td><td class="us">不用（訓練時丟 prompt）</td><td class="us">ε_c − ε_∅</td></tr>
+          <tr><td>Negative prompt</td><td>2</td><td>不用</td><td>ε_c − ε_neg</td></tr>
+          <tr><td>Guidance interval</td><td>只在開的那段是 2</td><td>不用</td><td>ε_c − ε_∅，只在中間的 t</td></tr>
+          <tr><td>Guidance distillation</td><td>1</td><td>蒸餾一個學生模型</td><td>w 當成輸入</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cf-cols">
+      <div>
+        <h3>實際用的時候</h3>
+        <ul>
+          <li>diffusers 的 <code>guidance_scale</code> 就是這裡的 w。SD 系列的 pipeline 在 guidance_scale ≤ 1 時不跑無條件那次。</li>
+          <li>預設值差很多：SD 3.5 Large 參考實作 4.5，Ideogram 4 前面 7、最後降到 3，FLUX.1 [dev] 在 diffusers 預設 3.5，但那是餵給模型的輸入，不是兩次 forward 的外插。</li>
+          <li>圖太飽和、太油的時候，先把 w 調小；還不夠再考慮 rescale 或只在中間幾步開 guidance。</li>
+          <li>Negative prompt 也乘上同一個 w，w 大的時候它推得一樣用力。</li>
+        </ul>
+      </div>
+      <div>
+        <h3>資料來源與數字怎麼算的</h3>
+        <ul>
+          <li>CFG 的公式、condition dropout 與 p_uncond 來自 <a href="https://arxiv.org/abs/2207.12598" target="_blank" rel="noopener">Ho &amp; Salimans, Classifier-Free Diffusion Guidance</a>；classifier guidance 來自 <a href="https://arxiv.org/abs/2105.05233" target="_blank" rel="noopener">Dhariwal &amp; Nichol, Diffusion Models Beat GANs on Image Synthesis</a>；guidance interval 來自 <a href="https://arxiv.org/abs/2404.07724" target="_blank" rel="noopener">Kynkäänniemi et al.</a>；CFG rescale 來自 <a href="https://arxiv.org/abs/2305.08891" target="_blank" rel="noopener">Lin et al.</a>；dynamic thresholding 來自 <a href="https://arxiv.org/abs/2205.11487" target="_blank" rel="noopener">Imagen</a>。</li>
+          <li>SD 3.5 Large 40 步 / CFG 4.5、Turbo 4 步 / CFG 1 來自 <a href="https://github.com/Stability-AI/sd3.5" target="_blank" rel="noopener">Stability-AI/sd3.5</a> 的 <code>sd3_infer.py</code>；FLUX.1 [dev] 的 28 步、guidance 3.5 是 diffusers <code>FluxPipeline</code> 的預設值；Ideogram 4 的數字見 <a href="/lab/ideogram4-vs-sd35/">Ideogram 4 vs SD 3.5</a>。</li>
+          <li>頁面上的資料是 6 個高斯（每類 2 個）。加了雜訊之後還是高斯，所以 E[x₀ | x_t]、E[ε | x_t]、p(c | x_t) 都是精確解，沒有訓練任何網路。軌跡是 64 步 Euler 解 flow matching 的 ODE，起點用固定種子。</li>
+          <li>統計用 300 個起點（畫出來的是前 48 條）。「落在貓」是終點用乾淨資料上的貝氏 classifier 判類；「散布」是終點到平均的 RMS 距離，除以 w = 0 的值；「衝出資料範圍」是終點的資料密度低於 0.004，大約在資料最外圈之外。</li>
+          <li>w = 1 時 90% 的終點判成貓，直接從 p(x | 貓) 抽 300 個樣本是 93%，差距來自抽樣和 Euler 的誤差。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
