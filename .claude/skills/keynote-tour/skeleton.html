@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keynote Tour Skeleton</title>
+<style>
+/* 骨架：hero、5 拍、3 個場景（grid 連用 3 拍，最後一拍拉遠發光）、章節列、自動播放、outro。
+   換內容時改 ART 裡的場景、<article data-beat> 和 outro；controller 照抄。
+   放進部落格時：:root 這段改成 body.is-<slug>（見 SKILL.md「強制深色」），--header-h、--gutter 用網站的 */
+:root {
+  --bg: #0a0a09; --ink: #f2f1ea; --ink-2: #a9a69c; --ink-3: #6d6b62; --line: #24251f; --line-2: #36382f;
+  --accent: #ff6a2c; --cool: #7ea6ff; --header-h: 0px; --gutter: 24px; --wrap: 1100px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1); --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, "Noto Sans TC", sans-serif; -webkit-font-smoothing: antialiased; }
+
+/* ---------- hero ---------- */
+.kt-hero { position: relative; min-height: calc(100svh - var(--header-h)); display: grid; place-content: center; padding: 48px var(--gutter) 96px; text-align: center; }
+.kt-kick { margin: 0; font: 500 12.5px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.kt-title { margin: 22px 0 0; font-size: clamp(42px, 7.6vw, 108px); line-height: 1.03; font-weight: 600; letter-spacing: -0.045em; }
+.kt-title span { color: var(--ink-3); }
+.kt-lede { margin: 26px auto 0; max-width: 30em; font-size: clamp(16.5px, 1.6vw, 20px); line-height: 1.65; color: var(--ink-2); text-wrap: balance; }
+.kt-skip { margin: 22px 0 0; font-size: 14.5px; }
+.kt-skip a, .kt-reads a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--line-2); padding-bottom: 2px; }
+.kt-skip a:hover, .kt-reads a:hover { color: var(--accent); border-color: var(--accent); }
+.kt-cue { position: absolute; left: 50%; bottom: 28px; margin: 0; translate: -50% 0; font: 500 11.5px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.kt-cue::after { content: ""; display: block; width: 1px; height: 40px; margin: 12px auto 0; background: linear-gradient(var(--ink-3), transparent); transform-origin: top; animation: kt-drip 2s ease-in-out infinite; }
+@keyframes kt-drip { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+.kt:not(.is-live) .kt-cue { display: none; }
+
+/* ---------- 每一拍的文字：上面一句大標，下面一兩句說明 + 筆記入口 ---------- */
+.kt-beat h2 { margin: 12px 0 0; font-size: clamp(28px, 4.4vw, 62px); line-height: 1.08; font-weight: 600; letter-spacing: -0.035em; text-wrap: balance; }
+.kt-beat h2 em { font-style: normal; color: var(--accent); }
+.kt-cap p { margin: 0 auto; max-width: 36em; font-size: 16px; line-height: 1.7; color: var(--ink-2); text-wrap: pretty; }
+.kt-reads { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin-top: 10px !important; font-size: 14px !important; }
+.kt-reads span { color: var(--ink-3); }
+.kt-reads a { color: var(--ink); }
+.kt-reads a::after { content: " ↗"; font-size: 0.85em; color: var(--ink-3); }
+.kt-cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 18px !important; }
+.kt-btn { display: inline-flex; padding: 12px 22px; border: 1px solid var(--line-2); border-radius: 999px; font-size: 15px; font-weight: 500; color: var(--ink); text-decoration: none; }
+.kt-btn.is-pri { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+
+/* 沒有 JS：每一拍依序排好；reduced-motion（.is-static）：先放完成圖，再排文字 */
+.kt-world, .kt-rail, .kt-play { display: none; }
+.kt:not(.is-live) .kt-cap { margin-top: 18px; }
+.kt:not(.is-live) .kt-beats { display: grid; gap: 56px; max-width: 760px; margin: 0 auto; padding: 0 var(--gutter) 64px; text-align: center; }
+.kt.is-static .kt-world { display: block; width: 100%; max-width: 900px; height: min(64svh, 560px); margin: 0 auto 48px; }
+
+/* ---------- 舞台：.is-live 才拉長、才釘住 ---------- */
+.kt.is-live .kt-track { height: 600svh; }            /* 約每拍 100–110svh；ICLAB 14 拍用 1500svh */
+.kt.is-live .kt-stage { position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h)); overflow: hidden; }
+/* 畫面夾在大標和說明中間；用 absolute + inset，不要用 grid + height: 100%（SVG 會撐成兩倍大） */
+.kt.is-live .kt-viz { position: absolute; left: var(--gutter); right: var(--gutter); top: clamp(128px, 22vh, 190px); bottom: clamp(150px, 23vh, 200px); }
+.kt.is-live .kt-viz::before { content: ""; position: absolute; left: 50%; top: 50%; width: min(72vw, 900px); aspect-ratio: 1.6; translate: -50% -50%; background: radial-gradient(closest-side, rgba(255, 106, 44, var(--glow, 0)), transparent); filter: blur(30px); pointer-events: none; }
+.kt.is-live .kt-world { display: block; position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.kt.is-live .kt-beat { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: clamp(28px, 6vh, 64px) var(--gutter) clamp(78px, 11vh, 96px); text-align: center; pointer-events: none; }
+.kt.is-live .kt-head, .kt.is-live .kt-cap { opacity: 0; translate: 0 12px; }
+.kt.is-ready .kt-head, .kt.is-ready .kt-cap { transition: opacity 0.45s, translate 0.6s var(--ease); }  /* is-ready 之後才有 transition：載入在中段時不會整排淡入 */
+.kt.is-live .kt-beat.is-on .kt-head, .kt.is-live .kt-beat.is-on .kt-cap { opacity: 1; translate: none; }
+.kt.is-live .kt-beat.is-on .kt-cap { pointer-events: auto; }
+
+.kt.is-live .kt-rail { display: flex; position: absolute; left: 50%; bottom: clamp(20px, 3.4vh, 30px); translate: -50% 0; gap: 6px; }
+.kt-rail button { display: grid; gap: 7px; width: clamp(54px, 8vw, 110px); padding: 0; border: 0; background: none; cursor: pointer; font: 500 10.5px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; text-align: left; color: var(--ink-3); }
+.kt-rail button i { position: relative; height: 2px; background: var(--line-2); overflow: hidden; }
+.kt-rail button i::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: left; transform: scaleX(var(--p, 0)); }
+.kt-rail button.is-on, .kt-rail button:hover { color: var(--ink); }
+.kt.is-live .kt-play { display: inline-flex; position: absolute; right: max(var(--gutter), calc((100vw - var(--wrap)) / 2)); bottom: clamp(16px, 3vh, 26px); align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--line-2); border-radius: 999px; background: none; cursor: pointer; font: 500 11px var(--mono); color: var(--ink-2); transition: opacity 0.3s; }
+.kt-play-icon { width: 0; height: 0; border-left: 7px solid currentColor; border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
+.kt-play[data-state="run"] .kt-play-icon { width: 7px; height: 9px; border: 0; border-left: 2.5px solid currentColor; border-right: 2.5px solid currentColor; }
+.kt.is-end .kt-play { opacity: 0; pointer-events: none; }
+@media (max-width: 760px) {
+  .kt.is-live .kt-viz { top: 150px; bottom: 210px; }
+  .kt-cap p { font-size: 14.5px; }
+  .kt.is-live .kt-play { display: none; }
+}
+
+/* ---------- SVG：顏色全部走 class ---------- */
+.kt-world > g { transform-box: view-box; transform-origin: 300px 200px; }   /* 場景 scale 以世界中心為準 */
+.a-box { fill: #141512; stroke: var(--line-2); stroke-width: 1.5; }
+.a-box.is-hot { stroke: var(--accent); }
+.a-wire { fill: none; stroke: var(--ink-3); stroke-width: 1.5; }
+.a-lab { font: 500 13px var(--mono); fill: var(--ink-2); }
+.a-big { font: 600 44px system-ui, sans-serif; fill: var(--ink); letter-spacing: -0.03em; }
+.a-bar { fill: var(--cool); }
+.a-bar.is-hot { fill: var(--accent); }
+.a-cell { fill: #1c1d19; stroke: var(--line-2); stroke-width: 1; }
+.a-cell.is-hot { fill: var(--accent); stroke: none; }
+.a-frame { fill: none; stroke: var(--ink-2); stroke-width: 1.5; }
+.glow .a-frame { stroke: var(--accent); }
+
+/* ---------- outro：一般文章排版 ---------- */
+.kt-outro { max-width: 760px; margin: 0 auto; padding: 96px var(--gutter); }
+.kt-outro h2 { font-size: 32px; letter-spacing: -0.02em; }
+.kt-outro li { color: var(--ink-2); margin: 8px 0; }
+.kt-outro b { color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .kt-cue::after { animation: none; }
+  .kt * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="kt" data-kt>
+  <header class="kt-hero">
+    <p class="kt-kick">COURSE · CODE · 學校</p>
+    <h1 class="kt-title">一句話，<br><span>講完</span>整門課。</h1>
+    <p class="kt-lede">用同一個小例子從頭走到尾，每一站都接到那一站的筆記。</p>
+    <p class="kt-skip"><a href="#hub">直接看筆記總覽（12 篇）→</a></p>
+    <p class="kt-cue" aria-hidden="true">Scroll</p>
+  </header>
+
+  <section class="kt-track">
+    <div class="kt-stage">
+      <div class="kt-viz"><svg class="kt-world" data-world viewBox="-40 -30 680 470" role="img" aria-label="這一頁動畫畫了什麼（一句話寫完整個流程）"></svg></div>
+      <div class="kt-beats">
+        <!-- data-w：這一拍佔多少捲動距離；data-ch：第幾章；data-scene：用哪個場景（連續同一個場景的幾拍會接著演）；data-finale：最後拉遠那一拍 -->
+        <article class="kt-beat" data-beat="flow" data-w="1.2" data-ch="0" data-scene="blocks">
+          <header class="kt-head"><p class="kt-kick">01 — Flow · W1–3</p><h2>先有<em>三個步驟</em>。</h2></header>
+          <div class="kt-cap"><p>一兩句說明，講這一站在做什麼。數字和名詞要跟筆記一致。</p><p class="kt-reads"><span>讀筆記</span><a href="#a">第一篇</a><a href="#b">第二篇</a></p></div>
+        </article>
+        <article class="kt-beat" data-beat="bars" data-w="1.2" data-ch="0" data-scene="bars">
+          <header class="kt-head"><p class="kt-kick">02 — Result · W4</p><h2>結果<em>差了 3 倍</em>。</h2></header>
+          <div class="kt-cap"><p>數字跟著畫面跑，從同一組常數算出來。</p><p class="kt-reads"><span>讀筆記</span><a href="#c">第三篇</a></p></div>
+        </article>
+        <article class="kt-beat" data-beat="outline" data-w="0.9" data-ch="1" data-scene="grid">
+          <header class="kt-head"><p class="kt-kick">03 — Build · W5</p><h2>畫出<em>邊界</em>。</h2></header>
+          <div class="kt-cap"><p>同一個場景連用好幾拍：這一拍只畫外框。</p><p class="kt-reads"><span>讀筆記</span><a href="#d">第四篇</a></p></div>
+        </article>
+        <article class="kt-beat" data-beat="fill" data-w="1.2" data-ch="1" data-scene="grid">
+          <header class="kt-head"><p class="kt-kick">04 — Build · W6–7</p><h2>一格一格<em>填進去</em>。</h2></header>
+          <div class="kt-cap"><p>接著上一拍演，畫面不換，只多長出東西。</p><p class="kt-reads"><span>讀筆記</span><a href="#e">第五篇</a></p></div>
+        </article>
+        <article class="kt-beat" data-beat="final" data-w="1.0" data-ch="1" data-scene="grid" data-finale>
+          <header class="kt-head"><p class="kt-kick">COURSE · CODE</p><h2>這就是<em>一學期</em>。</h2></header>
+          <div class="kt-cap"><p>收尾一句話，加一個最能代表成果的數字。</p><p class="kt-cta"><a class="kt-btn is-pri" href="#hub">看全部 12 篇筆記 →</a><a class="kt-btn" href="#proj">期末專題</a></p></div>
+        </article>
+      </div>
+      <nav class="kt-rail" data-rail data-names="Basics|Build" aria-label="章節"></nav>
+      <button type="button" class="kt-play" data-play aria-label="自動播放"><span class="kt-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+    </div>
+  </section>
+
+  <section class="kt-outro">
+    <h2>三件事</h2>
+    <ol>
+      <li><b>第一點。</b>整門課最重要的觀念，一句話。</li>
+      <li><b>第二點。</b>……</li>
+      <li><b>第三點。</b>……</li>
+    </ol>
+    <p>這裡再放：進度表（週次 → 這頁的哪一站）、這頁連到的筆記、資料來源與哪些畫面是示意圖。</p>
+  </section>
+</div>
+
+<script>
+/* ---------- ART：每個場景都是 make(parent) → { set(t) }，畫面是 t 的純函式 ---------- */
+var ART = (function () {
+  'use strict';
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(tag, a, parent) { var e = document.createElementNS(NS, tag); for (var k in a) if (a[k] != null) e.setAttribute(k, a[k]); if (parent) parent.appendChild(e); return e; }
+  function T(parent, x, y, s, cls, anchor) { var t = el('text', { x: x, y: y, class: cls, 'text-anchor': anchor }, parent); t.textContent = s; return t; }
+  function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+  function seg(t, a, b) { return clamp01((t - a) / (b - a)); }
+  function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function rng(seed) { return function () { seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  // pathLength=1 的 dash：draw(p, 0) 看不到，draw(p, 1) 畫完
+  function wire(parent, d, cls) { return el('path', { d: d, class: cls || 'a-wire', pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1 }, parent); }
+  function draw(p, k) { p.setAttribute('stroke-dashoffset', 1 - clamp01(k)); }
+  function show(e, k, dy) { k = clamp01(k); e.style.opacity = k; e.style.transform = dy ? 'translateY(' + (1 - ease(k)) * dy + 'px)' : ''; }
+
+  /* 三個方塊 + 箭頭，依序出現 */
+  function blocks(parent) {
+    var g = el('g', {}, parent), bs = [], ws = [];
+    ['Input', 'Process', 'Output'].forEach(function (s, i) {
+      var b = el('g', {}, g); el('rect', { x: i * 210, y: 120, width: 160, height: 100, rx: 10, class: 'a-box' }, b); T(b, i * 210 + 80, 176, s, 'a-lab', 'middle'); bs.push(b);
+      if (i) ws.push(wire(g, 'M' + (i * 210 - 50) + ' 170 H' + (i * 210 - 4)));
+    });
+    return { set: function (t) {
+      bs.forEach(function (b, i) { show(b, seg(t, i * 0.3, i * 0.3 + 0.25), 10); b.firstChild.classList.toggle('is-hot', t > 0.95 && i === 1); });
+      ws.forEach(function (w, i) { draw(w, seg(t, i * 0.3 + 0.2, i * 0.3 + 0.35)); });
+    } };
+  }
+
+  /* 長條圖 + 跟著長的讀數 */
+  function bars(parent) {
+    var g = el('g', {}, parent), V = [1, 1.4, 3.1], rs = [];
+    V.forEach(function (v, i) { rs.push(el('rect', { x: 60 + i * 180, y: 360, width: 110, height: 0, rx: 4, class: 'a-bar' + (i === 2 ? ' is-hot' : '') }, g)); T(g, 115 + i * 180, 390, ['A', 'B', 'C'][i], 'a-lab', 'middle'); });
+    var big = T(g, 600, 60, '', 'a-big', 'end');
+    return { set: function (t) {
+      V.forEach(function (v, i) { var h = 300 * v / 3.1 * ease(seg(t, i * 0.2, i * 0.2 + 0.5)); rs[i].setAttribute('y', 360 - h); rs[i].setAttribute('height', h); });
+      big.textContent = (3.1 * ease(seg(t, 0.4, 0.9))).toFixed(1) + '×';
+    } };
+  }
+
+  /* 連用好幾拍的場景：PHASES 切成幾段，t 是整段的進度 */
+  var PHASES = [['outline', 0, 0.4], ['fill', 0.45, 1]];
+  function grid(parent, seed) {
+    var g = el('g', {}, parent), R = rng(seed), frame = wire(g, 'M0 0 H600 V400 H0 Z', 'a-frame'), cells = [];
+    for (var r = 0; r < 8; r++) for (var c = 0; c < 12; c++) {
+      var e = el('rect', { x: 14 + c * 48, y: 14 + r * 47, width: 42, height: 40, rx: 3, class: 'a-cell' + (R() < 0.15 ? ' is-hot' : '') }, g);
+      e.style.opacity = 0; cells.push({ e: e, at: R() });
+    }
+    function ph(t, name) { var p = PHASES.filter(function (x) { return x[0] === name; })[0]; return seg(t, p[1], p[2]); }
+    return { set: function (t) {
+      draw(frame, ph(t, 'outline'));
+      var k = ph(t, 'fill');
+      cells.forEach(function (c) { c.e.style.opacity = seg(k, c.at * 0.8, c.at * 0.8 + 0.2); });
+    } };
+  }
+
+  return { el: el, seg: seg, ease: ease, clamp01: clamp01, blocks: blocks, bars: bars, grid: grid };
+})();
+
+/* ---------- 舞台：捲動進度 p → 哪一拍、哪個場景、畫到哪裡（照抄，換內容不用改） ---------- */
+(function () {
+  'use strict';
+  var root = document.querySelector('[data-kt]');
+  if (!root) return;
+  var A = ART, el = A.el, seg = A.seg, ease = A.ease, clamp01 = A.clamp01;
+  var track = root.querySelector('.kt-track'), stage = root.querySelector('.kt-stage'), svg = root.querySelector('[data-world]');
+  var rail = root.querySelector('[data-rail]'), playBtn = root.querySelector('[data-play]');
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var B = [].map.call(root.querySelectorAll('[data-beat]'), function (n) {
+    return { id: n.dataset.beat, w: +n.dataset.w || 1, ch: +n.dataset.ch || 0, scene: n.dataset.scene, finale: n.hasAttribute('data-finale'), node: n };
+  });
+  var HOLD = 0.35, total = B.reduce(function (s, b) { return s + b.w; }, HOLD), acc = 0, span = {};
+  B.forEach(function (b) { span[b.id] = { s: acc / total, l: b.w / total }; acc += b.w; });
+  function lt(id, p) { return span[id] ? clamp01((p - span[id].s) / span[id].l) : 0; }
+
+  // 場景：同一個 680×470 世界，位置只在這裡擺一次，鏡頭不動
+  function place(tx, ty) { return el('g', { transform: 'translate(' + tx + ' ' + ty + ')' }, svg); }
+  var S = { blocks: { g: place(10, 40) }, bars: { g: place(10, 0) }, grid: { g: place(0, 0) } };
+  S.blocks.sc = A.blocks(S.blocks.g); S.bars.sc = A.bars(S.bars.g); S.grid.sc = A.grid(S.grid.g, 7);
+
+  // 連續用同一個場景的幾拍是一段 run：場景的 t 走過整段（finale 那拍不算，留給拉遠）
+  var RUNS = [];
+  B.forEach(function (b) {
+    var r = RUNS[RUNS.length - 1];
+    if (r && r.name === b.scene) { if (!b.finale) r.ids.push(b.id); return; }
+    if (r) r.next = b.id;
+    RUNS.push({ name: b.scene, first: b.id, ids: [b.id], next: null });
+  });
+  function runT(r, p) { var a = span[r.ids[0]].s, z = span[r.ids[r.ids.length - 1]]; return clamp01((p - a) / (z.s + z.l - a)); }
+  var finale = B.filter(function (b) { return b.finale; })[0];
+
+  var CH = [];
+  B.forEach(function (b) { (CH[b.ch] = CH[b.ch] || []).push(b.id); });
+  var names = (rail.dataset.names || '').split('|');
+  CH.forEach(function (ids, i) { rail.insertAdjacentHTML('beforeend', '<button type="button" data-ch="' + i + '"><i></i>' + (names[i] || i + 1) + '</button>'); });
+  var chBtns = [].slice.call(rail.children);
+
+  function vis(g, k, s) { g.style.opacity = k; g.style.visibility = k > 0.001 ? 'visible' : 'hidden'; g.style.scale = s; }
+  var cur = -1;
+  function render(p) {
+    var bi = 0; B.forEach(function (b, i) { if (p >= span[b.id].s) bi = i; });
+    if (bi !== cur) { cur = bi; B.forEach(function (b, i) { b.node.classList.toggle('is-on', i === bi); }); }
+    // 換場景：舊的在下一段第一拍的 0–10% 淡出，新的 6–20% 淡入，兩個畫面幾乎不重疊
+    var k = {};
+    RUNS.forEach(function (r, i) {
+      var v = (i ? seg(lt(r.first, p), 0.06, 0.2) : 1) * (r.next ? 1 - seg(lt(r.next, p), 0, 0.1) : 1);
+      k[r.name] = Math.max(k[r.name] || 0, v);
+      // 每段 run 開頭留一點空白再開始畫（0.08），結尾留一點讓人看完成的樣子（0.85）
+      S[r.name].sc.set(seg(runT(r, p), 0.08 / r.ids.length, 1 - 0.15 / r.ids.length));
+    });
+    var tf = finale ? lt(finale.id, p) : 0;
+    Object.keys(S).forEach(function (n) {
+      var isFin = finale && finale.scene === n;
+      vis(S[n].g, k[n] || 0, isFin ? 1 - 0.14 * ease(tf) : 0.97 + 0.03 * (k[n] || 0));
+      if (isFin) S[n].g.classList.toggle('glow', tf > 0.1);
+    });
+    root.style.setProperty('--glow', (0.22 * ease(tf)).toFixed(3));
+    chBtns.forEach(function (btn, i) {
+      var ids = CH[i], s0 = span[ids[0]].s, last = span[ids[ids.length - 1]];
+      btn.style.setProperty('--p', clamp01((p - s0) / (last.s + last.l - s0)).toFixed(3));
+      btn.classList.toggle('is-on', B[bi].ch === i);
+    });
+    root.classList.toggle('is-end', p > 0.985);
+  }
+
+  function headerH() { return parseFloat(getComputedStyle(stage).top) || 0; }
+  function range() { return track.offsetHeight - stage.offsetHeight; }
+  function progress() { var r = track.getBoundingClientRect(), R = range(); return R > 0 ? clamp01((headerH() - r.top) / R) : 1; }
+  function topOf(p) { return track.getBoundingClientRect().top + scrollY - headerH() + p * range(); }
+
+  if (reduce) { root.classList.add('is-static'); render(1); return; }
+  root.classList.add('is-live');
+
+  var raf = 0;
+  function tick() { raf = 0; render(progress()); }
+  addEventListener('scroll', function () { if (!raf) raf = requestAnimationFrame(tick); }, { passive: true });
+  addEventListener('resize', tick);
+  if (document.fonts) document.fonts.ready.then(tick);
+  tick();
+  requestAnimationFrame(function () { root.classList.add('is-ready'); });
+
+  // 點章節：跳到那一章第一拍演到 60%
+  rail.addEventListener('click', function (e) {
+    var btn = e.target.closest('button'); if (!btn) return;
+    stop(); var id = CH[+btn.dataset.ch][0];
+    scrollTo({ top: topOf(span[id].s + span[id].l * 0.6), behavior: 'smooth' });
+  });
+
+  // 自動播放：幫使用者捲，碰到滾輪、觸控、鍵盤就停
+  var playing = 0, last = 0, SPEED = 1 / (B.length * 5.5);   // 每拍約 5.5 秒；ICLAB 14 拍約 75 秒
+  function step(now) {
+    if (!playing) return;
+    var dt = Math.min(64, now - last); last = now;
+    if (progress() >= 1) { stop(); return; }
+    window.scrollTo(0, scrollY + dt / 1000 * SPEED * range());
+    playing = requestAnimationFrame(step);
+  }
+  function start() {
+    if (progress() >= 0.99 || track.getBoundingClientRect().top > headerH() + 2) window.scrollTo(0, topOf(progress() >= 0.99 ? 0 : progress()));
+    last = performance.now(); playing = requestAnimationFrame(step);
+    playBtn.dataset.state = 'run'; playBtn.querySelector('[data-play-label]').textContent = 'Pause';
+  }
+  function stop() {
+    if (!playing) return;
+    cancelAnimationFrame(playing); playing = 0;
+    playBtn.dataset.state = ''; playBtn.querySelector('[data-play-label]').textContent = 'Auto-play';
+  }
+  playBtn.addEventListener('click', function () { playing ? stop() : start(); });
+  ['wheel', 'touchstart', 'keydown'].forEach(function (ev) { addEventListener(ev, function (e) { if (ev === 'keydown' && e.target === playBtn) return; stop(); }, { passive: true }); });
+})();
+</script>
+</body>
+</html>

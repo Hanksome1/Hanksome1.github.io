@@ -18,6 +18,8 @@ description: 做捲動驅動的動畫解說頁（scrollytelling）：一個釘�
 
 最小可跑的骨架在 [skeleton.html](skeleton.html)：從它開始改，不要從零寫。
 
+要做的是一門課或一個大專案的入口頁（把很多篇筆記串成一條故事、黑底發表會式），用 `keynote-tour`。
+
 ## 先寫分鏡，再寫程式
 
 動手前先跟使用者對一張分鏡表，每一列是一個 beat：
