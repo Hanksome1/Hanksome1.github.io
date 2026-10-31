@@ -7,11 +7,16 @@
   // 英文首頁是 layout: index 的 page（source/en/index.md），is_home() 只認得 index generator 產生的首頁
   var home = is_home() || page.layout === 'index';
   var kind = home ? 'home' : (page.layout === 'project' ? 'project' : (is_post() ? 'post' : (page.layout || 'page')));
+  var chapter = course_chapter(page);
 %>
 <body class="is-<%= kind %>">
   <a class="skip-link" href="#main"><%= __('skip_to_content') %></a>
   <%- partial('_partial/header') %>
-  <main id="main"><%- body %></main>
+  <main id="main">
+    <% if (chapter) { %><%- partial('_partial/course-chapter', { chapter: chapter, at: 'top' }) %><% } %>
+    <%- body %>
+    <% if (chapter) { %><%- partial('_partial/course-chapter', { chapter: chapter, at: 'bottom' }) %><% } %>
+  </main>
   <%- partial('_partial/footer') %>
   <% if (theme.statusbar) { %><%- partial('_partial/statusbar') %><% } %>
   <%- js('js/main') %>

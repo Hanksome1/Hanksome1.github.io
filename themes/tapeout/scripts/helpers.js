@@ -65,20 +65,30 @@ hexo.extend.helper.register('tag_names', post =>
 // _config.tapeout.yml 的 notes.courses：hub 是課程總覽筆記的網址，tag 是這門課的筆記共用的標籤。
 // /notes/ 頂端用 note_courses() 排出課程入口；筆記頁用 note_course() 在標頭連回所屬課程的總覽。
 
+// hub 也可以是 source/lab/ 的頁面：這種課程沒有標籤可以分，成員是頁面 front-matter 的 chapters，章節順序就是閱讀順序。
+
 const trimSlash = s => String(s || '').replace(/^\/+|\/+$/g, '');
+const pagePath = p => trimSlash(p.path).replace(/\/?index\.html$/, '');
 const courseConfig = theme => [].concat((theme.notes || {}).courses || []).filter(c => c && c.hub && c.tag);
 
 hexo.extend.helper.register('note_courses', function () {
   const tagNames = hexo.extend.helper.get('tag_names');
   const readingTime = hexo.extend.helper.get('reading_time');
   const notes = hexo.extend.helper.get('split_posts')(this.site.posts).notes;
+  const pages = this.site.pages.filter(p => p.kind === 'note').toArray();
   return courseConfig(this.theme).map(c => {
-    const hub = notes.find(p => trimSlash(p.path) === trimSlash(c.hub));
+    const hub = notes.find(p => trimSlash(p.path) === trimSlash(c.hub)) || pages.find(p => pagePath(p) === trimSlash(c.hub));
     if (!hub) {
       hexo.log.warn(`[notes] 找不到課程總覽筆記 ${c.hub}，課程 ${c.tag} 不會出現在 /notes/`);
       return null;
     }
-    const members = notes.filter(p => p !== hub && tagNames(p).includes(c.tag));
+    const members = hub.chapters
+      ? hub.chapters.map(ch => {
+        const page = pages.find(p => pagePath(p) === trimSlash(ch.url));
+        if (!page) hexo.log.warn(`[notes] 課程 ${c.tag} 的章節 ${ch.url} 找不到頁面，或頁面沒有 kind: note`);
+        return page;
+      }).filter(Boolean)
+      : notes.filter(p => p !== hub && tagNames(p).includes(c.tag));
     // 卡片上的主題：成員筆記最常用的其他標籤
     const count = {};
     members.forEach(p => tagNames(p).forEach(t => {
@@ -87,11 +97,39 @@ hexo.extend.helper.register('note_courses', function () {
     return Object.assign({}, c, {
       hub,
       notes: members,
-      minutes: members.reduce((sum, p) => sum + readingTime(p.content), 0),
+      minutes: members.reduce((sum, p) => sum + (p.reading || readingTime(p.content)), 0),
       updated: [hub].concat(members).reduce((a, p) => (p.updated > a ? p.updated : a), hub.updated),
-      topics: Object.keys(count).sort((a, b) => count[b] - count[a]).slice(0, 5)
+      topics: c.topics || Object.keys(count).sort((a, b) => count[b] - count[a]).slice(0, 5)
     });
   }).filter(Boolean);
+});
+
+// 這一頁是哪門課的第幾章（hub 的 chapters，also 也算同一章），沒有就回傳 null。
+// 章節頁的頁首和頁尾用它畫導覽（_partial/course-chapter.ejs）
+hexo.extend.helper.register('course_chapter', function (page) {
+  if (!page || page.kind !== 'note' || !page.path) return null;
+  const pages = this.site.pages.filter(p => p.chapters).toArray();
+  const path = pagePath(page);
+  for (const c of courseConfig(this.theme)) {
+    const hub = pages.find(p => pagePath(p) === trimSlash(c.hub));
+    if (!hub) continue;
+    const chapters = hub.chapters;
+    const index = chapters.findIndex(ch => trimSlash(ch.url) === path || (ch.also && trimSlash(ch.also.url) === path));
+    if (index < 0) continue;
+    const isAlt = trimSlash(chapters[index].url) !== path;
+    return {
+      name: c.name || hub.title,
+      hubUrl: c.hub,
+      chapters,
+      index,
+      total: chapters.length,
+      isAlt,
+      altLabel: isAlt ? String(chapters[index].also.label).split(/[，,]/)[0] : null,
+      prev: chapters[index - 1] || null,
+      next: chapters[index + 1] || null
+    };
+  }
+  return null;
 });
 
 // 這篇筆記屬於哪一門課（總覽筆記本身也算），沒有就回傳 null
@@ -105,7 +143,7 @@ hexo.extend.helper.register('note_course', function (post) {
 // 課程總覽筆記的標頭用它放動畫入口；沒有設定 tour 就回傳 null
 hexo.extend.helper.register('course_tour', function (course) {
   if (!course || !course.tour) return null;
-  const page = this.site.pages.toArray().find(p => trimSlash(p.path).replace(/\/?index\.html$/, '') === trimSlash(course.tour));
+  const page = this.site.pages.toArray().find(p => pagePath(p) === trimSlash(course.tour));
   if (!page || !page.tour || !page.tour.stops) {
     hexo.log.warn(`[notes] 課程 ${course.tag} 的 tour ${course.tour} 找不到頁面，或頁面沒有 tour.stops`);
     return null;
