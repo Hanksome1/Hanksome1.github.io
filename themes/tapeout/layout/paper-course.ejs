@@ -1,0 +1,72 @@
+<%
+  // 論文閱讀課程的入口頁，章節來自 front-matter 的 chapters（順序就是閱讀順序）。
+  // 上面的路徑圖標出每一章在模型的哪一段：游標移到章節或圖上的編號時，兩邊一起亮（CSS 的 :has()，見 style.css）。
+  var pages = site.pages.toArray();
+  var chapters = (page.chapters || []).map(function (ch) {
+    var p = pages.filter(function (x) { return ('/' + x.path).replace(/index\.html$/, '') === ch.url; })[0];
+    return Object.assign({}, ch, { minutes: p ? p.reading : null });
+  });
+  var total = chapters.reduce(function (sum, ch) { return sum + (ch.minutes || 0); }, 0);
+  function pin(i) {
+    var ch = chapters[i];
+    return ch ? '<a class="pc-pin" data-ch="' + (i + 1) + '" href="' + url_for(ch.url) + '" aria-label="第 ' + (i + 1) + ' 章：' + ch.paper + '">' + ch.n + '</a>' : '';
+  }
+%>
+<div class="pc">
+  <section class="page-head wrap" data-section="COURSE">
+    <p class="kicker">§ Course — Paper Reading</p>
+    <h1 class="page-title"><%= page.title %><sup><%= chapters.length %></sup></h1>
+    <div class="page-lede"><%- page.content %></div>
+    <dl class="pc-meta">
+      <div><dt>章節</dt><dd><%= chapters.length %> 章</dd></div>
+      <div><dt>閱讀</dt><dd>約 <%= total %> 分鐘</dd></div>
+      <div><dt>前置知識</dt><dd>Transformer 和 attention 的基本概念</dd></div>
+      <% if (chapters.length) { %><div><dt>開始</dt><dd><a class="more-link" href="<%- url_for(chapters[0].url) %>">從第 1 章讀起 <span aria-hidden="true">→</span></a></dd></div><% } %>
+    </dl>
+  </section>
+
+  <section class="section section-tight wrap" data-section="MAP">
+    <figure class="pc-map reveal">
+      <p class="pc-span on-1"><%- pin(0) %><span>從 prompt 到一張圖，走完整條路</span></p>
+      <div class="pc-path">
+        <span class="pc-node on-1">Prompt</span>
+        <span class="pc-node on-1">Text encoder</span>
+        <span class="pc-node on-1">Latent</span>
+        <div class="pc-block on-1 on-3 on-4">
+          <p class="pc-block-head"><span>DiT block × 34–38</span><span>重跑 20–40 步 ↻</span></p>
+          <div class="pc-block-row">
+            <span class="pc-node on-1 on-2 on-3 on-4">Attention<%- pin(1) %></span>
+            <span class="pc-node on-1 on-3 on-4">MLP</span>
+          </div>
+          <p class="pc-bits on-3 on-4"><span>權重與 activation 壓到 4 bit</span><span class="pc-pins"><%- pin(2) %><%- pin(3) %></span></p>
+        </div>
+        <span class="pc-node on-1">VAE decode</span>
+        <span class="pc-node on-1">圖片</span>
+      </div>
+    </figure>
+  </section>
+
+  <section class="section wrap" data-section="CHAPTERS">
+    <header class="section-head">
+      <p class="kicker">§ Reading order</p>
+      <h2 class="section-title">Chapters</h2>
+    </header>
+    <ol class="pc-chapters">
+      <% chapters.forEach(function (ch, i) { %>
+        <li class="pc-ch reveal" data-ch="<%= i + 1 %>">
+          <span class="pc-ch-n" aria-hidden="true"><%= ch.n %></span>
+          <div class="pc-ch-body">
+            <a class="pc-ch-link" href="<%- url_for(ch.url) %>">
+              <span class="pc-ch-kicker"><%= ch.group %></span>
+              <span class="pc-ch-title"><%= ch.paper %></span>
+              <span class="pc-ch-sub"><%= ch.sub %></span>
+              <span class="pc-ch-meta"><span><%= ch.source %></span><% if (ch.minutes) { %><span><%= ch.minutes %> min</span><% } %></span>
+              <span class="pc-ch-arrow" aria-hidden="true">→</span>
+            </a>
+            <% if (ch.also) { %><a class="pc-ch-also" href="<%- url_for(ch.also.url) %>"><%= ch.also.label %> <span aria-hidden="true">→</span></a><% } %>
+          </div>
+        </li>
+      <% }) %>
+    </ol>
+  </section>
+</div>

@@ -1,0 +1,24 @@
+<%
+  // 課程章節頁的導覽，chapter 來自 course_chapter()。at: 'top' 是頁首那一條，'bottom' 是頁尾的上一章、下一章。
+  var c = chapter;
+%>
+<% if (at === 'top') { %>
+<nav class="cc-bar wrap" aria-label="所屬課程">
+  <a href="<%- url_for(c.hubUrl) %>"><%= c.name %></a>
+  <span class="cc-where">第 <%= c.index + 1 %> 章，共 <%= c.total %> 章<% if (c.isAlt) { %> · <%= c.altLabel %><% } %></span>
+  <span class="cc-dots" aria-hidden="true"><% c.chapters.forEach(function (ch, i) { %><i<% if (i === c.index) { %> class="is-on"<% } %>></i><% }) %></span>
+</nav>
+<% } else { %>
+<nav class="cc-foot wrap" aria-label="課程章節">
+  <% if (c.prev) { %>
+    <a class="cc-link" href="<%- url_for(c.prev.url) %>"><span class="cc-label">← 上一章</span><span class="cc-title"><%= c.prev.paper %></span></a>
+  <% } else { %>
+    <a class="cc-link" href="<%- url_for(c.hubUrl) %>"><span class="cc-label">← 課程總覽</span><span class="cc-title"><%= c.name %></span></a>
+  <% } %>
+  <% if (c.next) { %>
+    <a class="cc-link cc-next" href="<%- url_for(c.next.url) %>"><span class="cc-label">下一章 →</span><span class="cc-title"><%= c.next.paper %></span></a>
+  <% } else { %>
+    <a class="cc-link cc-next" href="<%- url_for(c.hubUrl) %>"><span class="cc-label">課程總覽 →</span><span class="cc-title"><%= c.name %></span></a>
+  <% } %>
+</nav>
+<% } %>

@@ -29,7 +29,7 @@
             <h3 class="chip-title"><%= c.name || c.hub.title %></h3>
             <% if (c.hub.summary || c.summary) { %><p class="chip-summary"><%= c.hub.summary || c.summary %></p><% } %>
             <dl class="chip-metrics">
-              <div><dt>Notes</dt><dd><%= c.notes.length %></dd></div>
+              <div><dt><%= c.hub.chapters ? 'Chapters' : 'Notes' %></dt><dd><%= c.notes.length %></dd></div>
               <div><dt>Reading</dt><dd><%= c.minutes %> min</dd></div>
               <div><dt>Tended</dt><dd><time datetime="<%= date_xml(c.updated) %>"><%= date(c.updated, 'YYYY.MM.DD') %></time></dd></div>
             </dl>
