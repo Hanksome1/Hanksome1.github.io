@@ -1,60 +1,61 @@
 <%
-  // 論文閱讀課程的入口頁，章節來自 front-matter 的 chapters（順序就是閱讀順序）。
-  // 上面的路徑圖標出每一章在模型的哪一段：游標移到章節或圖上的編號時，兩邊一起亮（CSS 的 :has()，見 style.css）。
+  // 論文清單的入口頁，論文來自 front-matter 的 papers，依 date（論文公開的年月）由新到舊排（sorted_papers，見 scripts/helpers.js）。
+  // 上面的路徑圖標出每一篇在模型的哪一段：標記用 key 找論文，游標移到論文或圖上的標記時，兩邊一起亮（CSS 的 :has()，見 style.css）。
   var pages = site.pages.toArray();
-  var chapters = (page.chapters || []).map(function (ch) {
+  var ym = function (d) { return String(d || '').replace('-', '.'); };
+  var chapters = sorted_papers(page).map(function (ch) {
     var p = pages.filter(function (x) { return ('/' + x.path).replace(/index\.html$/, '') === ch.url; })[0];
     return Object.assign({}, ch, { minutes: p ? p.reading : null });
   });
   var total = chapters.reduce(function (sum, ch) { return sum + (ch.minutes || 0); }, 0);
-  function pin(i) {
-    var ch = chapters[i];
-    return ch ? '<a class="pc-pin" data-ch="' + (i + 1) + '" href="' + url_for(ch.url) + '" aria-label="第 ' + (i + 1) + ' 章：' + ch.paper + '">' + ch.n + '</a>' : '';
+  function pin(key) {
+    var ch = chapters.filter(function (x) { return x.key === key; })[0];
+    return ch ? '<a class="pc-pin" data-ch="' + key + '" href="' + url_for(ch.url) + '" aria-label="' + ch.paper + '（' + ym(ch.date) + '）">' + String(ch.date).slice(0, 4) + '</a>' : '';
   }
 %>
 <div class="pc">
   <section class="page-head wrap" data-section="COURSE">
-    <p class="kicker">§ Course — Paper Reading</p>
+    <p class="kicker">§ Paper Reading — 依發表時間，新到舊</p>
     <h1 class="page-title"><%= page.title %><sup><%= chapters.length %></sup></h1>
     <div class="page-lede"><%- page.content %></div>
     <dl class="pc-meta">
-      <div><dt>章節</dt><dd><%= chapters.length %> 章</dd></div>
+      <div><dt>論文</dt><dd><%= chapters.length %> 篇</dd></div>
       <div><dt>閱讀</dt><dd>約 <%= total %> 分鐘</dd></div>
       <div><dt>前置知識</dt><dd>Transformer 和 attention 的基本概念</dd></div>
-      <% if (chapters.length) { %><div><dt>開始</dt><dd><a class="more-link" href="<%- url_for(chapters[0].url) %>">從第 1 章讀起 <span aria-hidden="true">→</span></a></dd></div><% } %>
+      <% if (chapters.length) { %><div><dt>最新</dt><dd><a class="more-link" href="<%- url_for(chapters[0].url) %>"><%= chapters[0].paper %> <span aria-hidden="true">→</span></a></dd></div><% } %>
     </dl>
   </section>
 
   <section class="section section-tight wrap" data-section="MAP">
     <figure class="pc-map reveal">
-      <p class="pc-span on-1"><%- pin(0) %><span>從 prompt 到一張圖，走完整條路</span></p>
+      <p class="pc-span on-ideogram4"><%- pin('ideogram4') %><span>從 prompt 到一張圖，走完整條路</span></p>
       <div class="pc-path">
-        <span class="pc-node on-1">Prompt</span>
-        <span class="pc-node on-1">Text encoder</span>
-        <span class="pc-node on-1">Latent</span>
-        <div class="pc-block on-1 on-2 on-4 on-5 on-6">
-          <p class="pc-block-head"><span>DiT block × 34–38</span><span class="pc-loop on-2">每步 × 2 · 重跑 20–40 步 ↻<%- pin(1) %></span></p>
+        <span class="pc-node on-ideogram4">Prompt</span>
+        <span class="pc-node on-ideogram4">Text encoder</span>
+        <span class="pc-node on-ideogram4">Latent</span>
+        <div class="pc-block on-ideogram4 on-cfg on-swiglu on-svdquant on-kroquant">
+          <p class="pc-block-head"><span>DiT block × 34–38</span><span class="pc-loop on-cfg">每步 × 2 · 重跑 20–40 步 ↻<%- pin('cfg') %></span></p>
           <div class="pc-block-row">
-            <span class="pc-node on-1 on-3 on-5 on-6">Attention<%- pin(2) %></span>
-            <span class="pc-node on-1 on-4 on-5 on-6">MLP<%- pin(3) %></span>
+            <span class="pc-node on-ideogram4 on-rope on-flash-attention on-svdquant on-kroquant">Attention<%- pin('rope') %><%- pin('flash-attention') %></span>
+            <span class="pc-node on-ideogram4 on-swiglu on-svdquant on-kroquant">MLP<%- pin('swiglu') %></span>
           </div>
-          <p class="pc-bits on-5 on-6"><span>權重與 activation 壓到 4 bit</span><span class="pc-pins"><%- pin(4) %><%- pin(5) %></span></p>
+          <p class="pc-bits on-svdquant on-kroquant"><span>權重與 activation 壓到 4 bit</span><span class="pc-pins"><%- pin('svdquant') %><%- pin('kroquant') %></span></p>
         </div>
-        <span class="pc-node on-1">VAE decode</span>
-        <span class="pc-node on-1">圖片</span>
+        <span class="pc-node on-ideogram4">VAE decode</span>
+        <span class="pc-node on-ideogram4">圖片</span>
       </div>
     </figure>
   </section>
 
-  <section class="section wrap" data-section="CHAPTERS">
+  <section class="section wrap" data-section="PAPERS">
     <header class="section-head">
-      <p class="kicker">§ Reading order</p>
-      <h2 class="section-title">Chapters</h2>
+      <p class="kicker">§ Newest first</p>
+      <h2 class="section-title">Papers</h2>
     </header>
     <ol class="pc-chapters">
       <% chapters.forEach(function (ch, i) { %>
-        <li class="pc-ch reveal" data-ch="<%= i + 1 %>">
-          <span class="pc-ch-n" aria-hidden="true"><%= ch.n %></span>
+        <li class="pc-ch reveal" data-ch="<%= ch.key %>">
+          <span class="pc-ch-n"><%= ym(ch.date) %></span>
           <div class="pc-ch-body">
             <a class="pc-ch-link" href="<%- url_for(ch.url) %>">
               <span class="pc-ch-kicker"><%= ch.group %></span>

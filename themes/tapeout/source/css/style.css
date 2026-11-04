@@ -1872,38 +1872,15 @@ details.note > summary + * { margin-top: 8px; }
 }
 
 /* ==========================================================================
-   課程動畫導覽的入口（_partial/course-tour.ejs），放在課程總覽筆記的摘要下面
-   左邊是動畫開場地圖的縮圖，一顆點沿路線跑
+   課程動畫導覽的入口（_partial/course-tour.ejs）：課程總覽筆記 kicker 最後的小按鈕
    ========================================================================== */
-.tour-entry {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px;
-  max-width: 720px; margin-top: 26px; padding: 12px 20px 12px 12px;
-  border: 1px solid var(--line-2); border-radius: 3px; background: var(--surface);
-  color: inherit; text-decoration: none;
-  transition: border-color 0.25s, box-shadow 0.35s var(--ease), transform 0.35s var(--ease);
+.kicker .tour-entry {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; padding: 2px 8px;
+  border: 1px solid var(--accent); border-radius: 2px; color: var(--accent);
+  transition: background 0.2s, color 0.2s;
 }
-.tour-entry:hover, .tour-entry:focus-visible { border-color: var(--accent); box-shadow: var(--shadow); transform: translateY(-2px); }
-.tour-thumb { display: block; width: 146px; height: 76px; padding-right: 14px; border-right: 1px dashed var(--line-2); }
-.tour-thumb .r { fill: none; stroke: var(--line-2); stroke-width: 1.2; }
-.tour-thumb .t { fill: var(--surface); stroke: var(--ink-3); stroke-width: 1; }
-.tour-thumb .k { fill: var(--accent); }
-.tour-copy { display: block; min-width: 0; }
-.tour-kicker { display: flex; align-items: center; gap: 7px; font: 600 10.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-.tour-play { width: 0; height: 0; border-left: 7px solid currentColor; border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
-.tour-title { display: block; margin-top: 5px; font-size: 16px; line-height: 1.4; font-weight: 600; color: var(--ink); text-wrap: balance; }
-.tour-sub { display: block; margin-top: 3px; font-size: 13px; line-height: 1.55; color: var(--ink-3); text-wrap: pretty; }
-.tour-arrow { font: 500 18px var(--font-mono); color: var(--ink-3); transition: color 0.2s, transform 0.25s var(--ease); }
-.tour-entry:hover .tour-arrow, .tour-entry:focus-visible .tour-arrow { color: var(--accent); transform: translateX(4px); }
-@media (max-width: 560px) {
-  .tour-entry { gap: 12px; padding: 10px 14px 10px 10px; }
-  .tour-thumb { width: 96px; height: 50px; padding-right: 10px; }
-  .tour-sub { display: none; }
-  .tour-title { font-size: 14.5px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .tour-thumb .k { display: none; }
-  .tour-entry { transition: none; }
-}
+.kicker .tour-entry:hover, .kicker .tour-entry:focus-visible { background: var(--accent); color: var(--bg); }
+.tour-play { width: 0; height: 0; border-left: 6px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
 
 /* ==========================================================================
    論文閱讀課程（layout: paper-course）與章節頁的導覽（_partial/course-chapter.ejs）
@@ -1928,7 +1905,7 @@ details.note > summary + * { margin-top: 8px; }
 @keyframes pc-run { from { left: 0; } to { left: calc(100% - 6px); } }
 .pc-node, .pc-block { position: relative; z-index: 1; background: var(--surface); transition: border-color 0.2s, color 0.2s, opacity 0.2s; }
 .pc-node { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: 1 1 0; min-height: 44px; padding: 6px 10px; border: 1px solid var(--ink-3); border-radius: 2px; font: 500 13px/1.3 var(--font-mono); color: var(--ink); text-align: center; }
-.pc-block { flex: 3.4 1 0; min-width: 0; padding: 10px 12px 12px; border: 1px dashed var(--ink-3); border-radius: 3px; }
+.pc-block { flex: 4.4 1 0; min-width: 0; padding: 10px 12px 12px; border: 1px dashed var(--ink-3); border-radius: 3px; }
 .pc-block-head, .pc-bits { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 400 11.5px/1.4 var(--font-mono); color: var(--ink-3); }
 .pc-block-head { margin: 0 0 10px; white-space: nowrap; }
 .pc-loop { display: inline-flex; align-items: center; gap: 8px; transition: color 0.2s; }
@@ -1938,26 +1915,28 @@ details.note > summary + * { margin-top: 8px; }
 .pc-pin { position: relative; z-index: 2; display: inline-block; padding: 1px 5px; border: 1px solid var(--accent); border-radius: 2px; background: var(--surface); font: 600 11px/1.4 var(--font-mono); color: var(--accent); text-decoration: none; transition: background 0.2s, color 0.2s; }
 .pc-pin:hover, .pc-pin:focus-visible { background: var(--accent); color: var(--bg); }
 
-/* 第 N 章亮起來時，圖上其他部分退到後面 */
+/* 游標移到某一篇（清單或圖上的標記）時，圖上其他部分退到後面 */
 .pc:has(.pc-ch:is(:hover, :focus-within)) .pc-node,
 .pc:has(.pc-pin:is(:hover, :focus-visible)) .pc-node { opacity: 0.4; }
-.pc:has([data-ch="1"]:is(:hover, :focus-within)) .on-1,
-.pc:has([data-ch="2"]:is(:hover, :focus-within)) .on-2,
-.pc:has([data-ch="3"]:is(:hover, :focus-within)) .on-3,
-.pc:has([data-ch="4"]:is(:hover, :focus-within)) .on-4,
-.pc:has([data-ch="5"]:is(:hover, :focus-within)) .on-5,
-.pc:has([data-ch="6"]:is(:hover, :focus-within)) .on-6 { border-color: var(--accent); color: var(--accent); opacity: 1; }
-.pc:has(.pc-pin[data-ch="1"]:is(:hover, :focus-visible)) .pc-ch[data-ch="1"] .pc-ch-title,
-.pc:has(.pc-pin[data-ch="2"]:is(:hover, :focus-visible)) .pc-ch[data-ch="2"] .pc-ch-title,
-.pc:has(.pc-pin[data-ch="3"]:is(:hover, :focus-visible)) .pc-ch[data-ch="3"] .pc-ch-title,
-.pc:has(.pc-pin[data-ch="4"]:is(:hover, :focus-visible)) .pc-ch[data-ch="4"] .pc-ch-title,
-.pc:has(.pc-pin[data-ch="5"]:is(:hover, :focus-visible)) .pc-ch[data-ch="5"] .pc-ch-title,
-.pc:has(.pc-pin[data-ch="6"]:is(:hover, :focus-visible)) .pc-ch[data-ch="6"] .pc-ch-title { color: var(--accent); }
+.pc:has([data-ch="ideogram4"]:is(:hover, :focus-within)) .on-ideogram4,
+.pc:has([data-ch="cfg"]:is(:hover, :focus-within)) .on-cfg,
+.pc:has([data-ch="rope"]:is(:hover, :focus-within)) .on-rope,
+.pc:has([data-ch="flash-attention"]:is(:hover, :focus-within)) .on-flash-attention,
+.pc:has([data-ch="swiglu"]:is(:hover, :focus-within)) .on-swiglu,
+.pc:has([data-ch="svdquant"]:is(:hover, :focus-within)) .on-svdquant,
+.pc:has([data-ch="kroquant"]:is(:hover, :focus-within)) .on-kroquant { border-color: var(--accent); color: var(--accent); opacity: 1; }
+.pc:has(.pc-pin[data-ch="ideogram4"]:is(:hover, :focus-visible)) .pc-ch[data-ch="ideogram4"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="cfg"]:is(:hover, :focus-visible)) .pc-ch[data-ch="cfg"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="rope"]:is(:hover, :focus-visible)) .pc-ch[data-ch="rope"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="flash-attention"]:is(:hover, :focus-visible)) .pc-ch[data-ch="flash-attention"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="swiglu"]:is(:hover, :focus-visible)) .pc-ch[data-ch="swiglu"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="svdquant"]:is(:hover, :focus-visible)) .pc-ch[data-ch="svdquant"] .pc-ch-title,
+.pc:has(.pc-pin[data-ch="kroquant"]:is(:hover, :focus-visible)) .pc-ch[data-ch="kroquant"] .pc-ch-title { color: var(--accent); }
 
-/* ---------- 章節 ---------- */
+/* ---------- 論文清單（新到舊） ---------- */
 .pc-chapters { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line-2); }
 .pc-ch { position: relative; display: grid; grid-template-columns: 76px minmax(0, 1fr); border-bottom: 1px solid var(--line); }
-/* 章節之間的走線，接起每一章的編號 */
+/* 論文之間的走線，接起每一篇的年月 */
 .pc-ch::before { content: ""; position: absolute; left: 17px; top: 0; bottom: -1px; border-left: 1px solid var(--line-2); }
 .pc-ch:first-child::before { top: 28px; }
 .pc-ch:last-child::before { bottom: auto; height: 28px; }

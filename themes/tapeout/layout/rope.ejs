@@ -1,0 +1,198 @@
+<%
+  // RoPE → MRoPE 的捲動解說（js/rope.js）。說明文字寫在這裡，沒有 JS 時依序排好。
+%>
+<div class="rp" data-rp>
+  <header class="rp-hero wrap">
+    <p class="kicker">§ Explainer — Attention · arXiv 2104.09864 · 2409.12191 · Ideogram 4</p>
+    <h1 class="rp-title">RoPE：位置不是加進去的，是<em>轉</em>出來的</h1>
+    <p class="rp-lede">Attention 只看 q · k，本身不知道哪個 token 在哪。SD 3.5 在入口把一張位置表加到 token 上；Ideogram 4 改成在每一層的 attention 裡，把 q、k 依位置轉一個角度，內積裡就只剩「相隔幾格」。圖片有上下、左右兩個方向，所以再把轉盤分成 t、h、w 三組，各跟著一個軸轉，就是 MRoPE。往下捲，用 Ideogram 4 的規格把每一個數字算一次。</p>
+    <dl class="rp-meta">
+      <div><dt>論文</dt><dd><a href="https://arxiv.org/abs/2104.09864" target="_blank" rel="noopener">RoFormer, arXiv 2104.09864</a>（2021）</dd></div>
+      <div><dt>MRoPE</dt><dd><a href="https://arxiv.org/abs/2409.12191" target="_blank" rel="noopener">Qwen2-VL, arXiv 2409.12191</a>（2024）</dd></div>
+      <div><dt>Ideogram 4 的設定</dt><dd>head_dim 256 · base 5,000,000</dd></div>
+      <div><dt>三個軸</dt><dd>t 88 對 · h 20 對 · w 20 對</dd></div>
+    </dl>
+    <p class="rp-hint">往下捲，或按 Auto-play ↓</p>
+  </header>
+
+  <section class="rp-track">
+    <div class="rp-stage">
+      <svg class="rp-world" data-world role="img" aria-label="RoPE 與 MRoPE 的動畫解說：attention 不知道順序、SD 3.5 的位置表、q 和 k 的旋轉、128 對的頻率、內積隨距離衰減、圖片攤平的問題、t h w 三軸分配、文字 token 的位置與成本"></svg>
+      <aside class="rp-panel">
+        <div class="rp-top">
+          <p class="rp-status"><i></i><span data-status>Overview</span></p>
+          <button type="button" class="rp-play" data-play aria-label="自動播放"><span class="rp-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+        </div>
+        <ol class="rp-stops">
+          <li><button type="button" data-stop="absolute"><span>01</span>Absolute<i></i></button></li>
+          <li><button type="button" data-stop="rotate"><span>02</span>Rotate<i></i></button></li>
+          <li><button type="button" data-stop="freqs"><span>03</span>Freqs<i></i></button></li>
+          <li><button type="button" data-stop="decay"><span>04</span>Decay<i></i></button></li>
+          <li><button type="button" data-stop="raster"><span>05</span>2D<i></i></button></li>
+          <li><button type="button" data-stop="mrope"><span>06</span>MRoPE<i></i></button></li>
+          <li><button type="button" data-stop="text"><span>07</span>Text<i></i></button></li>
+          <li><button type="button" data-stop="angle"><span>08</span>cos·sin<i></i></button></li>
+          <li><button type="button" data-stop="ops"><span>09</span>Ops<i></i></button></li>
+          <li><button type="button" data-stop="layer"><span>10</span>Layer<i></i></button></li>
+          <li><button type="button" data-stop="cost"><span>11</span>Cost<i></i></button></li>
+        </ol>
+        <!-- 說明文字寫在 HTML 裡：沒有 JS 時就是依序排好的內容 -->
+        <div class="rp-caps">
+          <article class="rp-cap is-on" data-cap="intro">
+            <p class="kicker">Overview</p>
+            <h2>Attention 不知道誰在哪</h2>
+            <p>attention 的分數是 q · k，而 q、k 都只從 token 自己的內容算出來。把句子打亂，「貓」看「窗」的分數一模一樣。</p>
+            <p>圖片也一樣：1024² 的圖是 64 × 64 = 4,096 個 token，攤成一列送進 attention，誰在左上角、誰在右下角，它分不出來。</p>
+            <p class="hl"><b>所以</b>位置要另外告訴模型。這一頁看兩種做法：SD 3.5 把位置加在入口；Ideogram 4 在每一層的 attention 裡，把 q、k 轉一個角度。</p>
+          </article>
+          <article class="rp-cap" data-cap="absolute">
+            <p class="kicker">Stop 01 — 絕對位置</p>
+            <h2>SD 3.5：在入口加一張表</h2>
+            <p>SD 3.5 Large 存了一張 192 × 192 的 2D sincos 表，每一格是一個 2,432 維的向量。1024² 的圖切成 64 × 64 個 patch，從表的正中間裁出 64 × 64 那一塊加到 token 上，之後 38 層都不再碰位置。</p>
+            <p class="xs">加法把位置混進內容：q · k 展開成四項，「相隔幾格」要模型自己從兩個絕對位置學出來。文字 token 完全沒有加位置。</p>
+            <p class="hl"><b>上限</b>表只有 192 格寬：192 × 16 = 3,072 px，再大就 assert 失敗。</p>
+          </article>
+          <article class="rp-cap" data-cap="rotate">
+            <p class="kicker">Stop 02 — 旋轉</p>
+            <h2>RoPE：把 q、k 轉一個角度</h2>
+            <p>把 q 的兩個數看成平面上的一個箭頭。位置 m 的 q 轉 mθ，位置 n 的 k 轉 nθ。內積只看兩個箭頭的夾角，所以兩個 token 一起往後挪幾格，夾角都不變。</p>
+            <p class="xs">「轉」在數學上是一對 (x₁, x₂) 乘一個 2 × 2 矩陣 <code>[cos φ, −sin φ; sin φ, cos φ]</code>；「內積」是 dot product：對應的數相乘再加總。角度和 cos、sin 怎麼算出來在 Stop 08，旋轉本身怎麼算在 Stop 09。</p>
+            <p class="hl"><b>重點</b><code>qₘᵀkₙ = qᵀR((n−m)θ)k</code>：轉進去的是絕對位置，內積裡只剩相對距離 n − m。沒有任何參數，v 也不轉。</p>
+          </article>
+          <article class="rp-cap" data-cap="freqs">
+            <p class="kicker">Stop 03 — 頻率</p>
+            <h2>128 對，128 種轉速</h2>
+            <p>Ideogram 4 每個 head 256 維，兩兩一對共 128 對，第 i 對每一格轉 θᵢ = base^(−2i/256)。第 0 對每格轉 1 弧度，6.3 格就轉一圈；最後一對要兩千多萬格才轉一圈。</p>
+            <p class="xs">像時鐘的秒針、分針、時針：高頻分得出隔壁的 token，低頻分得出很遠的距離。</p>
+            <p class="hl"><b>base</b>RoFormer 原本用 10,000。Ideogram 4 用 5,000,000，最慢那幾對轉得更慢，序列很長時還分得開。</p>
+          </article>
+          <article class="rp-cap" data-cap="decay">
+            <p class="kicker">Stop 04 — 距離</p>
+            <h2>距離越遠，內積越小</h2>
+            <p>把 q、k 都設成全 1，128 對的 cos 平均起來，就是內積跟相對距離的關係。距離越遠，各對的角度越亂，平均就越接近 0。</p>
+            <p>base 10,000 在距離 4,096 左右就掉到 0；5,000,000 到 65,536 還有 0.22。</p>
+            <p class="hl"><b>意思</b>模型天生偏向看近的 token，但遠的也不會完全看不到。這條線是示意：真正的 q、k 是學出來的。</p>
+          </article>
+          <article class="rp-cap" data-cap="raster">
+            <p class="kicker">Stop 05 — 圖片是 2D 的</p>
+            <h2>攤成一列，距離就歪了</h2>
+            <p>圖片 token 進 attention 前排成一列：第 0 列從左到右，接著第 1 列。照 1D RoPE 的算法，右邊的鄰居差 1，正下方的鄰居差 64。</p>
+            <p class="xs">更糟的是每一列最右邊和下一列最左邊：在圖上隔了整張寬，在序列裡只差 1。</p>
+            <p class="hl"><b>要的是</b>兩個方向分開量：上下差幾列、左右差幾行。</p>
+          </article>
+          <article class="rp-cap" data-cap="mrope">
+            <p class="kicker">Stop 06 — MRoPE</p>
+            <h2>把 128 對分給 t、h、w</h2>
+            <p>Qwen2-VL 的 MRoPE 把位置從一個數改成 (t, h, w) 三個數，轉盤分成三組，各跟著一個軸轉。Ideogram 4 照 Qwen3-VL 的交錯排法：前 60 對 t、h、w 輪流，後面 68 對都給 t。</p>
+            <p class="xs">算下來 t 88 對、h 20 對、w 20 對，h、w 拿到的都是高頻那一段。</p>
+            <p class="hl"><b>結果</b>一張圖的 t 固定。往右走只有 w 組在轉，往下走只有 h 組在轉，兩個方向各量各的。</p>
+          </article>
+          <article class="rp-cap" data-cap="text">
+            <p class="kicker">Stop 07 — 文字 token</p>
+            <h2>文字是 (n, n, n)：退回普通的 RoPE</h2>
+            <p>第 n 個文字 token 的位置是 (n, n, n)，三組轉的角度一樣，128 對全部照 n 轉，跟原本的 1D RoPE 完全相同。</p>
+            <p class="xs">圖片 token 是 (0, h, w) 再加 65,536。文字最多 2,048 個，兩段位置不會重疊，放在同一個位置空間裡。</p>
+            <p class="hl"><b>對照</b>SD 3.5 的文字 token 在 DiT 裡沒有位置；Ideogram 4 每一層、每個 token 都有。</p>
+          </article>
+          <article class="rp-cap" data-cap="angle">
+            <p class="kicker">Stop 08 — cos、sin 怎麼來</p>
+            <h2>角度 = 位置 × 轉速</h2>
+            <p>每一對先用公式算出自己的轉速 <code>θᵢ = base^(−2i/d)</code>：i = 0 每格轉 1 弧度，i 越大轉得越慢。位置 m 的 token，第 i 對的角度就是 <code>φᵢ = m · θᵢ</code>，單位是弧度（2π 弧度 = 360°）。</p>
+            <p class="xs">把半徑 1 的箭頭從 x 軸逆時針轉 φᵢ，箭頭尖端的 x 座標就是 cos φᵢ、y 座標就是 sin φᵢ。圖上用 d = 8、base = 100、m = 2 示範；Ideogram 4 是 d = 256、base = 5,000,000，m 換成那一對所屬的 t、h 或 w。</p>
+            <p class="hl"><b>怎麼算的</b>所有 token 一次算：位置向量和 128 個 θ 做外積得到 L × 128 的角度表，逐元素取 cos、sin，再前後各接一份成 256 維。沒有參數，一次 forward 算一張，34 層共用。</p>
+          </article>
+          <article class="rp-cap" data-cap="ops">
+            <p class="kicker">Stop 09 — 實際怎麼算</p>
+            <h2>逐元素乘加，不是矩陣乘法</h2>
+            <p>一個 head 的 q 有 256 個數，第 j 維和第 j + 128 維配成一對（圖上用 8 維示範）。<code>rotate_half</code> 把後半取負搬到前面、前半搬到後面：只是重排，沒有乘法。</p>
+            <p class="xs">接著逐元素算 <code>q ⊙ cos + rotate_half(q) ⊙ sin</code>：同一格對同一格相乘再相加。cos、sin 就是 Stop 08 算好的那兩列，前半、後半各放一份。</p>
+            <p class="hl"><b>等價的矩陣</b>結果等於 q 乘一個 256 × 256 的旋轉矩陣 <code>[C, −S; S, C]</code>，但它只有 512 格不是 0：逐元素每個數 3 FLOPs，照矩陣乘要 512，所以程式裡從來不建這個矩陣。</p>
+          </article>
+          <article class="rp-cap" data-cap="layer">
+            <p class="kicker">Stop 10 — 一層 attention</p>
+            <h2>RoPE 夾在兩次矩陣乘法中間</h2>
+            <p>q、k 先由 <code>x · W_qkv</code>（矩陣乘法）得到，做完 QK-RMSNorm（逐元素）才轉。轉完的 q′、k′ 進 <code>S = q′k′ᵀ</code>：這是矩陣乘法，S 的每一格就是一對 token 的 dot product，256 個數相乘再加總。</p>
+            <p class="hl"><b>位置在哪裡起作用</b>旋轉只動 q、k，v 不轉。位置在第 5 步轉進去，在第 6 步的 dot product 裡變成只剩 n − m。</p>
+          </article>
+          <article class="rp-cap" data-cap="cost">
+            <p class="kicker">Stop 11 — 成本</p>
+            <h2>沒有參數，幾乎不花時間</h2>
+            <p>RoPE 對 q、k 的每個元素做一次 <code>q·cos + rotate_half(q)·sin</code>：2 次乘法、1 次加法。一個 token 一層是 27,648 FLOPs，線性層是 5.3 億，差了四個數量級。</p>
+            <p class="xs">cos、sin 每次 forward 算一次，34 層共用。SD 3.5 的位置表則有 8,965 萬個數存在 checkpoint 裡。</p>
+            <p class="hl"><b>解析度</b>換解析度只是 h、w 變大，沒有表會被超出。但模型沒訓練過的尺寸不一定畫得好，那是資料的問題。</p>
+          </article>
+        </div>
+        <dl class="rp-facts" data-facts></dl>
+      </aside>
+      <p class="rp-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+    </div>
+  </section>
+
+  <section class="rp-outro wrap">
+    <p class="kicker">§ Summary</p>
+    <h2>三件事</h2>
+    <ol class="rp-take">
+      <li><b>轉，不是加。</b>RoPE 把 q、k 依位置轉一個角度，內積裡的絕對位置互相抵掉，只剩相對距離 n − m。沒有參數，每一層都用得到。</li>
+      <li><b>128 種轉速。</b>高頻分辨隔壁的 token，低頻分辨很遠的距離。Ideogram 4 把 base 從 10,000 拉到 5,000,000，遠距離的內積衰減得比較慢。</li>
+      <li><b>圖片要兩個軸。</b>MRoPE 把轉盤分給 t、h、w（Ideogram 4 是 88 / 20 / 20），圖片上下、左右各量各的；文字是 (n, n, n)，退回普通的 RoPE。</li>
+    </ol>
+
+    <div class="table-wrap">
+      <table class="rp-table">
+        <caption>位置怎麼進到 attention 裡</caption>
+        <thead><tr><th>項目</th><th>SD 3.5 Large</th><th>1D RoPE（RoFormer）</th><th>Ideogram 4 · MRoPE</th></tr></thead>
+        <tbody>
+          <tr><td>做法</td><td>入口加 2D sincos 表</td><td>q、k 依位置旋轉</td><td class="us">q、k 依 (t, h, w) 旋轉</td></tr>
+          <tr><td>作用在</td><td>第 1 層的輸入，一次</td><td>每一層的 q、k</td><td class="us">34 層的 q、k</td></tr>
+          <tr><td>內積看到</td><td>絕對位置（混在內容裡）</td><td>相對距離 n − m</td><td class="us">Δt、Δh、Δw 各自的相對距離</td></tr>
+          <tr><td>要存的數</td><td>192 × 192 × 2,432 = 89.65M</td><td>0</td><td class="us">0</td></tr>
+          <tr><td>文字 token</td><td>沒有位置</td><td>n</td><td class="us">(n, n, n)</td></tr>
+          <tr><td>圖片 token</td><td>表上的 (h, w)</td><td>攤平後的序號</td><td class="us">(0, h, w) + 65,536</td></tr>
+          <tr><td>base · 每 head 的對數</td><td>—</td><td>10,000 · d/2</td><td class="us">5,000,000 · 128</td></tr>
+          <tr><td>解析度上限</td><td>3,072 px</td><td>—</td><td class="us">沒有表的上限</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-wrap">
+      <table class="rp-table">
+        <caption>一層 attention 裡的運算 · Ideogram 4 · L = 序列長度</caption>
+        <thead><tr><th>#</th><th>步驟</th><th>算式</th><th>形狀</th><th>運算</th><th>FLOPs / token</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>QKV 投影</td><td>x · W_qkv</td><td>L×4608 → L×13824</td><td>矩陣乘法</td><td>127.4M</td></tr>
+          <tr><td>2</td><td>拆成 18 個 head</td><td>reshape</td><td>3 × (L×18×256)</td><td>重排</td><td>0</td></tr>
+          <tr><td>3</td><td>QK-RMSNorm</td><td>q / rms(q) ⊙ w</td><td>L×18×256</td><td>逐元素</td><td>≈36.9K（估）</td></tr>
+          <tr><td>4</td><td>角度 φ</td><td>φ = pos ⊗ θ，取 cos、sin</td><td>每個 token (t, h, w) → 256</td><td>外積 + 逐元素</td><td>每次 forward 一次，34 層共用</td></tr>
+          <tr><td>5</td><td class="us">RoPE 旋轉</td><td class="us">q ⊙ cos + rotate_half(q) ⊙ sin</td><td class="us">L×18×256</td><td class="us">逐元素</td><td class="us">27,648（q、k 合計）</td></tr>
+          <tr><td>6</td><td>分數</td><td>S = q′k′ᵀ / √256</td><td>每個 head：(L×256)(256×L) → L×L</td><td>矩陣乘法（每格一個 dot product）</td><td>9,216 · L</td></tr>
+          <tr><td>7</td><td>mask + softmax</td><td>softmax(S)</td><td>L×L</td><td>逐列</td><td>—</td></tr>
+          <tr><td>8</td><td>加權 v</td><td>P · v</td><td>(L×L)(L×256)</td><td>矩陣乘法</td><td>9,216 · L</td></tr>
+          <tr><td>9</td><td>輸出投影</td><td>o · W_o</td><td>L×4608 → L×4608</td><td>矩陣乘法</td><td>42.5M</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="rp-cols">
+      <div>
+        <h3>實際用的時候</h3>
+        <ul>
+          <li>Ideogram 4 的實作沒有旋轉矩陣：把 head 的前半、後半配成一對，<code>rotate_half</code> 把 (x₁, x₂) 換成 (−x₂, x₁)，再做 <code>q·cos + rotate_half(q)·sin</code>。這跟原論文相鄰兩維配一對的寫法等價，只是配對的方式不同。</li>
+          <li>RoPE 套在 QK-RMSNorm 之後、<code>scaled_dot_product_attention</code> 之前，所以 FlashAttention 這類 kernel 不用改：轉完的 q、k 照常送進去。</li>
+          <li>cos、sin 只跟位置有關，取樣的 20 步之間位置都不變，可以算一次就快取起來。</li>
+          <li>想看 RoPE 在一層裡的位置，接著看 <a href="<%- url_for('/lab/ideogram4-vs-sd35-tower/') %>">Ideogram 4 vs SD 3.5 的塔</a>：每一層側面的 ⟳ 就是它。轉完的 q、k 怎麼算得快，可以接著看 <a href="<%- url_for('/lab/flash-attention/') %>">FlashAttention</a>。</li>
+        </ul>
+      </div>
+      <div>
+        <h3>資料來源與數字怎麼算的</h3>
+        <ul>
+          <li>Ideogram 4 的 head_dim（4608 / 18 = 256）、<code>rope_theta = 5_000_000</code>、<code>mrope_section = (24, 20, 20)</code>、交錯排法、文字 (n, n, n)、圖片 (0, h, w) + 65,536、<code>max_text_tokens = 2048</code> 來自 <a href="https://github.com/ideogram-oss/ideogram4" target="_blank" rel="noopener">ideogram-oss/ideogram4</a> 的 <code>modeling_ideogram4.py</code>、<code>pipeline_ideogram4.py</code>、<code>constants.py</code>。t / h / w 的 88 / 20 / 20 是照 <code>Ideogram4MRoPE.forward</code> 的索引算出來的。</li>
+          <li>SD 3.5 Large 的 192 × 192 位置表、從中間裁切與 assert 來自 <a href="https://github.com/Stability-AI/sd3.5" target="_blank" rel="noopener">Stability-AI/sd3.5</a> 的 <code>mmditx.py</code>；89.65M 是 checkpoint 裡存的元素數減掉可訓練參數，剛好等於 192² × 2,432。</li>
+          <li>RoPE 的定義與「長距離衰減」來自 <a href="https://arxiv.org/abs/2104.09864" target="_blank" rel="noopener">Su et al., RoFormer</a>；MRoPE 來自 <a href="https://arxiv.org/abs/2409.12191" target="_blank" rel="noopener">Qwen2-VL</a>。</li>
+          <li>Stop 08、09 的 8 維 q、base = 100（θ = 100^(−2i/8) = 1, 0.316, 0.1, 0.032）與 m = 2 是示意數字，θ 用的是跟 Ideogram 4 同一條公式；q′ 照 Ideogram 4 的 <code>_apply_rotary_pos_emb</code> 逐元素算出來。Stop 10 與上表第 3 步 RMSNorm 的 op 數是估計（平方、加總、乘倒數、乘權重各 1）；第 6、8 步是 2 × 256 × 18 × L。</li>
+          <li>Stop 02 的 θ = 0.45 和兩個箭頭的起始角度、Stop 00 的 q·k = 1.37 都是示意數字。Stop 04 的曲線是 q = k = 全 1 時 128 對 cos 的平均，不是模型實際的 attention。</li>
+          <li>FLOPs：RoPE 每個元素 2 乘 1 加，q、k 各 4,608 個元素；線性層 = 2 × 一層的參數（attention 4d²、MLP 3dh、調變 512 × 4d + 4d），不含 attention 本身的 QKᵀ 與 softmax。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>

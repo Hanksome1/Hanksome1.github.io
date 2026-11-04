@@ -33,6 +33,17 @@
         "4002"
       ],
       "port": 4002
+    },
+    {
+      "name": "hexo-4004",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "hexo",
+        "server",
+        "-p",
+        "4004"
+      ],
+      "port": 4004
     }
   ]
 }

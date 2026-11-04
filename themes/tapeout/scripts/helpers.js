@@ -65,10 +65,13 @@ hexo.extend.helper.register('tag_names', post =>
 // _config.tapeout.yml 的 notes.courses：hub 是課程總覽筆記的網址，tag 是這門課的筆記共用的標籤。
 // /notes/ 頂端用 note_courses() 排出課程入口；筆記頁用 note_course() 在標頭連回所屬課程的總覽。
 
-// hub 也可以是 source/lab/ 的頁面：這種課程沒有標籤可以分，成員是頁面 front-matter 的 chapters，章節順序就是閱讀順序。
+// hub 也可以是 source/lab/ 的頁面：這種課程沒有標籤可以分，成員是頁面 front-matter 的 papers，
+// 依每一項的 date（論文第一次公開的年月，例如 '2024-11'）由新到舊排，front-matter 裡的順序不重要。
 
 const trimSlash = s => String(s || '').replace(/^\/+|\/+$/g, '');
 const pagePath = p => trimSlash(p.path).replace(/\/?index\.html$/, '');
+const sortedPapers = hub => [].concat(hub.papers || []).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+hexo.extend.helper.register('sorted_papers', sortedPapers);
 const courseConfig = theme => [].concat((theme.notes || {}).courses || []).filter(c => c && c.hub && c.tag);
 
 hexo.extend.helper.register('note_courses', function () {
@@ -82,10 +85,10 @@ hexo.extend.helper.register('note_courses', function () {
       hexo.log.warn(`[notes] 找不到課程總覽筆記 ${c.hub}，課程 ${c.tag} 不會出現在 /notes/`);
       return null;
     }
-    const members = hub.chapters
-      ? hub.chapters.map(ch => {
+    const members = hub.papers
+      ? sortedPapers(hub).map(ch => {
         const page = pages.find(p => pagePath(p) === trimSlash(ch.url));
-        if (!page) hexo.log.warn(`[notes] 課程 ${c.tag} 的章節 ${ch.url} 找不到頁面，或頁面沒有 kind: note`);
+        if (!page) hexo.log.warn(`[notes] 課程 ${c.tag} 的論文 ${ch.url} 找不到頁面，或頁面沒有 kind: note`);
         return page;
       }).filter(Boolean)
       : notes.filter(p => p !== hub && tagNames(p).includes(c.tag));
@@ -104,16 +107,16 @@ hexo.extend.helper.register('note_courses', function () {
   }).filter(Boolean);
 });
 
-// 這一頁是哪門課的第幾章（hub 的 chapters，also 也算同一章），沒有就回傳 null。
-// 章節頁的頁首和頁尾用它畫導覽（_partial/course-chapter.ejs）
-hexo.extend.helper.register('course_chapter', function (page) {
+// 這一頁是論文清單裡的哪一篇（hub 的 papers，also 也算同一篇），沒有就回傳 null。
+// 頁首和頁尾用它畫導覽（_partial/course-paper.ejs）：prev 是較新的一篇，next 是較舊的一篇
+hexo.extend.helper.register('course_paper', function (page) {
   if (!page || page.kind !== 'note' || !page.path) return null;
-  const pages = this.site.pages.filter(p => p.chapters).toArray();
+  const pages = this.site.pages.filter(p => p.papers).toArray();
   const path = pagePath(page);
   for (const c of courseConfig(this.theme)) {
     const hub = pages.find(p => pagePath(p) === trimSlash(c.hub));
     if (!hub) continue;
-    const chapters = hub.chapters;
+    const chapters = sortedPapers(hub);
     const index = chapters.findIndex(ch => trimSlash(ch.url) === path || (ch.also && trimSlash(ch.also.url) === path));
     if (index < 0) continue;
     const isAlt = trimSlash(chapters[index].url) !== path;

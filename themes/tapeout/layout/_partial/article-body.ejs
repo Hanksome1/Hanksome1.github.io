@@ -1,5 +1,7 @@
 <%
-  var tocHtml = page.toc === false ? '' : math_toc(page.content, { list_number: false, max_depth: 3 });
+  // layout: explainer 只把舞台後面的內容傳進來
+  var html = typeof content === 'string' ? content : page.content;
+  var tocHtml = page.toc === false ? '' : math_toc(html, { list_number: false, max_depth: 3 });
   var isNote = post_kind(page) === 'note';
   // 筆記預設不加 §01 編號，可用 front-matter 的 numbering 覆蓋
   var numbered = page.numbering !== undefined ? page.numbering !== false : !isNote;
@@ -15,7 +17,7 @@
     <% } %>
   </aside>
   <div class="prose<% if (!numbered) { %> no-numbering<% } %>">
-    <%- page.content %>
+    <%- html %>
   </div>
 </div>
 

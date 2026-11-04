@@ -6,6 +6,7 @@
 //   npm run sync                       同步 front-matter 有 publish: true 的筆記
 //   npm run sync -- --dry-run          只列出會做什麼，不寫檔
 //   npm run sync -- "Some Note.md"     額外把指定筆記當成已發佈（測試用，不用改 vault；下次同步沒指定就會移除）
+//   npm run sync -- --vault <路徑>     改讀別的 vault（測試用）；只新增、更新，不刪除正式 vault 同步來的筆記和附件
 //
 // 設定在 _config.yml 的 obsidian_sync。repo 是公開的，所以寫出去之前會：
 //   - front-matter 只留白名單欄位（title、date、tags、aliases、summary…）
@@ -17,6 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const yaml = require('js-yaml');
+const { parseNote } = require('./explainer-note.cjs'); // 由 explainer-notes 的 tools/build-core.mjs 產生
 
 const ROOT = path.resolve(__dirname, '..');
 const MARK = 'obsidian'; // 產生的筆記 front-matter 會有 synced: obsidian，只有這些會被自動刪除
@@ -47,6 +49,8 @@ const VAULT = path.resolve(String(vaultArg || process.env.OBSIDIAN_VAULT || cfg.
 const OUT_NOTES = path.join(ROOT, 'source/_posts', notesDir);
 const OUT_ASSETS = path.join(ROOT, 'source/attachments/vault');
 const FLAGS = [].concat(cfg.flag);
+// 別的 vault 裡沒有的筆記，不代表正式 vault 取消發佈了
+const PRUNE = !vaultArg;
 
 if (!cfg.vault && !vaultArg && !process.env.OBSIDIAN_VAULT) fail('請在 _config.yml 設定 obsidian_sync.vault');
 if (!fs.existsSync(VAULT)) fail(`找不到 vault：${VAULT}`);
@@ -151,6 +155,36 @@ function useAsset(rel) {
 
 // 程式碼與 $$ 區塊不處理
 const PROTECT = /(^([ \t]*)(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n\2\3[ \t]*$|`[^`\n]+`|\$\$[\s\S]+?\$\$)/m;
+
+// explainer 筆記：區塊變成 front-matter，卡片排在兩個標記之間，版面由 layout: explainer 決定
+function explainerOf(body) {
+  const list = parseNote(body, yaml.load);
+  if (!list.length) return null;
+  if (list.length > 1) return { problems: ['部落格一篇只支援一個 explainer 區塊'] };
+  const [ex] = list;
+  if (ex.problems.length) return { problems: ex.problems };
+  const { script, inlineScript, style, ...config } = ex.config;
+  if (inlineScript) return { problems: ['部落格還不支援內嵌腳本，請放到 explainers/'] };
+  const paths = [script].concat(style || []).map(p => path.posix.normalize(p));
+  const missing = paths.filter(p => !files.includes(p));
+  if (missing.length) return { problems: missing.map(p => `找不到 ${p}`) };
+
+  const lines = body.split(/\r?\n/);
+  const cards = ex.cards.slice().sort((a, b) => a.line - b.line);
+  const inCard = i => cards.some(c => i >= c.line && i < c.end);
+  const rest = lines.map((l, i) => i).filter(i => i > ex.end && !inCard(i)).map(i => lines[i]);
+  const card = c => `<!-- explainer:card ${c.id} -->\n\n### ${c.title}\n\n${c.markdown}`;
+  return {
+    config: Object.assign(config, { script: useAsset(paths[0]) }, style ? { style: useAsset(paths[1]) } : {}),
+    body: [
+      lines.slice(0, ex.line).join('\n'),
+      '<!-- explainer:begin -->',
+      ...ex.cards.map(card),
+      '<!-- explainer:end -->',
+      rest.join('\n')
+    ].join('\n\n')
+  };
+}
 
 function transform(rel, body, title, report) {
   const linkText = (name, heading, label) => label || (heading ? `${name} › ${heading}` : name);
@@ -297,21 +331,30 @@ for (const [rel, outName] of published) {
   const note = loadNote(rel);
   if (note.data.__error) problems.push(`${rel} 的 front-matter 不是合法 YAML：${note.data.__error}`);
   const report = { privateLinks: new Set(), missingAssets: new Set(), notes: [] };
+  const explainer = explainerOf(note.body);
+  if (explainer && explainer.problems) {
+    explainer.problems.forEach(p => problems.push(`${rel}：${p}（這篇沒有更新）`));
+    continue;
+  }
   const fm = frontMatter(rel, note);
-  const body = transform(rel, note.body, fm.title, report);
+  if (explainer) {
+    fm.layout = 'explainer';
+    fm.explainer = explainer.config;
+  }
+  const body = transform(rel, explainer ? explainer.body : note.body, fm.title, report);
   const text = '---\n' + HEADER + yaml.dump(fm, { lineWidth: -1 }) + '---\n\n' + body;
   const changed = writeIfChanged(path.join(OUT_NOTES, outName), text);
   results.push({ rel, outName, url: '/' + fm.permalink, changed, report });
 }
 
 // 已經取消發佈（或改名）的筆記
-const removed = existing.filter(f => !handWritten.has(lower(f)) && !outNames.has(lower(f)));
+const removed = PRUNE ? existing.filter(f => !handWritten.has(lower(f)) && !outNames.has(lower(f))) : [];
 removed.forEach(f => { if (!dryRun) fs.unlinkSync(path.join(OUT_NOTES, f)); });
 
 // 附件：整個資料夾都歸同步管，沒被引用的就刪掉
 const keepAssets = new Set(assets.values());
 const oldAssets = fs.existsSync(OUT_ASSETS) ? fs.readdirSync(OUT_ASSETS) : [];
-const staleAssets = oldAssets.filter(f => !keepAssets.has(f));
+const staleAssets = PRUNE ? oldAssets.filter(f => !keepAssets.has(f)) : [];
 let copied = 0;
 for (const [rel, name] of assets) {
   const src = path.join(VAULT, rel);

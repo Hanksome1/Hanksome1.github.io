@@ -7,7 +7,7 @@ description: 做「發表會式」的捲動導覽首頁：黑底、一拍一句�
 
 一門課、一個大專案有幾十篇筆記，總覽頁只是一張清單。這個版型把它們串成一條故事：用**同一個小例子**從頭走到尾，每走一站畫面換一次，標題一句話講完這一站，底下直接連到那一站的筆記。看完動畫的人知道整門課在做什麼，也知道要點哪一篇。
 
-參考實作：ICLAB 設計流程 `/lab/iclab/`（commit `f9935e4`）
+參考實作：ICLAB 設計流程 `/lab/iclab/`（commit `f9935e4`），在部落格 repo（本機在 `~/Workspace/personal_project/Personal Blog`，部落格的 cloud session 就是工作目錄），下面的路徑都相對於它的根目錄。讀不到時以骨架和這份文件為準。
 
 | 檔案 | 看什麼 |
 | --- | --- |
@@ -43,7 +43,7 @@ description: 做「發表會式」的捲動導覽首頁：黑底、一拍一句�
 
 - 原型放在 `_prototypes/<slug>/`，不要 commit。場景程式寫在 `common.js` 讓各版共用；每一版是一個 `x.src.html`，裡面用 `/*COMMON*/` 佔位，再用一支小 `build.js` 把 `common.js` 塞進去，產生單檔的 `x.html`。
 - 每一版都用真的內容（真的站名、真的筆記標題、真的數字），只是版型不同。用 lorem ipsum 的話，使用者沒辦法判斷哪一版好。
-- 單檔 HTML 用 `mcp__claude-artifacts__publish_files` 發成 artifact 給使用者看。artifact 只會載 Google Fonts，所以 CSS 和 JS 都要內嵌。
+- 單檔 HTML 用 `mcp__claude-artifacts__publish_files` 發成 artifact 給使用者看，沒有這個工具就給檔案路徑。artifact 只會載 Google Fonts，所以 CSS 和 JS 都要內嵌。
 - 使用者選定後，正式版照選中的那一版重寫，把它接進主題（下面第 4 步），不要直接把原型搬進去。
 
 ### 2. 分鏡：一個例子、幾站、幾拍
@@ -84,12 +84,14 @@ description: 做「發表會式」的捲動導覽首頁：黑底、一拍一句�
 
 ### 4. 接進網站
 
-照 `CLAUDE.md` 的「新增頁面」接好 `source/lab/<slug>/index.md`、`layout/<slug>.ejs`、`css/<slug>.css`、`js/<slug>.js`，以及 `head.ejs`、`layout.ejs` 各一行。另外：
+不在部落格裡的頁面：接進該網站的頁面結構；沒有網站就產出單檔 HTML（CSS、JS 內嵌），然後到「驗證」。
+
+部落格的頁面：照部落格 `CLAUDE.md` 的「新增頁面」接好 `source/lab/<slug>/index.md`、`layout/<slug>.ejs`、`css/<slug>.css`、`js/<slug>.js`，以及 `head.ejs`、`layout.ejs` 各一行。另外：
 
 - **筆記連結從 layout 算，不寫死標題**：`NOTES = { key: [網址, 短標題, 小標] }`，用 `site.posts` 比對 path，拿到筆記的完整標題。比對前兩邊都要去掉頭尾的 `/`，因為 obsidian 同步來的筆記 path 開頭有 `/`。篇數用課程 tag 算（扣掉總覽本身）。連到的筆記不存在時，就退回寫死的短標題，不讓頁面壞掉。
 - **課程入口**：`_config.tapeout.yml` 的 `notes.courses` 那一門加 `tour: /lab/<slug>/`。加了之後：
   - `/notes/` 的課程卡片會直接連到動畫頁（`notes.ejs` 的 `c.tour || c.hub.path`）。
-  - 總覽筆記的標頭會出現動畫入口卡（`course_tour()` → `_partial/course-tour.ejs`）。它讀的是動畫頁 front-matter 的 `tour.tagline` 和 `tour.stops`（每站 `id / n / label / weeks / sub / notes`），縮圖的格數就是站數。
+  - 總覽筆記標頭的 kicker 那行最後會出現一個「▶ 動畫導覽」小按鈕（`course_tour()` → `_partial/course-tour.ejs`），連到動畫頁，滑過時顯示 `tour.tagline`。`course_tour()` 要求動畫頁 front-matter 有 `tour.stops`（每站 `id / n / label / weeks / sub / notes`）。
 - 動畫頁 front-matter 加 `kind: note` 和 `reading`，它才會列在 `/notes/`。
 - **強制深色**：layout 會給 `<body>` 加 `is-<layout>` 的 class。在 `body.is-<slug>` 上把網站的變數全部覆寫成深色（`--bg --surface --ink --ink-2 --ink-3 --line --line-2 --accent --header-bg`，加上 `color-scheme: dark`），再用 `html:has(body.is-<slug>) { background: … }` 讓捲過頭時露出來的也是黑色；這一頁不需要的 statusbar 藏起來。header、footer 吃同一組變數，會自動變深色，不用另外改。
 - CSS 和 JS 的網址由 `css()`、`js()` 自動加 `?v=<hash>`（`fb1c919`），改了檔案不用手動 bust cache。
@@ -139,14 +141,16 @@ description: 做「發表會式」的捲動導覽首頁：黑底、一拍一句�
 
 ## 驗證
 
+`<skill>` 是這份 SKILL.md 所在的資料夾。[shoot.js](shoot.js) 需要 `playwright`，專案裡沒有就在暫存資料夾裝好，用 `NODE_PATH` 指過去。部落格頁面先跑前兩行；單檔 HTML 直接給 `file://` 網址。
+
 ```bash
 npx hexo generate                       # 不能有任何 WARN
 (cd public && python3 -m http.server 4100 &)
-node .claude/skills/keynote-tour/shoot.js http://localhost:4100/lab/<slug>/ 1440 /tmp/shots
-node .claude/skills/keynote-tour/shoot.js http://localhost:4100/lab/<slug>/ 390  /tmp/shots
+node <skill>/shoot.js http://localhost:4100/lab/<slug>/ 1440 /tmp/shots
+node <skill>/shoot.js http://localhost:4100/lab/<slug>/ 390  /tmp/shots
 ```
 
-[shoot.js](shoot.js) 會截下面這些圖，最後印出 console 錯誤：
+它會截下面這些圖，最後印出 console 錯誤：
 
 - hero；
 - 每一拍演到 60% 的畫面；
@@ -160,12 +164,12 @@ node .claude/skills/keynote-tour/shoot.js http://localhost:4100/lab/<slug>/ 390 
 3. 連用的場景一拍一拍往前長，最後一拍有拉遠和發光。
 4. 390px 寬時說明沒有擠到章節列上。
 5. reduced-motion 是「完成圖 + 依序排好的文字」，停用 JS 是依序排好的文字，兩者都讀得完。
-6. `/notes/` 的課程卡片連到動畫頁，總覽筆記的標頭有入口卡。
+6. 部落格頁面：`/notes/` 的課程卡片連到動畫頁，總覽筆記的標頭有入口卡。
 
-要給使用者先看時，跑 [preview.js](preview.js) 把產生的頁面做成單檔（站內 CSS 和 JS 內嵌，其他站內連結改成正式站的網址），再用 `publish_files` 發成 artifact：
+部落格頁面要給使用者先看時，跑 [preview.js](preview.js) 把產生的頁面做成單檔（站內 CSS 和 JS 內嵌，其他站內連結改成正式站的網址），再用 `publish_files` 發成 artifact：
 
 ```bash
-node .claude/skills/keynote-tour/preview.js public/lab/<slug>/index.html /tmp/<slug>-preview.html
+node <skill>/preview.js public/lab/<slug>/index.html /tmp/<slug>-preview.html
 ```
 
 ## 做專案首頁時
@@ -173,5 +177,5 @@ node .claude/skills/keynote-tour/preview.js public/lab/<slug>/index.html /tmp/<s
 同一個版型可以給大專案用（例如 3DGS 加速器：演算法 → 架構 → RTL → 驗證 → 合成 → APR → 結果）。要改的地方：
 
 - 「一個例子走到底」換成一筆資料或一個 frame 走過整個系統；「讀筆記」換成專案頁的章節錨點、報告、repo。
-- **專案是中英雙語**（`CLAUDE.md`）：專案首頁如果放在 `/projects/` 底下，英文版要一起做；放在 `/lab/` 的動畫頁不在 `i18n.js` 的檢查範圍內，但如果從英文專案頁連過來，也要準備英文版或明寫 (in Chinese)。
+- **部落格的專案是中英雙語**（部落格 `CLAUDE.md`）：專案首頁如果放在 `/projects/` 底下，英文版要一起做；放在 `/lab/` 的動畫頁不在 `i18n.js` 的檢查範圍內，但如果從英文專案頁連過來，也要準備英文版或明寫 (in Chinese)。
 - 專案頁和 `/projects/` 列表的入口要另外接（目前 `tour` 只有 `notes.courses` 認得），接的時候照 `course_tour()` 的做法加一個 helper，不要在 layout 裡寫死網址。

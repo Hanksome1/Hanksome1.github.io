@@ -1,0 +1,136 @@
+<%
+  // LoRA 的捲動解說（js/lora.js）。說明文字寫在這裡，沒有 JS 時依序排好。
+%>
+<div class="lr" data-lr>
+  <header class="lr-hero wrap">
+    <p class="kicker">§ Explainer — Fine-tuning · arXiv 2106.09685</p>
+    <h1 class="lr-title">LoRA：不動原本的權重，旁邊接一條<em>低秩</em>的旁路</h1>
+    <p class="lr-lede">微調一個大模型，直覺是把權重矩陣 <code>W</code> 整個重練一遍——每個任務存一份完整副本，optimizer 還要再存好幾倍。LoRA 把 <code>W</code> 凍結，只學一個低秩的更新量 <code>ΔW = BA</code>：一個瘦高的 <code>B</code>、一個矮寬的 <code>A</code>，中間的腰只有 <code>r</code> 維。可訓練參數從 <code>d·k</code> 掉到 <code>r·(d+k)</code>，部署時還能折回去、零額外延遲。往下捲，用一個 <code>d × k</code> 的矩陣把每一步算一次。</p>
+    <dl class="lr-meta">
+      <div><dt>論文</dt><dd><a href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">Hu et al., arXiv 2106.09685</a>（2021）</dd></div>
+      <div><dt>一句話</dt><dd>凍結 W，學 ΔW = (α/r)·BA</dd></div>
+      <div><dt>頁面上的例子</dt><dd>d = k = 4096、r = 8、α = 16（示意）</dd></div>
+      <div><dt>常見用法</dt><dd>attention 的 q、v 投影</dd></div>
+    </dl>
+    <p class="lr-hint">往下捲，或按 Auto-play ↓</p>
+  </header>
+
+  <section class="lr-track">
+    <div class="lr-stage">
+      <svg class="lr-world" data-world role="img" aria-label="LoRA 的動畫解說：一個權重矩陣、全量微調的成本、低秩分解 ΔW = BA、前向傳播的旁路、可訓練參數的對比、放大到整個模型，以及部署時的合併與熱插拔"></svg>
+      <aside class="lr-panel">
+        <div class="lr-top">
+          <p class="lr-status"><i></i><span data-status>Overview</span></p>
+          <button type="button" class="lr-play" data-play aria-label="自動播放"><span class="lr-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+        </div>
+        <ol class="lr-stops">
+          <li><button type="button" data-stop="full"><span>01</span>Full FT<i></i></button></li>
+          <li><button type="button" data-stop="rank"><span>02</span>Low rank<i></i></button></li>
+          <li><button type="button" data-stop="forward"><span>03</span>Forward<i></i></button></li>
+          <li><button type="button" data-stop="params"><span>04</span>Params<i></i></button></li>
+          <li><button type="button" data-stop="model"><span>05</span>Scale up<i></i></button></li>
+          <li><button type="button" data-stop="merge"><span>06</span>Merge<i></i></button></li>
+        </ol>
+        <!-- 說明文字寫在 HTML 裡：沒有 JS 時就是依序排好的內容 -->
+        <div class="lr-caps">
+          <article class="lr-cap is-on" data-cap="intro">
+            <p class="kicker">Overview</p>
+            <h2>一個權重矩陣</h2>
+            <p>Transformer 的每一層都是一堆權重矩陣：attention 的 <code>W_q</code>、<code>W_k</code>、<code>W_v</code>、<code>W_o</code>，還有 MLP。挑其中一個 <b class="in">W</b> 來看，它是 <code>d × k</code> 的格子，每一格都是一個參數。</p>
+            <p class="hl"><b>微調</b>最直覺的做法就是把這些格子全部重新訓練一遍。問題是：這樣的成本有多大？</p>
+          </article>
+          <article class="lr-cap" data-cap="full">
+            <p class="kicker">Stop 01 — 全量微調</p>
+            <h2>整個 W 都要重練</h2>
+            <p>全量微調（full fine-tuning）把 W 的每一格都設成可訓練。光是權重還不夠：反向傳播要存梯度，Adam 還要再存動量 <code>m</code> 和方差 <code>v</code>。</p>
+            <p class="hl"><b>成本</b>記憶體大約是可訓練量的 4 倍（權重 + 梯度 + m + v）。而且每訓練一個新任務，就要另外存一整份新的權重 <code>W'</code>。</p>
+            <p class="nt">一個 70 億參數的模型，光 optimizer 狀態就要幾十 GB。</p>
+          </article>
+          <article class="lr-cap" data-cap="rank">
+            <p class="kicker">Stop 02 — 低秩</p>
+            <h2>更新量 ΔW 其實很「瘦」</h2>
+            <p>微調前後的差 <code>ΔW = W' − W</code>，實驗發現它的「內在秩」很低——真正有變化的方向沒幾個。既然如此，就不用把 ΔW 當成一個滿滿的 <code>d × k</code> 矩陣。</p>
+            <p>把它拆成兩個瘦矩陣的乘積：<b class="in">B</b> 是 <code>d × r</code>、<b class="in">A</b> 是 <code>r × k</code>，<code>ΔW ≈ BA</code>。中間的腰只有 <code>r</code> 維，<code>r</code> 可以小到 1、2、4、8。</p>
+            <p class="hl"><b>重點</b>原本的 W 整個凍結、一格都不動；要學的只有 B 和 A。</p>
+          </article>
+          <article class="lr-cap" data-cap="forward">
+            <p class="kicker">Stop 03 — 前向傳播</p>
+            <h2>原路不變，旁邊加一條</h2>
+            <p>輸入 x 同時走兩條路：一條還是凍結的 W（<code>Wx</code>），一條走 LoRA 的旁路——先用 A 壓到 <code>r</code> 維，再用 B 升回 <code>d</code> 維。兩條相加：<code>h = Wx + (α/r)·B(Ax)</code>。</p>
+            <p>中間那個 <code>r</code> 維的瓶頸，就是「低秩」在前向傳播裡的樣子。<code>α/r</code> 是一個固定的縮放，調整旁路的強度。</p>
+            <p class="hl"><b>關鍵細節</b>B 初始化成 0，所以一開始 <code>ΔW = 0</code>，模型跟微調前一模一樣，再慢慢學。</p>
+          </article>
+          <article class="lr-cap" data-cap="params">
+            <p class="kicker">Stop 04 — 省多少</p>
+            <h2>d·k 掉到 r·(d+k)</h2>
+            <p>全量微調這個矩陣要訓練 <code>d · k</code> 個參數。LoRA 只訓練 B 和 A，也就是 <code>d·r + r·k = r·(d + k)</code> 個。</p>
+            <p>當 <code>r</code> 遠小於 <code>d</code>、<code>k</code> 時，差距是好幾個數量級。把 <code>r</code> 從 1 拉到 64 看比值怎麼變。</p>
+            <p class="hl"><b>示意</b>d = k = 4096、r = 8 時：16.8M → 65.5K，少了 256 倍。</p>
+          </article>
+          <article class="lr-cap" data-cap="model">
+            <p class="kicker">Stop 05 — 放大到整個模型</p>
+            <h2>十億 → 百萬，GB → MB</h2>
+            <p>一個矩陣省 256 倍，整個模型就很可觀。示意：一個 <code>d = 4096</code>、32 層的模型，只對每層的 q、v 投影做 LoRA。</p>
+            <p class="hl"><b>可訓練參數</b>全量約 1.07B，LoRA（r = 8）只有 4.19M。存下來的 adapter 大約 8 MB，而不是一整份幾 GB 的模型。</p>
+            <p class="nt">原論文在 GPT-3 175B 上，可訓練參數少 10,000 倍、GPU 記憶體少 3 倍。</p>
+          </article>
+          <article class="lr-cap" data-cap="merge">
+            <p class="kicker">Stop 06 — 部署</p>
+            <h2>折回去，或熱插拔</h2>
+            <p>推論時可以把旁路折回權重：<code>W' = W + (α/r)·BA</code>，又變回一個 <code>d × k</code> 矩陣。跟原本的 W 一樣大、一樣快，<b>零額外延遲</b>。</p>
+            <p class="hl"><b>或者</b>保留凍結的底座不動，把每個任務、每種風格各自的小 adapter 掛上去、拿下來。一個底座，配幾十個幾 MB 的 adapter，隨時切換。</p>
+          </article>
+        </div>
+        <dl class="lr-facts" data-facts></dl>
+      </aside>
+      <p class="lr-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+    </div>
+  </section>
+
+  <section class="lr-outro wrap">
+    <p class="kicker">§ Summary</p>
+    <h2>三件事</h2>
+    <ol class="lr-take">
+      <li><b>凍結 W，只學一個低秩的更新量。</b>微調帶來的改變 ΔW 內在秩很低，所以寫成 <code>BA</code>：B 是 d×r、A 是 r×k，原本的權重一格都不動。</li>
+      <li><b>可訓練參數從 d·k 掉到 r·(d+k)。</b>r 遠小於 d、k 時差好幾個數量級。optimizer 狀態、梯度只需要掛在 B、A 上，記憶體跟著省；adapter 小到幾 MB。</li>
+      <li><b>部署幾乎零代價。</b>要快就把 <code>(α/r)·BA</code> 合併回 W，推論沒有任何額外延遲；要靈活就留著底座，熱插拔不同任務的 adapter。</li>
+    </ol>
+
+    <div class="table-wrap">
+      <table class="lr-table">
+        <caption>全量微調 vs LoRA · 一個 d × k 矩陣（示意 d = k = 4096、r = 8、α = 16）</caption>
+        <thead><tr><th>項目</th><th>全量微調</th><th>LoRA</th></tr></thead>
+        <tbody>
+          <tr><td>更新</td><td>直接改 W</td><td class="us">W 凍結，學 ΔW = (α/r)·BA</td></tr>
+          <tr><td>可訓練參數 / 矩陣</td><td>d·k ≈ 16.8M</td><td class="us">r·(d+k) ≈ 65.5K</td></tr>
+          <tr><td>相對</td><td>1×</td><td class="us">少 256×</td></tr>
+          <tr><td>optimizer 狀態</td><td>整個 W 都要</td><td class="us">只掛在 B、A 上</td></tr>
+          <tr><td>每個任務要存</td><td>一整份 W'（幾 GB）</td><td class="us">一個 adapter（幾 MB）</td></tr>
+          <tr><td>推論延遲</td><td>—</td><td class="us">合併後 +0；不合併 +一條旁路</td></tr>
+          <tr><td>新的超參數</td><td>無</td><td class="us">秩 r、縮放 α</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="lr-cols">
+      <div>
+        <h3>實際用的時候</h3>
+        <ul>
+          <li>最常接在 attention 的 <code>W_q</code>、<code>W_v</code> 上，原論文發現這兩個就夠；要更強可以再加 <code>W_k</code>、<code>W_o</code> 和 MLP。</li>
+          <li>PyTorch 大致是：<code>h = x @ W.T + (alpha / r) * (x @ A.T) @ B.T</code>，W 設 <code>requires_grad=False</code>。</li>
+          <li>r 常取 4～16，α 常設成 r 或 2r；α/r 固定住旁路的尺度，改 r 時不用重調學習率。</li>
+          <li>影像模型的社群 LoRA（SDXL 的風格、角色）就是同一招：一個底座、一堆幾 MB 的 adapter。後續還有 QLoRA（底座量化成 4-bit）、DoRA 等變體。</li>
+        </ul>
+      </div>
+      <div>
+        <h3>資料來源與數字怎麼算的</h3>
+        <ul>
+          <li>方法與公式來自 <a href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">Hu et al., LoRA: Low-Rank Adaptation of Large Language Models</a>（2021）：凍結 W、ΔW = BA、縮放 α/r、B 初始化為 0、A 用隨機高斯，以及「q、v 兩個投影就夠」。</li>
+          <li>頁面上的 <code>d = k = 4096</code>、<code>32 層</code>、<code>只對 q、v</code> 是方便計算的<b>示意</b>值，不對應任何特定模型；參數量一律由 <code>d·k</code> 與 <code>r·(d+k)</code> 當場算出。</li>
+          <li>記憶體「約 4 倍」指 fp32 下每個可訓練參數要存權重、梯度、Adam 的 m 與 v；實際依精度、是否 offload、有沒有 8-bit optimizer 而不同。</li>
+          <li>adapter 大小以 <code>可訓練參數 × 2 bytes</code>（bf16）估算；「10,000 倍、3 倍」是原論文在 GPT-3 175B 上的結果，不是本頁示意值。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>

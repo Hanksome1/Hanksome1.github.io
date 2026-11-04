@@ -1,24 +1,30 @@
 ---
 name: scroll-explainer
-description: 做捲動驅動的動畫解說頁（scrollytelling）：一個釘住的舞台、一條捲動進度 p 驅動整段 SVG 動畫、鏡頭推拉、停靠站與說明欄、自動播放。適用於「做一個像首頁開場那樣的動畫」、「用動畫比較兩個模型 / 架構 / 流程」、「把 X 畫成可以捲動看的 explainer」、把一段技術流程做成互動頁面。整理自 Hank 部落格首頁的 tapeout 開場（晶棒 → 晶圓 → APR → 封裝）和 Ideogram 4 vs SD 3.5 的兩版比較頁。
+description: 做捲動驅動的動畫解說頁（scrollytelling）：一個釘住的舞台、一條捲動進度 p 驅動整段 SVG 動畫、鏡頭推拉、停靠站與說明欄、自動播放。適用於「生成解說動畫」、「做一個像首頁開場那樣的動畫」、「用動畫比較兩個模型 / 架構 / 流程」、「把 X 畫成可以捲動看的 explainer」、把一段技術流程做成互動頁面。整理自 Hank 部落格首頁的 tapeout 開場（晶棒 → 晶圓 → APR → 封裝）和 Ideogram 4 vs SD 3.5 的兩版比較頁。
 ---
 
 # Scroll explainer
 
 一段很長的捲動距離換成一個 0–1 的進度 `p`，畫面上的每一樣東西都是 `p` 的純函式。捲下去動畫往前，捲回來就倒著播，點停靠站可以直接跳過去，自動播放只是幫使用者捲。
 
-參考實作（動手前先讀，照它們的寫法）：
+參考實作在部落格 repo（本機在 `~/Workspace/personal_project/Personal Blog`，部落格的 cloud session 就是工作目錄），下面的路徑都相對於它的根目錄。動手前先讀，照它們的寫法；讀不到時以骨架和這份文件為準。
 
 | | 位置 | 看什麼 |
 | --- | --- | --- |
 | 首頁開場 | `themes/tapeout/source/js/tapeout.js`、`themes/tapeout/layout/index.ejs`、`themes/tapeout/source/css/style.css` 的 `13c. Tapeout intro` | 單一場景一路演下去：鏡頭從 µm 拉到整片晶圓再鑽進一顆 die、hero 用 FLIP 收進左欄、終端機 log、最後拉線接到下面的章節 |
 | 比較 v2「兩座塔」 | `themes/tapeout/source/js/dit-tower.js`、`layout/dit-tower.ejs`、`source/css/dit-tower.css` | 一個 SVG 世界放兩個並排的主角、斜投影的 2.5D 方塊、左邊說明欄 + 停靠站 + 對照表 |
 | 比較 v1「逐章並排」 | `themes/tapeout/source/js/dit-compare.js`、`layout/dit-compare.ejs`、`source/css/dit-compare.css` | 左邊章節文字、右邊兩條 lane 各畫一次同一個場景、Δ 差異列、可以拉的參數 |
-| 論文圖解 | `themes/tapeout/source/js/kroquant.js`、`layout/kroquant.ejs`、`source/css/kroquant.css` | 把一篇論文從問題、推導到實驗結果走完一遍；新頁面要放進部落格時，照這頁的接法（見 `CLAUDE.md` 的「發佈」） |
+| 論文圖解 | `themes/tapeout/source/js/kroquant.js`、`layout/kroquant.ejs`、`source/css/kroquant.css` | 把一篇論文從問題、推導到實驗結果走完一遍；新頁面要放進部落格時，照這頁的接法（見部落格 `CLAUDE.md` 的「新增頁面」） |
 
 最小可跑的骨架在 [skeleton.html](skeleton.html)：從它開始改，不要從零寫。
 
 要做的是一門課或一個大專案的入口頁（把很多篇筆記串成一條故事、黑底發表會式），用 `keynote-tour`。
+
+## 成品放哪裡
+
+- **在部落格 repo 裡**：照部落格 `CLAUDE.md` 的「新增頁面」接進主題。
+- **其他專案有自己的網站**：接進該網站的頁面結構，沿用它的 token。
+- **都不是**：產出單檔 HTML（CSS、JS 內嵌），用 `file://` 打開就能跑。
 
 ## 先寫分鏡，再寫程式
 
@@ -144,7 +150,7 @@ function camera(p) {
 
 ## 做完要驗
 
-用瀏覽器開頁面，對每一項截圖或讀數值。Desktop app 用 built-in browser；cloud session 沒有的話，先試 headless 瀏覽器，連這個也跑不起來就照下面的「沒有瀏覽器時」做。
+用手邊能控制瀏覽器的工具開頁面，對每一項截圖或讀數值：built-in browser、Codex 的 browser、headless Playwright 都可以。全部跑不起來才照下面的「沒有瀏覽器時」做。
 
 1. 一路往下捲到底，再一路捲回頂端：每一站都正確，倒著播沒有殘影。
 2. 點每一個停靠站：直接跳過去畫面也對（證明沒有偷存狀態）。
@@ -156,6 +162,6 @@ function camera(p) {
 
 ### 沒有瀏覽器時
 
-1. `npx hexo generate` 輸出沒有任何 `WARN`，`public/` 裡有新頁面。
+1. 部落格頁面：`npx hexo generate` 輸出沒有任何 `WARN`，`public/` 裡有新頁面。
 2. `node --check` 檢查新的 JS；把 `BEATS`、`SHOTS` 用 Node 跑一次，確認 `p` 從 0 到 1 都算得出值、沒有 `NaN`。
 3. 回報時明講哪幾項沒驗到，不要說「驗過了」。使用者要在手機或 Mac 上看過才算完成。

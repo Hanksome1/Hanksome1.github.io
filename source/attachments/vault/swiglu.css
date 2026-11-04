@@ -1,0 +1,39 @@
+/* SVG 世界：顏色全部吃變數；--neg 是 ReLU / GELU（以往），--accent 是 SwiGLU */
+
+.explainer-world text { font-family: var(--font-mono); font-size: 14px; font-weight: 500; fill: var(--ink-2); }
+.explainer-world .t-b { fill: var(--ink); font-weight: 600; }
+.explainer-world .t-d { fill: var(--ink-3); font-size: 12px; }
+.explainer-world .t-s { font-size: 11px; fill: var(--ink-3); }
+.explainer-world .t-h { fill: var(--accent); font-weight: 600; }
+.explainer-world .t-n { fill: var(--neg); font-weight: 600; }
+.explainer-world .t-big { font-family: var(--font-sans); font-size: 26px; font-weight: 600; fill: var(--ink); letter-spacing: -0.02em; }
+.explainer-world .t-serif { font-family: var(--font-serif); font-style: italic; font-size: 30px; font-weight: 400; fill: var(--ink); }
+.explainer-world .mid { text-anchor: middle; } .explainer-world .end { text-anchor: end; }
+.explainer-world path, .explainer-world rect, .explainer-world line, .explainer-world circle { vector-effect: non-scaling-stroke; }
+.explainer-world .frame { fill: none; stroke: var(--line-2); stroke-width: 1; }
+.explainer-world .frame-h { fill: none; stroke: var(--accent); stroke-width: 2; }
+.explainer-world .card { fill: var(--surface); stroke: var(--line-2); stroke-width: 1; }
+.explainer-world .axis { stroke: var(--ink-2); stroke-width: 1; }
+.explainer-world .grid { stroke: var(--ink-3); stroke-width: 0.8; stroke-dasharray: 2 4; }
+.explainer-world .lead { fill: none; stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; }
+.explainer-world .wire { fill: none; stroke: var(--ink-2); stroke-width: 1.6; stroke-linecap: round; }
+.explainer-world .curve { fill: none; stroke: var(--lane); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.explainer-world .curve-d { fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-dasharray: 5 4; }
+.explainer-world .cell { stroke: var(--bg); stroke-width: 0.6; }
+.explainer-world .f-p { fill: var(--accent); } .explainer-world .f-n { fill: var(--neg); } .explainer-world .f-i { fill: var(--ink-3); }
+.explainer-world .f-l { fill: color-mix(in srgb, var(--lane) 30%, var(--surface)); stroke: var(--lane); stroke-width: 1.2; }
+.explainer-world .f-ls { fill: var(--lane); }
+.explainer-world .f-off { fill: none; stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 4 3; }
+.explainer-world .box { fill: var(--surface); stroke: var(--line-2); stroke-width: 1; }
+.explainer-world .box.is-on { fill: color-mix(in srgb, var(--lane, var(--accent)) 14%, var(--surface)); stroke: var(--lane, var(--accent)); stroke-width: 1.5; }
+.explainer-world .lane-a { --lane: var(--neg); } .explainer-world .lane-b { --lane: var(--accent); } .explainer-world .lane-c { --lane: var(--ink-3); }
+.explainer-world .t-l { fill: var(--lane); font-weight: 600; }
+.explainer-world .t-inv { fill: var(--bg); font-weight: 600; }
+.explainer-world .dot { fill: var(--lane); stroke: var(--bg); stroke-width: 1.5; }
+.explainer-world .probe { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; }
+.explainer-world .zero { stroke: var(--ink); stroke-width: 1.2; }
+.explainer-world .slab { stroke: var(--bg); stroke-width: 0.5; }
+.explainer-world .slab.s-mod { fill: color-mix(in srgb, var(--ink-3) 45%, var(--surface)); }
+.explainer-world .slab.s-attn { fill: color-mix(in srgb, var(--neg) 35%, var(--surface)); }
+.explainer-world .slab.s-mlp { fill: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
+.explainer-world .slab.s-mlp.is-on { fill: var(--accent); }

@@ -1,0 +1,47 @@
+<%- partial('_partial/progress') %>
+<%
+  // npm run sync 產生的 explainer 筆記。舞台、停靠站和說明卡都從 front-matter 和內文來，新增一頁不用改這裡。
+  var ex = page.explainer;
+  var parts = explainer_parts(page.content);
+  var stops = ex.beats.slice(1);
+  var weight = ex.beats.reduce(function (sum, b) { return sum + b[1]; }, 0);
+  var label = function (b) { return b[2] || b[0]; };
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var settings = { beats: ex.beats, shots: ex.shots, hold: ex.hold, narrowZoom: ex.narrowZoom, autoplayMs: ex.autoplayMs };
+%>
+<article class="article article-note ex" data-explainer data-section="NOTE" style="--ex-weight: <%= weight %>; --ex-stops: <%= stops.length %>;">
+  <script type="application/json" data-explainer-config><%- JSON.stringify(settings).replace(/</g, '\\u003c') %></script>
+  <%- partial('_partial/article-head') %>
+  <div class="article-grid wrap">
+    <aside class="article-aside"></aside>
+    <div class="prose no-numbering"><%- parts.before %></div>
+  </div>
+
+  <section class="ex-track">
+    <div class="ex-stage">
+      <svg class="explainer-world" data-world role="img" aria-label="<%= page.title %> 的動畫解說"></svg>
+      <aside class="ex-panel">
+        <div class="ex-top">
+          <p class="ex-status"><i></i><span data-status><%= label(ex.beats[0]) %></span></p>
+          <button type="button" class="ex-play" data-play aria-label="自動播放"><span class="ex-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+        </div>
+        <ol class="ex-stops">
+          <% stops.forEach(function (b, i) { %><li><button type="button" data-stop="<%= b[0] %>"><span><%= pad(i + 1) %></span><%= label(b) %><i></i></button></li>
+          <% }) %>
+        </ol>
+        <div class="ex-caps">
+          <% ex.beats.forEach(function (b, i) { %>
+          <article class="ex-cap<%= i ? '' : ' is-on' %>" data-cap="<%= b[0] %>">
+            <p class="kicker"><%= i ? 'Stop ' + pad(i) + ' — ' + label(b) : label(b) %></p>
+            <%- parts.cards[b[0]] %>
+          </article>
+          <% }) %>
+        </div>
+        <dl class="ex-facts" data-facts></dl>
+      </aside>
+      <p class="ex-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+    </div>
+  </section>
+
+  <%- partial('_partial/article-body', { content: parts.after }) %>
+</article>

@@ -6,16 +6,16 @@
 <%
   // 英文首頁是 layout: index 的 page（source/en/index.md），is_home() 只認得 index generator 產生的首頁
   var home = is_home() || page.layout === 'index';
-  var kind = home ? 'home' : (page.layout === 'project' ? 'project' : (is_post() ? 'post' : (page.layout || 'page')));
-  var chapter = course_chapter(page);
+  var kind = home ? 'home' : (page.layout === 'project' ? 'project' : (is_post() && page.layout !== 'explainer' ? 'post' : (page.layout || 'page')));
+  var chapter = course_paper(page);
 %>
 <body class="is-<%= kind %>">
   <a class="skip-link" href="#main"><%= __('skip_to_content') %></a>
   <%- partial('_partial/header') %>
   <main id="main">
-    <% if (chapter) { %><%- partial('_partial/course-chapter', { chapter: chapter, at: 'top' }) %><% } %>
+    <% if (chapter) { %><%- partial('_partial/course-paper', { chapter: chapter, at: 'top' }) %><% } %>
     <%- body %>
-    <% if (chapter) { %><%- partial('_partial/course-chapter', { chapter: chapter, at: 'bottom' }) %><% } %>
+    <% if (chapter) { %><%- partial('_partial/course-paper', { chapter: chapter, at: 'bottom' }) %><% } %>
   </main>
   <%- partial('_partial/footer') %>
   <% if (theme.statusbar) { %><%- partial('_partial/statusbar') %><% } %>
@@ -30,8 +30,11 @@
   <% if (page.layout === 'iclab-flow') { %><%- js('js/iclab-flow') %><% } %>
   <% if (page.layout === 'vlsi-tour') { %><%- js('js/vlsi-tour') %><% } %>
   <% if (page.layout === 'svdquant') { %><%- js('js/svdquant') %><% } %>
-  <% if (page.layout === 'swiglu') { %><%- js('js/swiglu') %><% } %>
+  <% if (page.layout === 'swiglu') { %><%- js('js/explainer-core') %><%- js('js/swiglu') %><% } %>
+  <% if (page.layout === 'rope') { %><%- js('js/explainer-core') %><%- js('js/rope') %><% } %>
   <% if (page.layout === 'cfg') { %><%- js('js/cfg') %><% } %>
+  <% if (page.layout === 'lora') { %><%- js('js/explainer-core') %><%- js('js/lora') %><% } %>
+  <% if (page.layout === 'explainer') { %><%- js('js/explainer-core') %><%- js('js/explainer-page') %><%- js('attachments/vault/' + page.explainer.script) %><% } %>
   <%- js('js/graph') %>
   <% if (page.content && page.content.indexOf('type="WaveDrom"') > -1) { %>
   <script src="<%- theme.wavedrom.skin %>"></script>
