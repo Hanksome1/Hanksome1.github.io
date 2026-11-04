@@ -28,3 +28,18 @@ graph:
   deselect: 取消選取
   neighbors: 相連的節點
   settings: 圖譜設定
+search:
+  open: 搜尋頁面
+  label: 快速切換
+  placeholder: 搜尋頁面、筆記或段落標題…
+  results: 搜尋結果
+  clear: 清除
+  loading: 載入索引中…
+  empty: 沒有符合的頁面
+  in: 位於
+  alias: 別名
+  hint_navigate: 移動
+  hint_open: 開啟
+  hint_new_tab: 在新分頁開啟
+  hint_tags: 搜尋標籤
+  hint_dismiss: 關閉

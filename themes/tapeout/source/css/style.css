@@ -534,6 +534,30 @@ code, pre, kbd { font-family: var(--font-mono); }
 @media (max-width: 560px) {
   .site-nav .scheme-switch { display: none; } /* 手機上 header 擺不下，改用 footer 的配色切換 */
 }
+/* search trigger: opens the quick switcher (_partial/search.ejs) */
+.search-trigger {
+  flex: none; display: flex; align-items: center; gap: 8px;
+  height: 28px; padding: 0 5px 0 8px;
+  border: 1px solid var(--line-2); border-radius: 6px;
+  background: none; color: var(--ink-2); cursor: pointer;
+  font: 500 11px var(--font-mono); letter-spacing: 0.04em;
+  transition: border-color 0.2s, color 0.2s;
+}
+.search-trigger:hover, .search-trigger:focus-visible { border-color: var(--ink); color: var(--ink); }
+.search-trigger svg { flex: none; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.search-trigger kbd {
+  padding: 2px 5px; border-radius: 4px;
+  font: inherit; font-size: 10.5px; color: var(--ink-3); background: var(--bg-2);
+}
+@media (max-width: 640px), (hover: none) {
+  .search-trigger { padding: 0 7px; }
+  .search-trigger kbd { display: none; }
+}
+/* 最窄的手機上 header 放不下框線，只留放大鏡 */
+@media (max-width: 440px) {
+  .search-trigger { padding: 0 6px; margin: 0 -6px; border-color: transparent; } /* 點擊範圍不變，排版只佔放大鏡的寬度 */
+  .search-trigger svg { width: 15px; height: 15px; }
+}
 .footer-scheme { gap: 16px; margin: 0 0 10px; }
 .footer-scheme .scheme-swatch {
   width: auto; height: 32px; grid-auto-flow: column; gap: 8px;
@@ -1744,7 +1768,7 @@ details.note > summary + * { margin-top: 8px; }
 
 @media print {
   .js .reveal { opacity: 1; transform: none; }
-  .site-header, .statusbar, .progress, .theme-toggle, .scheme-switch { display: none; }
+  .site-header, .statusbar, .progress, .theme-toggle, .scheme-switch, .search-trigger, .qs { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1841,7 +1865,10 @@ details.note > summary + * { margin-top: 8px; }
 
 @media (max-width: 440px) {
   .brand-name { display: none; }
-  .site-nav { gap: 16px; }
+  .brand { flex: none; }
+  .header-inner { gap: 12px; }
+  .site-nav { gap: 10px; }
+  .site-nav a { letter-spacing: 0; }
 }
 
 /* ==========================================================================
@@ -1987,3 +2014,84 @@ details.note > summary + * { margin-top: 8px; }
   .pc-path::after { display: none; }
   .cc-link { transition: none; }
 }
+
+/* ==========================================================================
+   快速切換器（⌘K）：_partial/search.ejs + js/search.js，像 Obsidian 的 Quick Switcher
+   ========================================================================== */
+html:has(.qs[open]) { overflow: hidden; }
+.qs {
+  flex-direction: column;
+  width: min(680px, calc(100vw - 24px)); max-width: none;
+  max-height: min(580px, calc(100dvh - 18vh));
+  margin: 12vh auto auto; padding: 0;
+  border: 1px solid var(--line-2); border-radius: 10px;
+  background: var(--surface); color: var(--ink);
+  box-shadow: 0 32px 80px -24px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+.qs[open] { display: flex; animation: qs-in 0.16s var(--ease); }
+.qs::backdrop { background: rgba(8, 8, 6, 0.36); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+@keyframes qs-in { from { opacity: 0; transform: translateY(-6px) scale(0.985); } }
+
+.qs-bar { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.qs-icon { flex: none; width: 16px; height: 16px; fill: none; stroke: var(--ink-3); stroke-width: 1.6; stroke-linecap: round; }
+.qs-input {
+  flex: 1; min-width: 0; padding: 0; border: 0; outline: 0; background: none;
+  font: 400 17px/1.4 var(--font-sans); color: var(--ink); caret-color: var(--accent);
+}
+.qs-input::placeholder { color: var(--ink-3); }
+.qs-clear {
+  flex: none; display: grid; place-items: center;
+  width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--ink-3); color: var(--surface); cursor: pointer;
+  transition: background 0.15s;
+}
+.qs-clear:hover { background: var(--ink-2); }
+.qs-clear svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.qs-clear[hidden] { display: none; }
+
+.qs-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 6px; }
+.qs-list:empty { display: none; }
+.qs-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 8px 10px; border-radius: 6px;
+  color: var(--ink); text-decoration: none;
+  scroll-margin: 6px;
+}
+.qs-item[aria-selected="true"] { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.qs-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--node-post); }
+.qs-item[data-k="project"] .qs-dot { background: var(--node-project); }
+.qs-item[data-k="note"] .qs-dot { background: var(--node-note); }
+.qs-item[data-k="lab"] .qs-dot { background: none; box-shadow: inset 0 0 0 1.5px var(--node-note); }
+.qs-item[data-k="page"] .qs-dot { background: none; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.qs-item[data-k="head"] .qs-dot, .qs-item[data-k="tag"] .qs-dot { background: none; }
+.qs-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.qs-line, .qs-sub { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.qs-line { font-size: 14.5px; line-height: 1.45; }
+.qs-sub { font-size: 12.5px; line-height: 1.4; color: var(--ink-3); }
+.qs-folder { color: var(--ink-3); }
+.qs-item mark { background: none; color: var(--accent); font-weight: 600; }
+.qs-side {
+  flex: none; margin-left: 8px;
+  font: 500 10px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3);
+}
+.qs-item[aria-selected="true"] .qs-side { color: var(--ink-2); }
+
+.qs-status { margin: 0; padding: 18px 18px 20px; font: 400 13px var(--font-mono); color: var(--ink-3); }
+.qs-status:empty { display: none; }
+
+.qs-hints {
+  display: flex; flex-wrap: wrap; gap: 6px 18px;
+  padding: 10px 16px; border-top: 1px solid var(--line);
+  font: 400 11px var(--font-mono); color: var(--ink-3);
+}
+.qs-hints kbd { margin-right: 5px; font: inherit; font-weight: 600; color: var(--ink-2); }
+.qs-hints kbd + kbd { margin-left: -2px; }
+
+@media (max-width: 640px) {
+  .qs { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); margin-top: 8px; }
+  .qs-input { font-size: 16px; } /* iOS 小於 16px 會在聚焦時放大頁面 */
+  .qs-hints { display: none; }
+}
+@media (hover: none) { .qs-hints { display: none; } }
+@media (prefers-reduced-motion: reduce) { .qs[open] { animation: none; } }

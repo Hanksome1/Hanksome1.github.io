@@ -19,7 +19,9 @@
   </main>
   <%- partial('_partial/footer') %>
   <% if (theme.statusbar) { %><%- partial('_partial/statusbar') %><% } %>
+  <%- partial('_partial/search') %>
   <%- js('js/main') %>
+  <%- js('js/search') %>
   <% if (home) { %><%- js('js/waveform') %><%- js('js/tapeout') %><% } %>
   <% if (page.layout === 'dit-compare') { %><%- js('js/dit-compare') %><% } %>
   <% if (page.layout === 'dit-tower') { %><%- js('js/dit-tower') %><% } %>
