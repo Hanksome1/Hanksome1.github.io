@@ -7,7 +7,8 @@
     "clean": "hexo clean",
     "deploy": "hexo deploy",
     "server": "hexo server",
-    "sync": "node tools/sync-vault.js"
+    "sync": "node tools/sync-vault.js",
+    "obsidian-theme": "node tools/obsidian-theme.js"
   },
   "hexo": {
     "version": "8.1.2"

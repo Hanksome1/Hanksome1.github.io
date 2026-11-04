@@ -49,3 +49,4 @@ push 到 `main` 就會由 `.github/workflows/pages.yml` 部署到 https://hankso
 - 新的論文解說頁要加進 `source/lab/diffusion-papers/index.md` 的 `papers`，寫上 `key` 和 `date`（論文第一次公開的年月，例如 `'2024-11'`）。清單依 `date` 由新到舊排，不分章、沒有閱讀順序；每一頁的較新、較舊和 `/notes/` 的卡片都從那裡算。要在路徑圖上標出來，在 `paper-course.ejs` 加 `pin('<key>')` 和 `on-<key>`，`style.css` 的 `.pc:has(...)` 也加一組。
 - 文章放 `source/_posts/blog/`，筆記放 `source/_posts/notes/`。
 - front-matter 有 `synced: obsidian` 的筆記是 `npm run sync` 從 Obsidian vault 產生的，每次同步都會覆蓋，不要直接改。vault 只在使用者的 Mac 上，cloud session 跑不了同步。
+- vault 用的 Obsidian 主題 Tapeout 是 `npm run obsidian-theme` 產生的：配色和字型讀 `style.css` 與 `fonts.google`，Obsidian 這邊的對應寫在 `tools/obsidian-theme.css`。改了部落格的配色或字型，跑一次讓 vault 跟上。

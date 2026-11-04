@@ -1,0 +1,403 @@
+/* ==========================================================================
+   Obsidian 這一側的對應：把 --tp-*（部落格的 tokens）接到 Obsidian 的變數與元件上。
+   --tp-* 由 tools/obsidian-theme.js 從 themes/tapeout/source/css/style.css 產生，
+   這裡不寫任何顏色值（程式碼高亮除外，部落格那邊也是寫死的）。
+   ========================================================================== */
+
+/* ---------- 01. Palette → Obsidian ---------- */
+body.theme-light,
+body.theme-dark {
+  --color-base-00: var(--tp-surface);
+  --color-base-05: var(--tp-surface);
+  --color-base-10: var(--tp-bg);
+  --color-base-20: var(--tp-bg-2);
+  --color-base-25: var(--tp-bg-2);
+  --color-base-30: var(--tp-line);
+  --color-base-35: var(--tp-line-2);
+  --color-base-40: var(--tp-line-2);
+  --color-base-50: var(--tp-ink-3);
+  --color-base-60: var(--tp-ink-3);
+  --color-base-70: var(--tp-ink-2);
+  --color-base-100: var(--tp-ink);
+
+  --color-accent: var(--tp-accent);
+  --color-accent-1: var(--tp-accent);
+  --color-accent-2: color-mix(in srgb, var(--tp-accent) 82%, var(--tp-ink));
+  --interactive-accent: var(--tp-accent);
+  --interactive-accent-hover: var(--color-accent-2);
+  --text-accent: var(--tp-accent);
+  --text-accent-hover: var(--color-accent-2);
+  --text-on-accent: var(--tp-accent-ink);
+
+  --background-primary: var(--tp-bg);
+  --background-primary-alt: var(--tp-surface);
+  --background-secondary: var(--tp-bg-2);
+  --background-secondary-alt: var(--tp-bg-2);
+  --background-modifier-border: var(--tp-line);
+  --background-modifier-border-hover: var(--tp-line-2);
+  --background-modifier-border-focus: var(--tp-ink-3);
+  --background-modifier-form-field: var(--tp-surface);
+  --interactive-normal: var(--tp-surface);
+  --interactive-hover: var(--tp-bg-2);
+  --divider-color: var(--tp-line);
+  --titlebar-background: var(--tp-bg-2);
+  --titlebar-background-focused: var(--tp-bg-2);
+
+  --text-normal: var(--tp-ink);
+  --text-muted: var(--tp-ink-2);
+  --text-faint: var(--tp-ink-3);
+  --text-selection: color-mix(in srgb, var(--tp-accent) 24%, transparent);
+  --text-highlight-bg: var(--tp-accent-soft);
+  --caret-color: var(--tp-accent);
+
+  /* 知識圖譜：跟部落格的 netlist 一樣，筆記是綠色、目前這篇是 accent */
+  --graph-node: var(--tp-node-note);
+  --graph-node-focused: var(--tp-accent);
+  --graph-node-unresolved: var(--tp-ink-3);
+  --graph-node-tag: var(--tp-node-post);
+  --graph-node-attachment: var(--tp-line-2);
+  --graph-line: var(--tp-line-2);
+  --graph-text: var(--tp-ink-2);
+
+  /* 程式碼一律是深色底（--tp-code-bg），顏色跟部落格的 highlight.js 一樣 */
+  --code-background: var(--tp-code-bg);
+  --code-normal: var(--tp-code-ink);
+  --code-comment: #77756b;
+  --code-keyword: #ff8a5c;
+  --code-tag: #ff8a5c;
+  --code-function: #8cb4ff;
+  --code-property: #8ef0b4;
+  --code-string: #b5dd8b;
+  --code-value: #f5c56b;
+  --code-operator: #ff9f7a;
+  --code-important: #d4a2ff;
+  --code-punctuation: #9a968a;
+}
+
+/* ---------- 02. Type ---------- */
+body {
+  --font-text-theme: var(--tp-font-sans);
+  --font-interface-theme: var(--tp-font-sans);
+  --font-monospace-theme: var(--tp-font-mono);
+
+  --bold-weight: 600;
+  --h1-weight: 600; --h1-size: 2em;    --h1-line-height: 1.15; --h1-letter-spacing: -0.03em;
+  --h2-weight: 600; --h2-size: 1.6em;  --h2-line-height: 1.35; --h2-letter-spacing: -0.02em;
+  --h3-weight: 600; --h3-size: 1.18em; --h3-line-height: 1.35; --h3-letter-spacing: -0.01em;
+  --h4-weight: 600; --h4-size: 1em;    --h4-line-height: 1.35; --h4-letter-spacing: 0;
+  --h5-weight: 600; --h5-size: 1em;
+  --h6-weight: 600; --h6-size: 1em;
+  --inline-title-size: 2.5em;
+  --inline-title-weight: 600;
+  --inline-title-line-height: 1.1;
+  --heading-formatting: var(--tp-ink-3);
+
+  --link-color: var(--tp-ink);
+  --link-color-hover: var(--tp-accent);
+  --link-external-color: var(--tp-ink);
+  --link-external-color-hover: var(--tp-accent);
+  --link-decoration-thickness: 1.5px;
+  --link-unresolved-color: var(--tp-ink-3);
+  --link-unresolved-opacity: 1;
+  --link-unresolved-decoration-style: dashed;
+  --link-unresolved-decoration-color: var(--tp-ink-3);
+
+  --blockquote-border-thickness: 3px;
+  --blockquote-border-color: var(--tp-accent);
+  --blockquote-color: var(--tp-ink-2);
+
+  --list-marker-color: var(--tp-accent);
+  --list-marker-color-hover: var(--tp-accent);
+  --list-bullet-size: 0.42em;
+  --list-bullet-radius: 0;
+
+  --checkbox-radius: 2px;
+  --checkbox-color: var(--tp-accent);
+  --checkbox-color-hover: var(--tp-accent);
+  --checkbox-marker-color: var(--tp-accent-ink);
+  --checkbox-border-color: var(--tp-ink-3);
+  --checklist-done-color: var(--tp-ink-3);
+
+  --code-size: 0.86em;
+  --code-radius: 6px;
+
+  --tag-color: var(--tp-node-note);
+  --tag-color-hover: var(--tp-node-note);
+  --tag-background: transparent;
+  --tag-background-hover: color-mix(in srgb, var(--tp-node-note) 14%, transparent);
+  --tag-border-width: 1px;
+  --tag-border-color: color-mix(in srgb, var(--tp-node-note) 45%, transparent);
+  --tag-border-color-hover: color-mix(in srgb, var(--tp-node-note) 45%, transparent);
+  --tag-radius: 999px;
+  --tag-size: 0.82em;
+  --tag-weight: 500;
+  --tag-padding-x: 0.5em;
+  --tag-padding-y: 0.15em;
+
+  --hr-color: var(--tp-line-2);
+
+  --embed-border-start: 3px solid var(--tp-node-note);
+
+  --table-border-color: var(--tp-line);
+  --table-header-border-color: var(--tp-ink);
+  --table-header-border-width: 0;
+  --table-header-font: var(--font-monospace);
+  --table-header-size: 0.68em;
+  --table-header-weight: 500;
+  --table-header-color: var(--tp-ink-2);
+  --table-text-size: 0.9em;
+
+  /* Properties 畫成專案頁的 datasheet：上緣一條粗線、虛線分隔、等寬大寫標籤 */
+  --metadata-border-width: 1.5px 0 0 0;
+  --metadata-border-color: var(--tp-ink);
+  --metadata-border-radius: 0;
+  --metadata-padding: 4px 0;
+  --metadata-divider-width: 1px;
+  --metadata-divider-color: var(--tp-line);
+  --metadata-label-font: var(--font-monospace);
+  --metadata-label-font-size: 10.5px;
+  --metadata-label-text-color: var(--tp-ink-3);
+  --metadata-label-width: 10em;
+
+  --callout-radius: 0 3px 3px 0;
+  --callout-padding: 14px 18px 12px;
+  --callout-title-size: 11px;
+  --callout-title-weight: 600;
+  --callout-blend-mode: normal;
+  /* 部落格把 callout 分成三種：資訊（灰）、提示（綠）、警告（accent） */
+  --callout-default: var(--tp-ink-2);
+  --callout-info: var(--tp-ink-2);
+  --callout-todo: var(--tp-ink-2);
+  --callout-summary: var(--tp-ink-2);
+  --callout-question: var(--tp-ink-2);
+  --callout-quote: var(--tp-ink-3);
+  --callout-example: var(--tp-ok);
+  --callout-tip: var(--tp-ok);
+  --callout-success: var(--tp-ok);
+  --callout-important: var(--tp-ok);
+  --callout-warning: var(--tp-accent);
+  --callout-error: var(--tp-accent);
+  --callout-bug: var(--tp-accent);
+  --callout-fail: var(--tp-accent);
+
+  --status-bar-font-size: 11px;
+}
+
+.markdown-source-view,
+.markdown-preview-view {
+  --line-height-normal: 1.85;
+  --p-spacing: 1.25em;
+  --file-line-width: 720px;
+}
+
+.inline-title,
+.inline-title:not([data-level]) { letter-spacing: -0.035em; text-wrap: balance; }
+
+/* ---------- 03. Paper: dot grid ---------- */
+body:not(.tp-no-grid) .workspace-leaf-content[data-type="markdown"] .markdown-reading-view > .markdown-preview-view,
+body:not(.tp-no-grid) .workspace-leaf-content[data-type="markdown"] .markdown-source-view.mod-cm6 > .cm-editor > .cm-scroller {
+  background-image: radial-gradient(var(--tp-grid-dot) 1px, transparent 1.3px);
+  background-size: 24px 24px;
+  background-attachment: local;
+}
+
+/* ---------- 04. Headings: § section marks ---------- */
+.markdown-rendered h2,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2 {
+  position: relative;
+  padding-top: 26px;
+  border-top: 1px solid var(--tp-line-2);
+}
+.markdown-rendered h2::before,
+.markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2::before {
+  content: "§";
+  position: absolute; left: 0; top: 7px;
+  font: 500 12px/1 var(--font-monospace);
+  letter-spacing: 0.08em;
+  color: var(--tp-accent);
+}
+
+/* 編號（Style Settings 打開）：只在閱讀模式和匯出 PDF。長筆記是分段算繪的，沒捲過的段落不在 DOM 裡，編號可能會跳 */
+.tp-heading-numbers .markdown-rendered > .markdown-preview-section { counter-reset: tp-h2; }
+.tp-heading-numbers .markdown-rendered > .markdown-preview-section > .el-h2 { counter-increment: tp-h2; counter-reset: tp-h3; }
+.tp-heading-numbers .markdown-rendered > .markdown-preview-section > .el-h3 { counter-increment: tp-h3; }
+.tp-heading-numbers .markdown-rendered > .markdown-preview-section > .el-h2 > h2::before { content: "§" counter(tp-h2, decimal-leading-zero); }
+.tp-heading-numbers .markdown-rendered > .markdown-preview-section > .el-h3 > h3::before {
+  content: counter(tp-h2) "." counter(tp-h3);
+  margin-right: 12px;
+  font: 500 14px var(--font-monospace);
+  letter-spacing: 0;
+  color: var(--tp-ink-3);
+}
+
+/* ---------- 05. Prose ---------- */
+/* 連結：本文色，accent 底線 */
+.markdown-rendered a.internal-link:not(.is-unresolved),
+.markdown-rendered a.external-link,
+.markdown-source-view.mod-cm6 .cm-hmd-internal-link:not(.is-unresolved) .cm-underline,
+.markdown-source-view.mod-cm6 .cm-link .cm-underline,
+.markdown-source-view.mod-cm6 .cm-url .cm-underline {
+  text-decoration-color: var(--tp-accent);
+  text-underline-offset: 3px;
+}
+.markdown-rendered a.internal-link.is-unresolved,
+.markdown-source-view.mod-cm6 .is-unresolved .cm-underline {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+/* ▸ 項目符號 */
+.list-bullet::after { clip-path: polygon(12% 0, 100% 50%, 12% 100%); }
+.markdown-rendered ol > li::marker,
+.markdown-source-view.mod-cm6 .cm-formatting-list-ol {
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+  color: var(--tp-ink-3);
+}
+
+.markdown-rendered blockquote { font-size: 1.04em; }
+
+/* ==highlight== */
+.markdown-rendered mark { padding: 0 0.15em; border-radius: 2px; color: inherit; }
+
+/* 分隔線是一段時脈波形 */
+.markdown-rendered hr,
+.markdown-source-view.mod-cm6 .cm-line hr {
+  height: 10px;
+  border: 0;
+  background: var(--tp-line-2);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10'%3E%3Cpath d='M0 9H6V1H18V9H24' fill='none' stroke='black' stroke-width='1.2'/%3E%3C/svg%3E") repeat-x left center / 24px 10px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10'%3E%3Cpath d='M0 9H6V1H18V9H24' fill='none' stroke='black' stroke-width='1.2'/%3E%3C/svg%3E") repeat-x left center / 24px 10px;
+}
+.markdown-rendered hr { margin: 3em 0; }
+
+.markdown-rendered img:not(.emoji) { border: 1px solid var(--tp-line); border-radius: 3px; }
+
+/* 標籤：綠色等寬膠囊 */
+a.tag,
+.cm-hashtag { font-family: var(--font-monospace); }
+
+/* ---------- 06. Code ---------- */
+.markdown-rendered :not(pre) > code {
+  padding: 0.12em 0.4em;
+  border: 1px solid var(--tp-line);
+  border-radius: 3px;
+  background-color: var(--tp-bg-2);
+  color: var(--tp-ink);
+}
+.cm-s-obsidian span.cm-inline-code,
+.cm-s-obsidian span.cm-inline-code span.cm-inline-code:not(.cm-formatting):not(.cm-hmd-indented-code):not(.obsidian-search-match-highlight) {
+  background-color: var(--tp-bg-2);
+  color: var(--tp-ink);
+}
+
+.markdown-rendered pre {
+  padding: 16px 20px 18px;
+  border: 1px solid var(--tp-code-line);
+  line-height: 1.75;
+}
+.markdown-rendered pre code { color: var(--tp-code-ink); }
+.markdown-source-view.mod-cm6 .code-block-flair,
+.markdown-rendered pre .copy-code-button {
+  font: 500 11px var(--font-monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8679;
+  background: transparent;
+}
+.markdown-source-view.mod-cm6 .code-block-flair:hover,
+.markdown-rendered pre .copy-code-button:hover { color: var(--tp-accent); }
+
+/* ---------- 07. Tables ---------- */
+.markdown-rendered th,
+.markdown-rendered td,
+.markdown-source-view.mod-cm6 .cm-table-widget th,
+.markdown-source-view.mod-cm6 .cm-table-widget td {
+  border-inline: 0;
+  border-top: 0;
+}
+.markdown-rendered thead tr > th,
+.markdown-source-view.mod-cm6 .cm-table-widget thead tr > th {
+  border-bottom: 1.5px solid var(--tp-ink);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.markdown-rendered td { font-variant-numeric: tabular-nums; line-height: 1.6; }
+
+/* ---------- 08. Callouts（= 部落格的 .note 與定理方塊） ---------- */
+.callout {
+  background-color: var(--tp-surface);
+  border: 1px solid var(--tp-line-2);
+  border-left: 3px solid var(--callout-color);
+}
+.callout-title {
+  font-family: var(--font-monospace);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  align-items: center;
+}
+.callout-content { font-size: 0.92em; }
+.callout-content > :first-child { margin-top: 0.4em; }
+body:not(.tp-callout-icons) .callout-icon { display: none; }
+
+/* > [!theorem] 等等：部落格的 math.js 把它們畫成定理方塊 */
+.callout:is([data-callout="theorem"], [data-callout="lemma"], [data-callout="proposition"], [data-callout="corollary"]) { --callout-color: var(--tp-ink); }
+.callout[data-callout="definition"] { --callout-color: var(--tp-accent); }
+.callout[data-callout="exercise"] { --callout-color: var(--tp-ok); }
+.callout[data-callout="remark"] { --callout-color: var(--tp-ink-3); background-color: transparent; }
+.callout:is([data-callout="theorem"], [data-callout="lemma"], [data-callout="proposition"], [data-callout="corollary"], [data-callout="definition"], [data-callout="example"], [data-callout="exercise"], [data-callout="remark"]) .callout-content { font-size: 1em; }
+
+/* > [!proof]：沒有框，斜體襯線的 Proof，結尾一個 ∎ 方塊 */
+.callout[data-callout="proof"] {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.callout[data-callout="proof"] > .callout-title {
+  font: italic 1.15em var(--tp-font-serif);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--tp-ink);
+}
+.callout[data-callout="proof"] > .callout-content { font-size: 1em; }
+.callout[data-callout="proof"] > .callout-content::after {
+  content: "";
+  display: block;
+  width: 0.6em; height: 0.6em;
+  margin: 0.2em 0 0 auto;
+  border: 1.5px solid var(--tp-ink-2);
+}
+
+/* ---------- 09. Properties = datasheet ---------- */
+.metadata-property-key,
+.metadata-property-value { border-bottom-style: dashed; }
+.metadata-property-key-input {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.metadata-properties-heading {
+  font: 500 11px var(--font-monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tp-ink-3);
+}
+
+/* ---------- 10. Chrome ---------- */
+/* 狀態列 = 部落格右下角的 statusbar：等寬字、綠色 LED */
+.status-bar { font-family: var(--font-monospace); letter-spacing: 0.03em; }
+.status-bar::before {
+  content: "";
+  flex: none;
+  align-self: center;
+  width: 6px; height: 6px;
+  margin-inline: 6px 2px;
+  border-radius: 50%;
+  background: var(--tp-ok);
+}
+
+.workspace-tab-header.is-active .workspace-tab-header-inner-title { color: var(--tp-ink); }
+.nav-file-title.is-active { box-shadow: inset 2px 0 0 var(--tp-accent); }
+
+/* ---------- 11. Print / PDF ---------- */
+.print .markdown-preview-view { background-image: none; }
