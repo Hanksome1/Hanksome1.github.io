@@ -18,6 +18,10 @@
           <span class="nav-pin"><%= pad(i + 1) %></span><%= item.label %>
         </a>
       <% }) %>
+      <button class="search-trigger" type="button" data-search-open aria-haspopup="dialog" aria-label="<%= __('search.open') %>" aria-keyshortcuts="Meta+K Control+K /" title="<%= __('search.open') %>">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="M10.4 10.4 14 14"/></svg>
+        <kbd aria-hidden="true">⌘K</kbd>
+      </button>
       <% var schemes = scheme_list(); if (schemes.length > 1) { %>
         <span class="scheme-switch" role="group" aria-label="<%= __('color_scheme') %>">
           <% schemes.forEach(function (s) { %>

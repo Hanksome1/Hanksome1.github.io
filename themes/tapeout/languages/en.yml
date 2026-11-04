@@ -28,3 +28,18 @@ graph:
   deselect: Clear selection
   neighbors: Linked nodes
   settings: Graph settings
+search:
+  open: Search pages
+  label: Quick switcher
+  placeholder: Find a page, note or heading…
+  results: Search results
+  clear: Clear
+  loading: Loading index…
+  empty: No matching pages
+  in: in
+  alias: alias
+  hint_navigate: to navigate
+  hint_open: to open
+  hint_new_tab: to open in new tab
+  hint_tags: to search tags
+  hint_dismiss: to dismiss

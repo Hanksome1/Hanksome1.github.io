@@ -1,0 +1,26 @@
+<%
+  // 快速切換器（⌘K）：source/js/search.js 打開這個 dialog，索引是 scripts/search.js 產生的 search.json
+  var qsText = {
+    loading: __('search.loading'),
+    empty: __('search.empty'),
+    in: __('search.in'),
+    alias: __('search.alias')
+  };
+%>
+<dialog class="qs" aria-label="<%= __('search.label') %>" data-index="<%- search_index_url() %>" data-text="<%= JSON.stringify(qsText) %>">
+  <div class="qs-bar">
+    <svg class="qs-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="M10.4 10.4 14 14"/></svg>
+    <input class="qs-input" type="text" role="combobox" aria-expanded="true" aria-controls="qs-list" aria-autocomplete="list"
+      autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="<%= __('search.placeholder') %>">
+    <button class="qs-clear" type="button" aria-label="<%= __('search.clear') %>" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6"/></svg></button>
+  </div>
+  <div class="qs-list" id="qs-list" role="listbox" aria-label="<%= __('search.results') %>"></div>
+  <p class="qs-status" role="status" aria-live="polite"></p>
+  <footer class="qs-hints" aria-hidden="true">
+    <span><kbd>↑↓</kbd><%= __('search.hint_navigate') %></span>
+    <span><kbd>↵</kbd><%= __('search.hint_open') %></span>
+    <span><kbd data-mod>⌘</kbd><kbd>↵</kbd><%= __('search.hint_new_tab') %></span>
+    <span><kbd>#</kbd><%= __('search.hint_tags') %></span>
+    <span><kbd>esc</kbd><%= __('search.hint_dismiss') %></span>
+  </footer>
+</dialog>
