@@ -72,6 +72,25 @@ body.theme-dark {
   --code-operator: #ff9f7a;
   --code-important: #d4a2ff;
   --code-punctuation: #9a968a;
+
+  /* Shiki Highlighter 外掛不讀上面那組，改讀 --shiki-*；
+     它的預設是 --text-muted、--color-pink 這類跟著淺色模式走的顏色，放在深色底上會看不清楚 */
+  --shiki-code-background: var(--code-background);
+  --shiki-code-normal: var(--code-normal);
+  --shiki-code-comment: var(--code-comment);
+  --shiki-code-function: var(--code-function);
+  --shiki-code-important: var(--code-important);
+  --shiki-code-keyword: var(--code-keyword);
+  --shiki-code-property: var(--code-property);
+  --shiki-code-punctuation: var(--code-punctuation);
+  --shiki-code-string: var(--code-string);
+  --shiki-code-value: var(--code-value);
+  --shiki-code-block-border-color: var(--tp-code-line);
+  --shiki-code-block-border-width: 1px;
+  --shiki-gutter-text-color: var(--code-comment);
+  --shiki-gutter-text-color-highlight: var(--code-normal);
+  --shiki-gutter-border-color: var(--tp-code-line);
+  --shiki-terminal-dots-color: var(--code-comment);
 }
 
 /* ---------- 02. Type ---------- */
