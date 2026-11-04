@@ -1,0 +1,161 @@
+<%
+  // Ideogram 4 的 VLM（Qwen3-VL-8B）inference 解說，後半跟 Ideogram 4 的 DiT 並排比較（js/ideogram4-qwen-vlm.js）。
+  // 舞台釘在畫面上，捲過 .qv-track 的距離換成 0–1 的進度；左邊說明欄、右邊兩座塔。沒有 JS 時只剩下說明文字。
+  // 數字的算法見頁尾「數字怎麼算的」，跟 JS 裡的常數同一組。
+  var stops = [
+    { key: 'prompt', name: 'Prompt' },
+    { key: 'embed', name: 'Embed' },
+    { key: 'qlayer', name: 'Layer 1' },
+    { key: 'stack', name: '36 Layers' },
+    { key: 'skip', name: 'Skipped' },
+    { key: 'handoff', name: 'Handoff' },
+    { key: 'compare', name: 'Compare' },
+    { key: 'loop', name: 'Loop' },
+    { key: 'cost', name: 'Cost' }
+  ];
+  // q：Qwen 這邊的說明，d：DiT 這邊的說明，both：兩邊共通的說明
+  var caps = [
+    { key: 'intro', kicker: 'Overview', title: '兩座塔：一座讀字，一座畫圖',
+      q: '左邊是 Qwen3-VL-8B 的語言模型：36 層、寬 4096，權重凍結。它只負責把 prompt 讀成特徵，一張圖只跑一次。旁邊虛線框是它的 vision encoder，Ideogram 只餵文字，所以用不到。',
+      d: '右邊是 Ideogram 4 的 DiT：34 層、寬 4608，9.3B 參數，負責把雜訊一步一步變成圖。' },
+    { key: 'prompt', stop: 0, kicker: 'Stop 01 — Prompt', title: 'JSON 套上 chat template，再切成 token',
+      q: '使用者給的 JSON prompt 先包進 Qwen 的 chat template（<code>&lt;|im_start|&gt;user</code> … <code>&lt;|im_start|&gt;assistant</code>），再交給 BPE tokenizer 切開。詞表有 151,936 個 token，這個例子切出 333 個，上限是 2048。' },
+    { key: 'embed', stop: 1, kicker: 'Stop 02 — Embedding', title: '查表：token id 換成向量',
+      q: '每個 token id 到嵌入表（151,936 × 4096）裡挑出對應的那一列，得到一個 333 × 4096 的矩陣。這一步只是查表，沒有任何乘加。位置編號是 (i, i, i)：MRoPE 本來有時間、高、寬三個軸，純文字時三個軸填同一個數，效果就等於普通的 1D RoPE。' },
+    { key: 'qlayer', stop: 2, kicker: 'Stop 03 — Layer 1', title: '拆開第 1 層',
+      q: '一層有 193M 參數，方塊的面積照參數量畫。SwiGLU 的三個矩陣佔 151M（78%），attention 的四個投影只佔 42M。attention 本身沒有權重，所以畫成一條淡色的虛線格。' },
+    { key: 'q-norm', stop: 2, kicker: 'Stop 03 · 1 / 6 — RMSNorm', title: '先正規化',
+      q: 'RMSNorm：<code>x / rms(x) · w</code>。不減平均、沒有 bias，整個只有 4096 個權重。這是 pre-norm：先正規化，再進 attention，residual 保留原本的 x。' },
+    { key: 'q-qkv', stop: 2, kicker: 'Stop 03 · 2 / 6 — Q, K, V', title: '三個投影，K、V 窄很多',
+      q: 'Q 輸出 4096 維，也就是 32 個 head × 128 維。K、V 各只有 1024 維（8 個 head）。這叫 GQA：每 4 個 Q head 共用一組 K、V，K、V 的投影和 KV cache 都只剩四分之一。' },
+    { key: 'q-rope', stop: 2, kicker: 'Stop 03 · 3 / 6 — QK-norm + MRoPE', title: '正規化 q、k，再依位置旋轉',
+      q: 'QK-norm：每個 head 的 q、k 各做一次 128 維的 RMSNorm，讓 attention 分數不會爆掉。接著 MRoPE 依位置旋轉 q、k（θ = 5,000,000）。旋轉只是逐元素的乘加，不算在矩陣乘法的 MAC 裡。' },
+    { key: 'q-attn', stop: 2, kicker: 'Stop 03 · 4 / 6 — Causal attention', title: '每個 token 只看前面',
+      q: '<code>softmax(QKᵀ / √128) · V</code>，32 個 head 平行算。mask 是下三角：第 i 個 token 只能看第 0 到 i 個，因為語言模型的本業是一個字一個字往後生成。這一步沒有權重，但 QKᵀ 和 AV 各要 T² × 4096 次乘加，會隨 T 平方成長。' },
+    { key: 'q-o', stop: 2, kicker: 'Stop 03 · 5 / 6 — Output projection', title: '接回來，加回 residual',
+      q: '32 個 head 的輸出接成 4096 維，經過 O 投影（4096 → 4096），再加回 residual。' },
+    { key: 'q-mlp', stop: 2, kicker: 'Stop 03 · 6 / 6 — SwiGLU', title: '整層最大的一塊',
+      q: '再做一次 RMSNorm，然後是 SwiGLU：gate、up 各把 4096 拉到 12288，算 <code>silu(gate) ⊙ up</code>，再用 down 投影回 4096，加回 residual。三個矩陣佔這一層 77% 的乘加。' },
+    { key: 'stack', stop: 3, kicker: 'Stop 04 — 36 layers', title: '一層一層往下，沿路抽 13 份',
+      q: '第 2 到 36 層的結構都一樣，只是權重不同。Ideogram 在第 0, 3, 6, …, 33, 35 層（從 0 數）的輸出各抓一份，總共 13 份。淺層的特徵比較接近字面，深層比較接近語意，13 份全部接起來交給 DiT。' },
+    { key: 'skip', stop: 4, kicker: 'Stop 05 — What is skipped', title: '一個字都不生成',
+      q: 'Qwen 原本是拿來生成文字的，但這裡不生成：最後的 norm、LM head（4096 × 151,936）、取樣、KV cache 全部不跑，vision encoder 也沒用到。整個 Qwen 只跑一次 prefill，第 35 層抓到的是還沒經過最後 norm 的 hidden state。' },
+    { key: 'handoff', stop: 5, kicker: 'Stop 06 — Handoff', title: '53,248 維交給 DiT',
+      q: '13 份 4096 維的 hidden state 接在一起，每個文字 token 變成 53,248 維。',
+      d: 'DiT 先對它做 RMSNorm，再用一個 53,248 → 4608 的 Linear（245M 參數）壓下來，加上「文字」的角色 embedding，排在 4096 個圖片 token 前面。這個投影屬於 DiT，每一步都會重算一次。' },
+    { key: 'compare', stop: 6, kicker: 'Stop 07 — Side by side', title: '兩邊的第 1 層一起拆開',
+      q: '每層 193M 參數；每個 token 每層 192.9M 次乘加。',
+      d: '每層 264M 參數；每個 token 每層 254.8M 次乘加，是 Qwen 的 1.32 倍。比例尺一樣，所以方塊可以直接比大小。' },
+    { key: 'c-same', stop: 6, kicker: 'Stop 07 · 1 / 4 — Same', title: '相同的地方',
+      both: '兩邊都用 pre-norm 的 RMSNorm、都對 q、k 做 QK-norm、都用交錯式 MRoPE（θ = 5,000,000，三個軸分到 24 / 20 / 20 個頻率）。MLP 都是 SwiGLU，中間寬度也都是 12288，所以 SwiGLU 的方塊幾乎一樣高。所有投影都沒有 bias。DiT 的 RoPE 寫法幾乎是照 Qwen3-VL 搬過來的。' },
+    { key: 'c-mask', stop: 6, kicker: 'Stop 07 · 2 / 4 — Mask', title: '看前面，還是全部都看',
+      q: 'Causal：下三角。序列只有 333 個文字 token。',
+      d: 'Full：同一張圖的文字和圖片 token 全部互相看得到（segment id 相同就看得到）。序列是 333 + 4096，長了 13 倍；平方之後再乘上比較寬的 4608，每層 attention 的乘加是 Qwen 的 199 倍。' },
+    { key: 'c-heads', stop: 6, kicker: 'Stop 07 · 3 / 4 — Heads', title: '多而窄，還是少而寬',
+      q: '32 個 Q head × 128 維，K、V 只有 8 個 head（GQA）。',
+      d: '18 個 head × 256 維，Q、K、V 一樣多（MHA）。head 少，但每個寬一倍。' },
+    { key: 'c-ada', stop: 6, kicker: 'Stop 07 · 4 / 4 — Timestep', title: 'DiT 多出來的：時間步',
+      q: '沒有時間步，也沒有調變。虛線框是 DiT 有、Qwen 沒有的東西。',
+      d: '時間步 t 先壓成 512 維，每層用 512 → 4 × 4608 產生兩組 scale 和 gate。attention 和 MLP 的輸出再做一次 RMSNorm（sandwich norm），乘上 tanh(gate) 才加回 residual。' },
+    { key: 'loop', stop: 7, kicker: 'Stop 08 — Sampling loop', title: '1 次對 40 次',
+      q: '整張圖只跑 1 次 forward。輸出跟時間步無關，算一次就能一直用。',
+      d: '預設 20 步，每一步跑兩次：有條件的那次跑主塔（文字 + 圖片），無條件的那次跑另一組 9.3B 的權重，而且只送圖片。一共 40 次 forward。' },
+    { key: 'cost', stop: 8, kicker: 'Stop 09 — Cost', title: '算總帳',
+      q: '只算 333 個文字 token：2.35 T MAC。reference 程式讓 Qwen 也跑過 4096 個空的圖片位置（mask 掉、輸出清成 0），變成 36.5 T MAC，是需要的 15.6 倍。',
+      d: '20 步 CFG：1,747 T MAC。就算照 reference 的寫法，Qwen 也只佔整條 pipeline 的 2%；只算文字的話是 0.13%。' }
+  ];
+%>
+<div class="qv" data-qv data-section="QWEN3-VL">
+  <header class="qv-hero wrap">
+    <p class="kicker">§ Explainer — Ideogram 4 · Text encoder</p>
+    <h1 class="article-title"><%= page.title %></h1>
+    <% if (page.summary) { %><p class="article-lede"><%= page.summary %></p><% } %>
+    <ul class="qv-legend">
+      <li class="qv-legend-q"><i></i><b>Qwen3-VL-8B</b><span>36 × 4096 · causal · 跑 1 次</span></li>
+      <li class="qv-legend-d"><i></i><b>Ideogram 4 DiT</b><span>34 × 4608 · full · 跑 40 次</span></li>
+    </ul>
+    <p class="qv-scroll-hint">往下捲，鏡頭從 prompt 一路走進 Qwen 的每一層 <span aria-hidden="true">↓</span> · DiT 的完整拆解在<a href="<%- url_for('/lab/ideogram4-vs-sd35-tower/') %>">兩座塔</a></p>
+  </header>
+
+  <section class="qv-track">
+    <div class="qv-stage">
+      <svg class="qv-world" data-qv-world role="img" aria-label="Qwen3-VL-8B 與 Ideogram 4 DiT 畫成兩座並排的塔，鏡頭從 prompt 走進 Qwen 的每一層，再跟 DiT 比較"></svg>
+      <aside class="qv-panel">
+        <div class="qv-panel-top">
+          <p class="qv-status"><span class="qv-status-dot"></span><span data-qv-status>Overview</span></p>
+          <button type="button" class="qv-play" data-qv-play aria-label="自動播放"><span class="qv-play-icon" aria-hidden="true"></span><span data-qv-play-label>Auto-play</span></button>
+        </div>
+        <ol class="qv-stops">
+          <% stops.forEach(function (s, i) { %>
+            <li><button type="button" data-qv-stop="<%= s.key %>"><span><%= pad(i + 1) %></span><%= s.name %><i data-qv-bar></i></button></li>
+          <% }) %>
+        </ol>
+        <div class="qv-caps">
+          <% caps.forEach(function (c, i) { %>
+            <article class="qv-cap<%= i === 0 ? ' is-on' : '' %>" data-cap="<%= c.key %>">
+              <p class="kicker"><%= c.kicker %></p>
+              <h2><%= c.title %></h2>
+              <% if (c.q) { %><p class="qv-cap-q"><b>Qwen3-VL</b><%- c.q %></p><% } %>
+              <% if (c.d) { %><p class="qv-cap-d"><b>Ideogram 4 DiT</b><%- c.d %></p><% } %>
+              <% if (c.both) { %><p class="qv-cap-both"><b><%= c.q || c.d ? '兩邊' : '兩邊都一樣' %></b><%- c.both %></p><% } %>
+            </article>
+          <% }) %>
+        </div>
+        <dl class="qv-facts" data-qv-facts></dl>
+      </aside>
+      <p class="qv-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+    </div>
+  </section>
+
+  <section class="qv-outro wrap">
+    <p class="kicker">§ Summary</p>
+    <h2 class="qv-summary-title">VLM 和 Diffusion 兩部分，逐項對照</h2>
+    <div class="qv-table-wrap">
+      <table class="qv-table">
+        <thead><tr><th scope="col"></th><th scope="col" class="qv-th-q">Qwen3-VL-8B（VLM）</th><th scope="col" class="qv-th-d">Ideogram 4 DiT（Diffusion）</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">工作</th><td>把 prompt 讀成特徵</td><td>把雜訊變成圖（預測速度 v）</td></tr>
+          <tr><th scope="row">權重</th><td>凍結，沿用 Qwen 的預訓練</td><td>訓練；有條件、無條件各一套</td></tr>
+          <tr><th scope="row">層數 × 寬度</th><td>36 × 4096</td><td>34 × 4608</td></tr>
+          <tr><th scope="row">每層參數</th><td>192.9M</td><td>264.3M</td></tr>
+          <tr><th scope="row">輸入</th><td>token id → 查嵌入表</td><td>latent 128 → 4608、文字 53,248 → 4608（Linear）</td></tr>
+          <tr><th scope="row">Attention</th><td>GQA：32 個 Q head、8 個 KV head，各 128 維</td><td>MHA：18 個 head × 256 維</td></tr>
+          <tr><th scope="row">Mask</th><td>causal（下三角）</td><td>full（同一個 segment 全部互看）</td></tr>
+          <tr><th scope="row">位置</th><td colspan="2" class="qv-same">交錯式 MRoPE，θ = 5,000,000，section 24 / 20 / 20（Qwen 的文字位置是 (i, i, i)；DiT 的圖片是 (0, h, w) 再加 65,536 的偏移）</td></tr>
+          <tr><th scope="row">Norm</th><td>pre-norm RMSNorm + QK-norm</td><td>pre-norm RMSNorm + QK-norm + 輸出再一次 RMSNorm（sandwich）</td></tr>
+          <tr><th scope="row">MLP</th><td colspan="2" class="qv-same">SwiGLU，中間寬度 12288，沒有 bias</td></tr>
+          <tr><th scope="row">時間步</th><td>沒有</td><td>adaLN：t → 512 → 每層 2 組 scale、2 組 tanh gate</td></tr>
+          <tr><th scope="row">輸出</th><td>第 0, 3, …, 33, 35 層的 hidden state，接成 53,248 維</td><td>final layer → 每個圖片 token 128 維的速度 v</td></tr>
+          <tr><th scope="row">沒用到的部分</th><td>vision encoder、final norm、LM head、取樣</td><td>文字 token 的輸出（直接丟掉）</td></tr>
+          <tr><th scope="row">每 token 每層 MAC</th><td>192.9M</td><td>254.8M</td></tr>
+          <tr><th scope="row">跑幾次</th><td>1 次</td><td>20 步 × 2 = 40 次</td></tr>
+          <tr><th scope="row">一張圖的 MAC</th><td>2.35 T（只算文字）· 36.5 T（reference）</td><td>1,747 T</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="qv-h3">三個重點</h3>
+    <ol class="qv-takeaways">
+      <li><b>同一套積木。</b>RMSNorm、QK-norm、MRoPE、SwiGLU 12288 兩邊都一樣，DiT 幾乎可以看成「拿掉 causal mask、加上時間步調變的 Qwen block」。差別在 head 的切法（GQA 32×128 對 MHA 18×256）和 DiT 多出來的 adaLN、sandwich norm、tanh gate。</li>
+      <li><b>Qwen 只是把文字讀一遍。</b>它不生成字：只跑一次 prefill、沿路抽 13 層的 hidden state，LM head 和 vision encoder 都不跑。所以它跟時間步無關，整張圖算一次就好。</li>
+      <li><b>錢花在 DiT。</b>一張 1024² 的圖，Qwen 只算文字是 2.35 T MAC，佔全部的 0.13%；DiT 一步就要 87 T、20 步 1,747 T。reference 程式讓 Qwen 多跑 4096 個空位置，把它推到 36.5 T，也只佔 2%，但這是很容易拿回來的浪費。</li>
+    </ol>
+
+    <h3 class="qv-h3">數字怎麼算的</h3>
+    <ul class="qv-notes">
+      <li>MAC 是乘加次數（1 MAC ≈ 2 FLOPs），只算矩陣乘法：Linear 是 <code>N × C<sub>in</sub> × C<sub>out</sub></code>，attention 的 QKᵀ 和 AV 各是 <code>N² × 寬度</code>（dense 等效，causal mask 不打折）。norm、softmax、RoPE、SiLU、residual 都不計。</li>
+      <li>例子固定為 1024 × 1024、batch 1、文字 T = 333 個 token（含 chat template）、圖片 4096 個 token、預設 20 步。</li>
+      <li>Qwen 每 token 每層：<code>2·4096² + 2·4096·1024 + 3·4096·12288 = 192.9M</code>；36 層、T = 333：<code>36 × (333 × 192.9M + 2 × 333² × 4096) = 2.35 T</code>。reference 程式把序列補到 333 + 4096 再送進 Qwen，同一個公式代 N = 4429 得 36.5 T。</li>
+      <li>DiT 每 token 每層：<code>4·4608² + 3·4608·12288 = 254.8M</code>；一步的有條件分支（N = 4429）加上無條件分支（N = 4096），含 53,248 → 4608 等 block 外的投影，共 87.4 T，20 步 1,747 T。VAE decoder 5.24 T 只跑一次。</li>
+      <li>Qwen 的參數量：36 層 × 192.9M + 嵌入表 151,936 × 4096（622M）≈ 7.57B，不含沒用到的 LM head 和 vision encoder。</li>
+    </ul>
+
+    <h3 class="qv-h3">資料來源</h3>
+    <ul class="qv-notes">
+      <li><a href="https://github.com/ideogram-oss/ideogram4/tree/990fe1c4e950bb9e9dc90e01c0ad98ba434f83c2">ideogram-oss/ideogram4 @ 990fe1c</a>：<code>pipeline_ideogram4.py</code>（tokenize、抽 13 層、sampling loop）、<code>modeling_ideogram4.py</code>（DiT block、MRoPE）、<code>constants.py</code>（tap 的層號）。</li>
+      <li><a href="https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct/blob/0c351dd01ed87e9c1b53cbc748cba10e6187ff3b/config.json">Qwen/Qwen3-VL-8B-Instruct config.json</a>：層數、寬度、head 數、詞表。</li>
+      <li><a href="https://github.com/huggingface/transformers/blob/v4.57.1/src/transformers/models/qwen3_vl/modeling_qwen3_vl.py">transformers v4.57.1 modeling_qwen3_vl.py</a>：decoder layer 的運算順序、QK-norm、GQA。</li>
+      <li>DiT 這半邊的逐層拆解見<a href="<%- url_for('/lab/ideogram4-vs-sd35-tower/') %>">兩座塔</a>和<a href="<%- url_for('/lab/ideogram4-vs-sd35/') %>">並排版</a>。</li>
+    </ul>
+  </section>
+</div>
