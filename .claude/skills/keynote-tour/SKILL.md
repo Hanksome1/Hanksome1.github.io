@@ -14,7 +14,7 @@ description: 做「發表會式」的捲動導覽首頁：黑底、一拍一句�
 | `themes/tapeout/source/js/iclab-flow.js` | 上半 `ART`：9 個場景，每個都是 `make(parent) → { set(t) }`；下半是舞台 controller |
 | `themes/tapeout/layout/iclab-flow.ejs` | `NOTES` 對照表、`reads()`、hero、14 個 `<article data-beat>`、outro |
 | `themes/tapeout/source/css/iclab-flow.css` | 強制深色、舞台版面、沒有 JS / reduced-motion 的退路、SVG 的 class |
-| `source/lab/iclab/index.md` | front-matter 的 `tour.stops`（總覽筆記標頭的縮圖用） |
+| `source/lab/iclab/index.md` | front-matter 的 `tour.stops`（總覽筆記標頭的動畫按鈕用） |
 
 最小可跑的骨架在 [skeleton.html](skeleton.html)：有 5 拍、3 個場景，其中一個場景連用 3 拍，最後一拍拉遠並發光；也有章節列、自動播放和 outro。從它開始改，controller 照抄。捲動進度、`seg`、`pathLength` 畫線、漸進增強這些共同的底子，寫在 `scroll-explainer` 的 SKILL.md，這裡不重複。
 
@@ -89,7 +89,7 @@ description: 做「發表會式」的捲動導覽首頁：黑底、一拍一句�
 - **筆記連結從 layout 算，不寫死標題**：`NOTES = { key: [網址, 短標題, 小標] }`，用 `site.posts` 比對 path，拿到筆記的完整標題。比對前兩邊都要去掉頭尾的 `/`，因為 obsidian 同步來的筆記 path 開頭有 `/`。篇數用課程 tag 算（扣掉總覽本身）。連到的筆記不存在時，就退回寫死的短標題，不讓頁面壞掉。
 - **課程入口**：`_config.tapeout.yml` 的 `notes.courses` 那一門加 `tour: /lab/<slug>/`。加了之後：
   - `/notes/` 的課程卡片會直接連到動畫頁（`notes.ejs` 的 `c.tour || c.hub.path`）。
-  - 總覽筆記的標頭會出現動畫入口卡（`course_tour()` → `_partial/course-tour.ejs`）。它讀的是動畫頁 front-matter 的 `tour.tagline` 和 `tour.stops`（每站 `id / n / label / weeks / sub / notes`），縮圖的格數就是站數。
+  - 總覽筆記標頭的 kicker 那行最後會出現一個「▶ 動畫導覽」小按鈕（`course_tour()` → `_partial/course-tour.ejs`），連到動畫頁，滑過時顯示 `tour.tagline`。`course_tour()` 要求動畫頁 front-matter 有 `tour.stops`（每站 `id / n / label / weeks / sub / notes`）。
 - 動畫頁 front-matter 加 `kind: note` 和 `reading`，它才會列在 `/notes/`。
 - **強制深色**：layout 會給 `<body>` 加 `is-<layout>` 的 class。在 `body.is-<slug>` 上把網站的變數全部覆寫成深色（`--bg --surface --ink --ink-2 --ink-3 --line --line-2 --accent --header-bg`，加上 `color-scheme: dark`），再用 `html:has(body.is-<slug>) { background: … }` 讓捲過頭時露出來的也是黑色；這一頁不需要的 statusbar 藏起來。header、footer 吃同一組變數，會自動變深色，不用另外改。
 - CSS 和 JS 的網址由 `css()`、`js()` 自動加 `?v=<hash>`（`fb1c919`），改了檔案不用手動 bust cache。
