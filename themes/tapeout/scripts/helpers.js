@@ -138,8 +138,10 @@ hexo.extend.helper.register('course_paper', function (page) {
 // 這篇筆記屬於哪一門課（總覽筆記本身也算），沒有就回傳 null
 hexo.extend.helper.register('note_course', function (post) {
   const tags = hexo.extend.helper.get('tag_names')(post);
-  const course = courseConfig(this.theme).find(c => trimSlash(c.hub) === trimSlash(post && post.path) || tags.includes(c.tag));
-  return course ? Object.assign({}, course, { isHub: trimSlash(course.hub) === trimSlash(post.path) }) : null;
+  // 頁面（source/lab/）的 path 結尾是 index.html，用 pagePath 去掉才比得到 hub
+  const path = post && post.path ? pagePath(post) : '';
+  const course = courseConfig(this.theme).find(c => trimSlash(c.hub) === path || tags.includes(c.tag));
+  return course ? Object.assign({}, course, { isHub: trimSlash(course.hub) === path }) : null;
 });
 
 // 課程的動畫導覽（notes.courses 的 tour 指到 source/lab/ 的頁面，頁面 front-matter 的 tour.stops 是站點）。

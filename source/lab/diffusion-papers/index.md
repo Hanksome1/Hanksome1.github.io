@@ -1,65 +1,39 @@
 ---
 title: Diffusion 相關論文閱讀
-summary: text-to-image 模型背後的論文：guidance 為什麼每步要算兩次、attention 怎麼知道位置、怎麼算得快，MLP 為什麼換成 SwiGLU，模型怎麼壓到 4 bit。每一篇都是可以捲動的動畫，依論文發表時間由新到舊排，挑有興趣的看。
+summary: text-to-image 模型背後的論文：text encoder 怎麼讀 prompt、guidance 為什麼每步要算兩次、attention 怎麼知道位置、怎麼算得快，MLP 為什麼換成 SwiGLU，怎麼用 LoRA 微調，模型怎麼壓到 4 bit。每一篇都是可以捲動的動畫。
 date: 2026-10-31
-updated: 2026-11-04
-layout: paper-course
-# kind: note 讓這一頁跟 source/_posts/notes/ 的筆記一起列在 /notes/；reading 是列表上顯示的閱讀分鐘數
+updated: 2026-11-05
+layout: post
+# kind: note 讓這一頁跟 source/_posts/notes/ 的筆記一起列在 /notes/
 kind: note
-reading: 78
-# 每一篇一項，主題會依 date（論文第一次公開的年月）由新到舊排，這裡的順序不重要。
-# key 對應上面模型路徑圖的標記（paper-course.ejs）；分鐘數取自該頁的 reading；每一頁頁尾的「較新／較舊」也從這裡算。
+# 每一篇一項，依 date（論文第一次公開的年月）由新到舊排，這裡的順序不重要。
+# 每一頁頁首的論文清單、頁尾的「較新／較舊」和 /notes/ 的課程卡片都從這裡算；內文的清單要跟著加一行。
 # also 是同一篇的另一個版本，不算進篇數和分鐘數
 papers:
-  - key: kroquant
-    date: '2026-07'
-    url: /lab/kroquant/
-    group: 量化
-    paper: KroQuant
-    sub: 量化前插一個 32×32 的 block 轉換，每一塊只用 15 個參數，跑起來跟 SmoothQuant 差不多快。它拿 Smooth + SVDQuant 當 baseline，可以先看 SVDQuant 那一篇。
-    source: arXiv 2607.21446
-  - key: ideogram4
-    date: '2026-06'
+  - { date: '2026-07', url: /lab/kroquant/, paper: KroQuant }
+  - date: '2026-06'
     url: /lab/ideogram4-vs-sd35-tower/
-    group: 模型
     paper: Ideogram 4 vs SD 3.5
-    sub: 同一句 prompt 交給兩個模型，走過 text encoder、latent、每一層 transformer block 和取樣迴圈，最後比總計算量。其他幾篇提到的架構都在這一頁。
-    source: 開源實作 ideogram4（2026-06 公開）· sd3.5
     also: { url: /lab/ideogram4-vs-sd35/, label: 並排版，可以自己調解析度和步數 }
-  - key: svdquant
-    date: '2024-11'
-    url: /lab/svdquant/
-    group: 量化
-    paper: SVDQuant
-    sub: 權重和 activation 都只剩 4 bit 時，smoothing 只是把 outlier 搬家。SVD 切出一條 16-bit 的低秩分支把它們吸走，剩下的殘差才量化，實驗跑在 FLUX.1。
-    source: arXiv 2411.05007 · ICLR 2025
-  - key: cfg
-    date: '2022-07'
-    url: /lab/cfg/
-    group: 取樣
-    paper: Classifier-Free Guidance
-    sub: text-to-image 模型的取樣迴圈每一步都跑兩次 forward，這一篇講為什麼：有 prompt 和沒有 prompt 的預測相減再放大 w 倍，就是一個免費的 classifier。用二維的玩具資料把 w 從 0 拉到 7，看樣本越來越像、也越來越單調。
-    source: arXiv 2207.12598 · 2105.05233
-  - key: flash-attention
-    date: '2022-05'
-    url: /lab/flash-attention/
-    group: Attention
-    paper: FlashAttention
-    sub: 把 N×N 的 S 切成 tile，留在晶片上算完就丟，不再來回搬 HBM。FlashAttention 不是 diffusion 論文，放在這裡是因為 DiT 每一步都要跑 attention，而配對數是 token 數的平方。
-    source: arXiv 2205.14135 · 2307.08691
-  - key: rope
-    date: '2021-04'
-    url: /lab/rope/
-    group: Attention
-    paper: RoPE → MRoPE
-    sub: attention 只看 q · k，不知道誰在哪；RoPE 把 q、k 依位置轉一個角度，內積裡只剩相對距離。圖片有兩個方向，MRoPE 再把 128 對轉盤分給 t、h、w，Ideogram 4 是 88 / 20 / 20。
-    source: arXiv 2104.09864 · 2409.12191 · 開源實作 ideogram4
-  - key: swiglu
-    date: '2020-02'
-    url: /lab/swiglu/
-    group: MLP
-    paper: SwiGLU
-    sub: Ideogram 4 一層裡最大的一塊就是 SwiGLU MLP。它跟 ReLU、GELU 不一樣的地方是多一條投影當閘門；多一個矩陣但 hidden 縮成 8/3·d，參數和 FLOPs 都沒變。接著算 FLOPs、HBM 搬運和訓練記憶體，看差別到底在哪。
-    source: arXiv 2002.05202 · 開源實作 ideogram4
+  - { date: '2025-11', url: /lab/ideogram4-qwen-vlm/, paper: Qwen3-VL }
+  - { date: '2024-11', url: /lab/svdquant/, paper: SVDQuant }
+  - { date: '2022-07', url: /lab/cfg/, paper: Classifier-Free Guidance }
+  - { date: '2022-05', url: /lab/flash-attention/, paper: FlashAttention }
+  - { date: '2021-06', url: /lab/lora/, paper: LoRA }
+  - { date: '2021-04', url: /lab/rope/, paper: RoPE → MRoPE }
+  - { date: '2020-02', url: /lab/swiglu/, paper: SwiGLU }
 ---
-text-to-image 模型背後的論文：guidance 為什麼每步要算兩次、attention 怎麼知道位置、怎麼算得快，MLP 為什麼換成 SwiGLU，模型怎麼壓到 4 bit。每一篇都是可以捲動的動畫。論文之間沒有固定的閱讀順序，這裡依發表時間由新到舊排，挑有興趣的看就好；上面的路徑圖標出每一篇在模型的哪一段。
+
+論文之間沒有固定的閱讀順序，這裡依發表時間由新到舊排，挑有興趣的看就好。想先看整個模型長什麼樣子，可以從 Ideogram 4 vs SD 3.5 開始，其他幾篇講到的架構都在那一頁。
+
+## 論文
+
+- [[kroquant|KroQuant]]（2026.07）：量化前插一個 32×32 的 block 轉換，每一塊只用 15 個參數，baseline 是 SVDQuant。
+- [[ideogram4-vs-sd35-tower|Ideogram 4 vs SD 3.5]]（2026.06）：同一句 prompt 交給兩個模型，一層一層比到總計算量。另有[[ideogram4-vs-sd35|並排版]]，可以自己調解析度和步數。
+- [[ideogram4-qwen-vlm|Qwen3-VL]]（2025.11）：Ideogram 4 的 text encoder，36 層怎麼把 prompt 讀成特徵，跟 DiT 哪裡一樣。
+- [[svdquant|SVDQuant]]（2024.11）：用一條 16-bit 的低秩分支吸走 outlier，剩下的殘差才壓到 4 bit。
+- [[cfg|Classifier-Free Guidance]]（2022.07）：取樣時每一步為什麼要跑兩次 forward。
+- [[flash-attention|FlashAttention]]（2022.05）：把 attention 切成 tile 留在晶片上算完，不再來回搬 HBM。
+- [[lora|LoRA]]（2021.06）：凍結原本的權重，只訓練兩個瘦矩陣 B、A，部署時再合併回去。
+- [[rope|RoPE → MRoPE]]（2021.04）：q、k 依位置轉一個角度，attention 就看得到相對距離；MRoPE 再分給 t、h、w 三個軸。
+- [[lab/swiglu/index|SwiGLU]]（2020.02）：MLP 多一條投影當閘門，hidden 縮成 8/3·d，參數和 FLOPs 都不變。
