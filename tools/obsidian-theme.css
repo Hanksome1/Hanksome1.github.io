@@ -127,8 +127,6 @@ body {
 
   --list-marker-color: var(--tp-accent);
   --list-marker-color-hover: var(--tp-accent);
-  --list-bullet-size: 0.42em;
-  --list-bullet-radius: 0;
 
   --checkbox-radius: 2px;
   --checkbox-color: var(--tp-accent);
@@ -265,8 +263,7 @@ body:not(.tp-no-grid) .workspace-leaf-content[data-type="markdown"] .markdown-so
   text-underline-offset: 4px;
 }
 
-/* ▸ 項目符號 */
-.list-bullet::after { clip-path: polygon(12% 0, 100% 50%, 12% 100%); }
+/* 有序清單的編號用等寬字 */
 .markdown-rendered ol > li::marker,
 .markdown-source-view.mod-cm6 .cm-formatting-list-ol {
   font-family: var(--font-monospace);
