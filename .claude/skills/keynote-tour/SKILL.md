@@ -14,7 +14,7 @@ description: 做「發表會式」的捲動導覽首頁：黑底、一拍一句�
 | `themes/tapeout/source/js/iclab-flow.js` | 上半 `ART`：9 個場景，每個都是 `make(parent) → { set(t) }`；下半是舞台 controller |
 | `themes/tapeout/layout/iclab-flow.ejs` | `NOTES` 對照表、`reads()`、hero、14 個 `<article data-beat>`、outro |
 | `themes/tapeout/source/css/iclab-flow.css` | 強制深色、舞台版面、沒有 JS / reduced-motion 的退路、SVG 的 class |
-| `source/lab/iclab/index.md` | front-matter 的 `tour.stops`（總覽筆記標頭的縮圖用） |
+| `source/lab/iclab/index.md` | front-matter 的 `tour.stops`（總覽筆記標頭的動畫按鈕用） |
 
 最小可跑的骨架在 [skeleton.html](skeleton.html)：有 5 拍、3 個場景，其中一個場景連用 3 拍，最後一拍拉遠並發光；也有章節列、自動播放和 outro。從它開始改，controller 照抄。捲動進度、`seg`、`pathLength` 畫線、漸進增強這些共同的底子，寫在 `scroll-explainer` 的 SKILL.md，這裡不重複。
 

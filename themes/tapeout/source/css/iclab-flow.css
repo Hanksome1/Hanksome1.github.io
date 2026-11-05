@@ -18,9 +18,9 @@ html:has(body.is-iclab-flow) { background: #0a0a09; }
 /* ---------- hero ---------- */
 .ic-hero { position: relative; min-height: calc(100svh - var(--header-h)); display: grid; place-content: center; padding: 48px var(--gutter) 96px; text-align: center; }
 .ic-kick { margin: 0; font: 500 12.5px var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
-.ic-title { margin: 22px 0 0; font-size: clamp(42px, 7.6vw, 108px); line-height: 1.03; font-weight: 600; letter-spacing: -0.045em; }
+.ic-title { margin: 22px 0 0; font-size: clamp(32px, 7.6vw, 108px); line-height: 1.03; font-weight: 600; letter-spacing: -0.045em; }
 .ic-title span { color: var(--ink-3); }
-.ic-lede { margin: 26px auto 0; max-width: 30em; font-size: clamp(16.5px, 1.6vw, 20px); line-height: 1.65; color: var(--ink-2); text-wrap: balance; }
+.ic-lede { margin: 26px auto 0; max-width: 30em; font-size: clamp(16.5px, 1.6vw, 20px); line-height: 1.65; color: var(--ink-2); text-wrap: balance; word-break: keep-all; }
 .ic-skip { margin: 22px 0 0; font-size: 14.5px; }
 .ic-skip a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--line-2); padding-bottom: 2px; transition: color 0.2s, border-color 0.2s; }
 .ic-skip a:hover { color: var(--accent); border-color: var(--accent); }
