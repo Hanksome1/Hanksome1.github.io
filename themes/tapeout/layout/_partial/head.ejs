@@ -77,6 +77,7 @@
 <% if (page.layout === 'rope') { %><%- css('css/rope') %><% } %>
 <% if (page.layout === 'cfg') { %><%- css('css/cfg') %><% } %>
 <% if (page.layout === 'lora') { %><%- css('css/lora') %><% } %>
+<% if (page.layout === 'number-formats') { %><%- css('css/number-formats') %><% } %>
 <% if (page.layout === 'explainer') { %><%- css('css/explainer') %><% if (page.explainer.style) { %><%- css('attachments/vault/' + page.explainer.style) %><% } %><% } %>
 <% if (page.content && page.content.indexOf('class="katex') > -1) { %><%- css('katex/katex.min') %><% } %>
 <% var ga = theme.analytics && theme.analytics.google; if (ga) { %>

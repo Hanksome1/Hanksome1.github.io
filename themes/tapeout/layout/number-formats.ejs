@@ -1,0 +1,372 @@
+<%
+  // 加速器數值格式比較（js/number-formats.js）。
+  // 格式的編碼參數和說明都寫在下面的 formats：JS 從 data-df-formats 讀進去，把每一個編碼解碼出來算總表和圖，
+  // 下面的「每個格式的筆記」也是從同一份資料印出來，沒有 JS 時照樣讀得到。
+  // enc.kind：float（e / m / bias / special）、int（bits / frac：隱含 2^-frac）、posit（n / es）、lut（bits / values）
+  // special：ieee（指數全 1 是 ∞ / NaN）、fn（只有 S.1111.111 是 NaN）、fnuz（只有 0x80 是 NaN）、none（全部都是數字）
+  // block：size（幾個值共用一個 scale）、scale（e8m0 / ue4m3 / fp32）；有 block 的格式 enc 寫的是元素
+  var E4M3 = { kind: 'float', e: 4, m: 3, bias: 7, special: 'fn' };
+  var E5M2 = { kind: 'float', e: 5, m: 2, bias: 15, special: 'ieee' };
+  var E3M2 = { kind: 'float', e: 3, m: 2, bias: 3, special: 'none' };
+  var E2M3 = { kind: 'float', e: 2, m: 3, bias: 1, special: 'none' };
+  var E2M1 = { kind: 'float', e: 2, m: 1, bias: 1, special: 'none' };
+  var MX = { size: 32, scale: 'e8m0' };
+  var groups = [
+    { id: 'ref', name: '16 / 32-bit 參考' },
+    { id: 'b8', name: '8-bit' },
+    { id: 'sub8', name: '6-bit / 4-bit' },
+    { id: 'block', name: 'Block scaling' }
+  ];
+  var formats = [
+    { id: 'fp32', name: 'FP32', group: 'ref', family: 'float', layout: 'E8M23', spec: 'IEEE 754 binary32',
+      enc: { kind: 'float', e: 8, m: 23, bias: 127, special: 'ieee' },
+      desc: 'IEEE 754 單精度：8-bit 指數、23-bit mantissa。比較低精度格式時當作「原值」。',
+      use: '訓練時的 master weight、optimizer state、矩陣乘法的累加器',
+      hw: '所有 CPU、GPU；tensor core 用它當累加器',
+      note: '這一頁的量化實驗用 Math.fround 模擬，誤差在 2⁻²⁴ 左右，SQNR 會是一百多 dB。' },
+    { id: 'tf32', name: 'TF32', group: 'ref', family: 'float', layout: 'E8M10', spec: 'NVIDIA Ampere',
+      enc: { kind: 'float', e: 8, m: 10, bias: 127, special: 'ieee' }, storeBits: 32,
+      desc: 'NVIDIA 從 A100 開始的 tensor core 模式：吃 FP32 的輸入，乘法前把 mantissa 降到 10 bits，用 FP32 累加。指數跟 FP32 一樣，精度跟 FP16 一樣。',
+      use: 'FP32 的 matmul / conv 不改程式就走 tensor core',
+      hw: 'NVIDIA Ampere 之後的 tensor core',
+      note: '它只是計算模式，記憶體裡還是存 32 bits；總表的 19 bits 是編碼長度，不是儲存成本。' },
+    { id: 'fp16', name: 'FP16', group: 'ref', family: 'float', layout: 'E5M10', spec: 'IEEE 754 binary16',
+      enc: { kind: 'float', e: 5, m: 10, bias: 15, special: 'ieee' },
+      desc: 'IEEE 754 半精度：5-bit 指數、10-bit mantissa。最大值 65504，再大就變 ∞。',
+      use: '混合精度訓練（要配 loss scaling）、推論',
+      hw: 'NVIDIA Volta 之後的 tensor core、幾乎所有 GPU 和 NPU',
+      note: '值域只有 40 個 binade，太小的梯度會 underflow 成 0，所以 FP16 訓練要先把 loss 乘上一個 scale。' },
+    { id: 'bf16', name: 'BF16', group: 'ref', family: 'float', layout: 'E8M7', spec: 'Google Brain',
+      enc: { kind: 'float', e: 8, m: 7, bias: 127, special: 'ieee' },
+      desc: 'Brain float：FP32 砍掉下面 16 bits，保留 8-bit 指數，只剩 7-bit mantissa。',
+      use: '大模型訓練和推論的預設格式',
+      hw: 'Google TPU（v2 起）、NVIDIA Ampere 之後、AMD Instinct、Intel AMX',
+      note: '值域跟 FP32 一樣，不用 loss scaling；代價是 1 附近的間距是 2⁻⁷ ≈ 0.0078，比 FP16 粗 8 倍。' },
+
+    { id: 'fp8e4m3', name: 'FP8 E4M3', group: 'b8', family: 'float', layout: 'E4M3', spec: 'OCP OFP8',
+      enc: E4M3,
+      desc: 'OCP 8-bit 浮點（NVIDIA、Arm、Intel 提出）的其中一種。為了多擠一點值域，它不放 ∞，指數全 1 的那一排也拿來表示數字，只有 S.1111.111 是 NaN，所以最大值是 448，不是 IEEE 規則下的 240。',
+      use: '前向的 weight 和 activation',
+      hw: 'NVIDIA Hopper、Ada、Blackwell；Intel Gaudi 2 / 3',
+      note: '值域只有 17.8 個 binade，實務上都配一個 per-tensor 的 FP32 scale（Transformer Engine 用前幾步的 amax 算）。' },
+    { id: 'fp8e4m3fnuz', name: 'E4M3 FNUZ', group: 'b8', family: 'float', layout: 'E4M3', spec: 'Graphcore / AMD',
+      enc: { kind: 'float', e: 4, m: 3, bias: 8, special: 'fnuz' },
+      desc: 'Graphcore 提出、AMD MI300 採用的 FP8 變體。FNUZ 是 finite、no negative zero：bias 是 8 不是 7，沒有 ∞、沒有 −0，原本 −0 的編碼 0x80 是唯一的 NaN。',
+      use: 'AMD MI300 上的 FP8 訓練與推論',
+      hw: 'AMD Instinct MI300 系列（CDNA 3）',
+      note: 'bias 差 1，最大值只有 240，跟 OCP E4M3 的 448 差兩倍；同一個 checkpoint 換硬體時 scale 要重算。' },
+    { id: 'fp8e5m2', name: 'FP8 E5M2', group: 'b8', family: 'float', layout: 'E5M2', spec: 'OCP OFP8',
+      enc: E5M2,
+      desc: 'OCP FP8 的另一種：指數 5 bits、bias 15，跟 FP16 一樣，等於把 FP16 的低 8 bits 砍掉，所以照 IEEE 的規則保留 ∞ 和 NaN。',
+      use: '反向傳播的梯度：值域比精度重要',
+      hw: '同 E4M3',
+      note: '1 附近只剩 2 bits mantissa，相鄰兩個值差 25%。' },
+    { id: 'int8', name: 'INT8', group: 'b8', family: 'int', layout: 'S + 7', spec: '二補數',
+      enc: { kind: 'int', bits: 8, frac: 0 },
+      desc: '8-bit 二補數整數，256 個等距的格點。本身沒有小數點，要配一個 scale：x ≈ s · q。',
+      use: '推論：weight 和 activation 都量化的 W8A8',
+      hw: 'Google TPU v1、NVIDIA Turing 之後的 tensor core、手機 NPU，幾乎所有推論晶片',
+      note: '格點等距，小值跟大值的絕對誤差一樣，相對誤差就大很多。對稱量化通常不用 −128，只用 ±127。' },
+    { id: 'posit8', name: 'Posit8 es=2', group: 'b8', family: 'other', layout: 'S·R·E2·F', spec: 'Posit Standard 2022',
+      enc: { kind: 'posit', n: 8, es: 2 },
+      desc: 'Gustafson 在 2017 年提出的 posit：用長度會變的 regime 欄位取代固定長度的指數。數字越靠近 1，regime 越短，留給 fraction 的 bits 越多；越大或越小，fraction 就被擠掉。2022 年的 Posit 標準把 es 固定成 2。',
+      use: '研究為主，主流 AI 加速器沒有採用',
+      hw: '研究用的 RISC-V 核心、FPGA',
+      note: '只有一個 0 和一個 NaR（Not a Real），沒有 ∞、沒有 subnormal。1 附近有 3 bits fraction（跟 E4M3 一樣），值域卻有 48 個 binade；代價是離 1 越遠，精度一路掉到 0 bit。' },
+    { id: 'posit8e0', name: 'Posit8 es=0', group: 'b8', family: 'other', layout: 'S·R·F', spec: 'Posit 2017 草案',
+      enc: { kind: 'posit', n: 8, es: 0 },
+      desc: '2017 年 posit 草案建議 8-bit 用 es = 0：值域縮到 1/64 到 64，換到 1 附近 5 bits 的 fraction。',
+      use: '研究為主',
+      hw: '研究用硬體',
+      note: '跟 es = 2 比，一樣 8 bits，一個換值域、一個換精度。es 對 posit 來說，就像指數 / mantissa 的分配之於浮點。' },
+
+    { id: 'fp6e3m2', name: 'FP6 E3M2', group: 'sub8', family: 'float', layout: 'E3M2', spec: 'OCP MX v1.0',
+      enc: E3M2,
+      desc: 'OCP MX 規格定義的 6-bit 浮點元素，沒有 ∞ 和 NaN，64 個編碼全部是數字。',
+      use: 'MXFP6 的元素',
+      hw: 'NVIDIA Blackwell、AMD Instinct MI350 系列（以 MXFP6 的形式）',
+      note: '單獨用只有 8.8 個 binade，幾乎一定要配 block scale。' },
+    { id: 'fp6e2m3', name: 'FP6 E2M3', group: 'sub8', family: 'float', layout: 'E2M3', spec: 'OCP MX v1.0',
+      enc: E2M3,
+      desc: '指數比 E3M2 少一位、mantissa 多一位：值域 0.125 到 7.5，1 附近有 3 bits。',
+      use: 'MXFP6 的元素',
+      hw: '同 E3M2',
+      note: 'E2M3 的最大值是最小非零值的 60 倍；資料落在這個範圍裡時，多一位 mantissa 比多一位指數划算。' },
+    { id: 'fp4', name: 'FP4 E2M1', group: 'sub8', family: 'float', layout: 'E2M1', spec: 'OCP MX v1.0',
+      enc: E2M1,
+      desc: '只有 16 個編碼：±{0, 0.5, 1, 1.5, 2, 3, 4, 6}。',
+      use: 'MXFP4、NVFP4 的元素',
+      hw: 'NVIDIA Blackwell、AMD Instinct MI350 系列',
+      note: '沒有 scale 幾乎不能用：0.25 以下全部變 0，6 以上全部變 6。' },
+    { id: 'int4', name: 'INT4', group: 'sub8', family: 'int', layout: 'S + 3', spec: '二補數',
+      enc: { kind: 'int', bits: 4, frac: 0 },
+      desc: '4-bit 二補數，−8 到 7。對稱量化只用 ±7，15 個格點。',
+      use: 'LLM 的 weight-only 量化（GPTQ、AWQ 這類，每 128 個 weight 一個 FP16 scale）、W4A4 研究（例如 SVDQuant）',
+      hw: 'NVIDIA Turing、Ampere 的 tensor core 有 INT4 MMA，Hopper 拿掉了',
+      note: '實務上 INT4 幾乎一定是 per-group：量化實驗裡把「非 block 格式的縮放」切到 per-group，就是 GPTQ / AWQ 的做法。' },
+    { id: 'nf4', name: 'NF4', group: 'sub8', family: 'other', layout: '4 → 查表', spec: 'QLoRA',
+      enc: { kind: 'lut', bits: 4, values: [-1, -0.6961928009986877, -0.5250730514526367, -0.39491748809814453, -0.28444138169288635, -0.18477343022823334, -0.09105003625154495, 0, 0.07958029955625534, 0.16093020141124725, 0.24611230194568634, 0.33791524171829224, 0.44070982933044434, 0.5626170039176941, 0.7229568362236023, 1] },
+      block: { size: 64, scale: 'fp32' },
+      desc: 'QLoRA 提出的 4-bit NormalFloat。16 個值取自 N(0, 1) 的分位數，再縮放到 [−1, 1]：靠近 0 比較密，正的 8 個、負的 7 個，加上一個剛好的 0。每 64 個 weight 存一個 absmax 當 scale。',
+      use: 'QLoRA 微調時凍結的 base weight、bitsandbytes 的 4-bit 載入',
+      hw: '沒有硬體直接拿 NF4 算：bitsandbytes 在 GPU 上查表還原成 BF16 再做矩陣乘法（weight-only）',
+      note: '分位數是照常態分佈挑的，資料不像常態分佈時不一定比 INT4 好。scale 用 FP32 是 4.5 bits / 值；QLoRA 的 double quantization 把 scale 再壓成 8 bits，降到約 4.127。' },
+
+    { id: 'mxfp8e4m3', name: 'MXFP8 E4M3', group: 'block', family: 'float', layout: 'E4M3', spec: 'OCP MX v1.0',
+      enc: E4M3, block: MX,
+      desc: 'OCP Microscaling（MX）v1.0：每 32 個值共用一個 8-bit 的 E8M0 scale（只能是 2 的冪次），元素是 FP8。scale 讓一個 block 可以平移 ±127 個 binade，不用另外追 per-tensor 的 amax。',
+      use: 'FP8 訓練與推論',
+      hw: 'NVIDIA Blackwell、AMD Instinct MI350 系列',
+      note: 'scale = 2^(⌊log₂ amax⌋ − 8)，block 最大值除以 scale 落在 [256, 512)，超過 448 的部分會被截掉。' },
+    { id: 'mxfp8e5m2', name: 'MXFP8 E5M2', group: 'block', family: 'float', layout: 'E5M2', spec: 'OCP MX v1.0',
+      enc: E5M2, block: MX,
+      desc: 'MXFP8 的 E5M2 版本，元素照 OCP FP8 保留 ∞ 和 NaN。',
+      use: '梯度',
+      hw: '同 MXFP8 E4M3',
+      note: '有了 block scale 之後，E5M2 多出來的值域大多用不到，精度少一位的代價還在。' },
+    { id: 'mxfp6e3m2', name: 'MXFP6 E3M2', group: 'block', family: 'float', layout: 'E3M2', spec: 'OCP MX v1.0',
+      enc: E3M2, block: MX,
+      desc: '每 32 個 FP6 E3M2 共用一個 E8M0 scale，6.25 bits / 值。',
+      use: '介於 FP8 和 FP4 之間的推論格式',
+      hw: 'NVIDIA Blackwell、AMD Instinct MI350 系列',
+      note: '6 bits 在記憶體裡不好對齊，4 個 FP6 剛好 24 bits，通常打包成 3 bytes 存。' },
+    { id: 'mxfp6e2m3', name: 'MXFP6 E2M3', group: 'block', family: 'float', layout: 'E2M3', spec: 'OCP MX v1.0',
+      enc: E2M3, block: MX,
+      desc: '每 32 個 FP6 E2M3 共用一個 E8M0 scale。',
+      use: '同 MXFP6 E3M2',
+      hw: '同 MXFP6 E3M2',
+      note: '有 block scale 時，一個 block 裡用不到那麼多值域，E2M3 通常比 E3M2 準。' },
+    { id: 'mxfp4', name: 'MXFP4', group: 'block', family: 'float', layout: 'E2M1', spec: 'OCP MX v1.0',
+      enc: E2M1, block: MX,
+      desc: 'MX 家族裡最小的：每 32 個 FP4 E2M1 共用一個 E8M0 scale，4.25 bits / 值。',
+      use: 'LLM 推論（gpt-oss 的 MoE weight 就是 MXFP4）、W4A4 研究（例如 KroQuant）',
+      hw: 'NVIDIA Blackwell、AMD Instinct MI350 系列',
+      note: 'scale 只能是 2 的冪次：block 最大值除以 scale 落在 [4, 8)，6 到 8 之間的會被截成 6；小於 block 最大值 1/32 到 1/16 的值會變成 0。' },
+    { id: 'mxint8', name: 'MXINT8', group: 'block', family: 'int', layout: 'S + 7', spec: 'OCP MX v1.0',
+      enc: { kind: 'int', bits: 8, frac: 6 }, block: MX,
+      desc: 'MX v1.0 裡唯一的整數元素：8-bit 二補數，隱含 2⁻⁶ 的小數點（1.6 定點數），範圍 −2 到 1.984375，scale 一樣是 E8M0。跟早期的 block floating point（例如 Microsoft 的 MSFP）是同一類。',
+      use: '需要比 MXFP8 更均勻精度的地方',
+      hw: 'OCP MX 規格的一部分，各家支援程度不同',
+      note: 'block 內是等距格點：最大值附近有 6 到 7 bits，比 MXFP8 E4M3 的 3 bits 準；但小於 block 最大值 1/256 到 1/128 的值會變成 0。' },
+    { id: 'mxint4', name: 'MXINT4', group: 'block', family: 'int', layout: 'S + 3', spec: 'microxcaling（非 OCP）',
+      enc: { kind: 'int', bits: 4, frac: 2 }, block: MX,
+      desc: 'OCP v1.0 沒有定義，但 Microsoft 的 microxcaling 模擬函式庫有 int4 元素：4-bit 帶號、隱含 2⁻²，元素是 ±{0, 0.25, …, 1.75}。放在這裡跟 MXFP4 對照：一樣 4.25 bits，一個等距、一個接近對數。',
+      use: '研究、模擬',
+      hw: '—',
+      note: '最大值附近比 MXFP4 準，靠近 0 的小值比 MXFP4 粗。' },
+    { id: 'nvfp4', name: 'NVFP4', group: 'block', family: 'float', layout: 'E2M1', spec: 'NVIDIA Blackwell',
+      enc: E2M1, block: { size: 16, scale: 'ue4m3' },
+      desc: 'NVIDIA Blackwell 的 4-bit 格式：元素一樣是 FP4 E2M1，但每 16 個值（不是 32）共用一個 FP8 E4M3 scale，外面再乘一個 per-tensor 的 FP32 scale。',
+      use: 'Blackwell 上的 4-bit 推論、FP4 訓練研究',
+      hw: 'NVIDIA Blackwell（B200、GB200、RTX 50 系列）',
+      note: 'E4M3 的 scale 有 3 bits mantissa，不像 E8M0 只能是 2 的冪次，block 最大值可以對到 6 附近（誤差 6% 以內）；block 小一半，一個 outlier 影響的範圍也小一半。代價是 4.5 bits / 值。' }
+  ];
+  var cfg = { groups: groups, formats: formats };
+%>
+<div class="df" data-df>
+  <header class="df-hero wrap">
+    <p class="kicker">§ Lab — Number formats</p>
+    <h1 class="df-title">加速器的數值格式，<em>放在一起比</em></h1>
+    <p class="df-lede">FP8 有兩種，MX 有六種，NVFP4 跟 MXFP4 長得很像，NF4 是查表，posit 的指數長度會變。這一頁把常見的 <%= formats.length %> 種格式放進同一套座標：總表、值域與精度分佈、拿同一組資料實際量化一次比誤差，最後可以一個 bit 一個 bit 點開來看怎麼解碼。</p>
+    <dl class="df-meta">
+      <div><dt>格式</dt><dd><%= formats.length %> 種：浮點、整數、posit、查表、block scaling</dd></div>
+      <div><dt>規格</dt><dd>IEEE 754 · OCP OFP8 · OCP MX v1.0 · Posit 2022</dd></div>
+      <div><dt>相關頁面</dt><dd><a href="<%- url_for('/lab/kroquant/') %>">KroQuant</a>（MXFP4）· <a href="<%- url_for('/lab/svdquant/') %>">SVDQuant</a>（INT4 / NVFP4）</dd></div>
+      <div><dt>數字怎麼來</dt><dd>每個編碼都在瀏覽器裡解碼出來算</dd></div>
+    </dl>
+    <nav class="df-toc" aria-label="這一頁的段落">
+      <a class="df-js" href="#df-spec"><span>01</span>總表</a>
+      <a class="df-js" href="#df-range"><span>02</span>值域與精度</a>
+      <a class="df-js" href="#df-quant"><span>03</span>量化實驗</a>
+      <a class="df-js" href="#df-bits"><span>04</span>位元</a>
+      <a href="#df-notes"><span>05</span>格式筆記</a>
+    </nav>
+  </header>
+
+  <script type="application/json" data-df-formats><%- JSON.stringify(cfg).replace(/</g, '\\u003c') %></script>
+
+  <div class="df-bar df-js" data-bar>
+    <div class="df-bar-in wrap">
+      <span class="df-bar-label">比較</span>
+      <div class="df-seg" data-presets role="group" aria-label="格式組合">
+        <button type="button" data-preset="default">常用</button>
+        <button type="button" data-preset="b8">8-bit</button>
+        <button type="button" data-preset="b4">4-bit</button>
+        <button type="button" data-preset="mx">Block</button>
+        <button type="button" data-preset="all">全部</button>
+      </div>
+      <button type="button" class="df-pick-toggle" data-pick-toggle aria-expanded="false" aria-controls="df-pick">自選 <b data-count>0</b><i aria-hidden="true"></i></button>
+    </div>
+    <div class="df-pick wrap" id="df-pick" data-pick hidden></div>
+  </div>
+  <p class="df-nojs wrap">這一頁的表格和圖是用 JavaScript 算的；沒有 JavaScript 時只看得到下面的格式筆記。</p>
+
+  <section class="df-sec wrap df-js" id="df-spec" data-section="SPEC">
+    <header class="df-head">
+      <p class="kicker">01 — Spec sheet</p>
+      <h2>總表</h2>
+      <p><b>bits / 值</b>含 block scale 的分攤。<b>動態範圍</b>是 log₂(最大值 ÷ 最小正值)，單位是 binade（一個 2 倍的區間），乘 6.02 就是 dB。<b>峰值精度</b>是一個 binade 裡最多有幾個值再取 log₂，浮點就是 mantissa 的位元數。Block 格式列的是 scale = 1 時元素本身的值。點欄位名稱可以排序。</p>
+    </header>
+    <div class="df-table-wrap"><table class="df-table" data-spec></table></div>
+    <p class="df-legend" data-legend></p>
+  </section>
+
+  <section class="df-sec wrap df-js" id="df-range" data-section="RANGE">
+    <header class="df-head">
+      <p class="kicker">02 — Range &amp; precision</p>
+      <h2>值域與精度分佈</h2>
+      <p>橫軸是數值的 log₂。每一列的<b>底線</b>是值域（虛線那段是 subnormal），底線下的<b>刻度</b>是每一個可以表示的正數，上面的<b>色塊</b>高度是那個 binade 裡有幾個值、取 log₂，也就是那一段的精度有幾 bits。<b>對齊最大值</b>把每個格式的最大值都放在 0：量化時用 absmax 縮放之後，資料看到的就是這個樣子。</p>
+    </header>
+    <div class="df-ctl">
+      <div class="df-seg" data-range-mode role="group" aria-label="橫軸">
+        <button type="button" data-v="raw" aria-pressed="true">原始數值</button>
+        <button type="button" data-v="align" aria-pressed="false">對齊最大值</button>
+      </div>
+    </div>
+    <div class="df-panel df-chart" data-range-chart></div>
+    <ol class="df-takeaways">
+      <li><b>E4M3 vs E5M2</b>多一個指數 bit，值域從 17.8 變成 31.8 個 binade，1 附近的間距從 1/8 變成 1/4。所以前向用 E4M3、梯度用 E5M2。</li>
+      <li><b>INT8 vs FP8</b>INT8 的 127 個正值全部等距，最大值附近有 6 bits，但只撐 7 個 binade；E4M3 每個 normal 的 binade 都是 8 個值，精度在整個值域裡差不多。所以資料集中的時候 INT8 比較準（常態分佈：40 dB 對 31.5 dB），尾巴長或有 outlier 時換 FP8 比較穩（見下面的量化實驗）。</li>
+      <li><b>Block scaling</b>MXFP4 的元素只有 3.6 個 binade，整體的值域靠每 32 個值換一次的 E8M0 scale 平移。切到「對齊最大值」看，一個 block 裡能用的範圍跟 FP4、NF4、INT4 差不多。</li>
+      <li><b>Posit</b>Posit8（es = 2）值域 48 個 binade，比 FP16 的 40 還大，但只有 1 附近有 3 bits，越往兩端精度越低，形狀是一個三角形。</li>
+    </ol>
+  </section>
+
+  <section class="df-sec wrap df-js" id="df-quant" data-section="QUANT">
+    <header class="df-head">
+      <p class="kicker">03 — Quantize</p>
+      <h2>拿同一組資料量化一次</h2>
+      <p>產生 8192 個數（32 個 token × 256 個 channel），每一種格式量化再還原，算 <b>SQNR</b> = 10 · log₁₀(Σx² ÷ Σ(x − x̂)²)，每多 1 bit 大約多 6 dB。Block 沿著 channel 切：「Outlier channel」那組資料只有 channel 7 和 141 特別大，只有含這兩個 channel 的 block 會被撐開。超過最大值的一律飽和到最大值。</p>
+    </header>
+    <div class="df-ctl df-ctl-grid">
+      <div class="df-field">
+        <span class="df-field-label">資料分佈</span>
+        <div class="df-seg" data-dist role="group" aria-label="資料分佈">
+          <button type="button" data-v="gauss" aria-pressed="true">常態</button>
+          <button type="button" data-v="laplace" aria-pressed="false">Laplace</button>
+          <button type="button" data-v="t3" aria-pressed="false">Student-t ν=3</button>
+          <button type="button" data-v="outlier" aria-pressed="false">Outlier channel</button>
+          <button type="button" data-v="uniform" aria-pressed="false">均勻</button>
+        </div>
+      </div>
+      <div class="df-field" data-outlier-field hidden>
+        <label class="df-field-label" for="df-outlier">Outlier 倍數 <output data-outlier-out>20×</output></label>
+        <input type="range" id="df-outlier" min="1" max="100" step="1" value="20" data-outlier>
+      </div>
+      <div class="df-field">
+        <span class="df-field-label">非 block 格式的縮放</span>
+        <div class="df-seg" data-scaling role="group" aria-label="非 block 格式的縮放">
+          <button type="button" data-v="tensor" aria-pressed="true">Per-tensor absmax</button>
+          <button type="button" data-v="group" aria-pressed="false">Per-group absmax</button>
+          <button type="button" data-v="pow2" aria-pressed="false">最佳 2ᵏ</button>
+          <button type="button" data-v="none" aria-pressed="false">不縮放</button>
+        </div>
+      </div>
+      <div class="df-field">
+        <span class="df-field-label">Block / group 大小</span>
+        <div class="df-seg" data-group role="group" aria-label="Block 或 group 大小">
+          <button type="button" data-v="0" aria-pressed="true">依規格</button>
+          <button type="button" data-v="16" aria-pressed="false">16</button>
+          <button type="button" data-v="32" aria-pressed="false">32</button>
+          <button type="button" data-v="64" aria-pressed="false">64</button>
+          <button type="button" data-v="128" aria-pressed="false">128</button>
+          <button type="button" data-v="256" aria-pressed="false">256</button>
+        </div>
+      </div>
+      <div class="df-field df-field-end">
+        <button type="button" class="df-btn" data-reseed>重新抽樣 <span data-seed></span></button>
+      </div>
+    </div>
+    <p class="df-ctl-note">依規格：MX 32、NVFP4 16、NF4 64；per-group 是 128，scale 存成 FP16（GPTQ / AWQ 的做法）。最佳 2ᵏ：每個格式各自找一個讓誤差最小的 2 的冪次當 scale。</p>
+
+    <div class="df-panel df-rtable-wrap"><table class="df-rtable" data-results></table></div>
+
+    <div class="df-subhead">
+      <h3>格點跟資料疊在一起看</h3>
+      <div class="df-ctl">
+        <div class="df-seg" data-grid-x role="group" aria-label="橫軸範圍">
+          <button type="button" data-v="amax" aria-pressed="true">± 最大值</button>
+          <button type="button" data-v="3s" aria-pressed="false">± 3σ</button>
+        </div>
+        <div class="df-seg" data-grid-block role="group" aria-label="畫哪一個 block 的格點">
+          <button type="button" data-v="max" aria-pressed="true">含最大值的 block</button>
+          <button type="button" data-v="med" aria-pressed="false">中位數的 block</button>
+        </div>
+      </div>
+    </div>
+    <p class="df-ctl-note">最上面是資料的直方圖，下面每一列是那個格式在這個範圍裡的格點（線性座標）。Block / group 格式每一段的格點不一樣，畫的是選的那一段；中位數的 block 是 absmax 排在中間的那一段。</p>
+    <div class="df-panel df-chart" data-grid-chart></div>
+    <ol class="df-takeaways" data-quant-notes>
+      <li><b>常態分佈</b>同樣 4 bits，NF4（約 20.8 dB）和 NVFP4（約 20.3 dB）最好，接著是 MXFP4、per-tensor 的 FP4、MXINT4，per-tensor 的 INT4 最差（約 15.2 dB）。INT4 的 15 個等距格點有 8 個在 2σ 以外，那裡只有不到 5% 的資料。</li>
+      <li><b>Outlier channel</b>預設 20 倍時，per-tensor 的 INT4、FP4 幾乎所有值都變成 0，INT8 從 40 dB 掉到 25 dB 左右；FP8 E4M3 幾乎不受影響，因為浮點的相對精度跟大小無關，只要值域撐得住。Block 格式只有含 outlier 的 block 變差：NVFP4 一段只有 16 個值，受影響的最少，SQNR 跟常態分佈時差不多。</li>
+      <li><b>Posit</b>用 absmax 把最大值對到 maxpos（2²⁴），Posit8 只剩 2 dB 左右；切到「最佳 2ᵏ」讓資料落在 1 附近，es = 2 有 31.5 dB（跟 E4M3 一樣），es = 0 有 40 dB（跟 INT8 差不多）。</li>
+    </ol>
+  </section>
+
+  <section class="df-sec wrap df-js" id="df-bits" data-section="BITS">
+    <header class="df-head">
+      <p class="kicker">04 — Bits</p>
+      <h2>一個 bit 一個 bit 看</h2>
+      <p>點每一個 bit 切換 0 / 1，或直接輸入一個數，看它被編成哪一個碼、誤差多少。8 bits 以下的格式會把全部的編碼排成一張表，點格子也可以跳過去。Block 格式多一列 scale。</p>
+    </header>
+    <div class="df-pg" data-pg>
+      <div class="df-pg-top">
+        <label class="df-field-label" for="df-pg-fmt">格式</label>
+        <select id="df-pg-fmt" data-pg-fmt></select>
+        <label class="df-field-label" for="df-pg-in">輸入數值</label>
+        <input id="df-pg-in" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 3.14、-0.001、448" data-pg-in>
+        <div class="df-pg-step">
+          <button type="button" class="df-btn" data-pg-step="-1" aria-label="前一個可以表示的值">◀ 前一個值</button>
+          <button type="button" class="df-btn" data-pg-step="1" aria-label="下一個可以表示的值">下一個值 ▶</button>
+        </div>
+      </div>
+      <div class="df-pg-rows" data-pg-rows></div>
+      <div class="df-pg-out" data-pg-out aria-live="polite"></div>
+      <div class="df-map-wrap" data-pg-map></div>
+    </div>
+  </section>
+
+  <section class="df-sec wrap" id="df-notes" data-section="NOTES">
+    <header class="df-head">
+      <p class="kicker">05 — Field notes</p>
+      <h2>每個格式的筆記</h2>
+    </header>
+    <% groups.forEach(function (g) { %>
+      <h3 class="df-group-title"><%= g.name %></h3>
+      <div class="df-cards">
+        <% formats.filter(function (f) { return f.group === g.id; }).forEach(function (f) { %>
+          <article class="df-card" id="fmt-<%= f.id %>" data-family="<%= f.family %>">
+            <header>
+              <h4><i aria-hidden="true"></i><%= f.name %><% if (f.block) { %><span class="df-badge" title="block scaling">▦ <%= f.block.size %></span><% } %></h4>
+              <p class="df-card-spec"><%= f.layout %> · <%= f.spec %></p>
+            </header>
+            <p><%= f.desc %></p>
+            <dl>
+              <div><dt>用在</dt><dd><%= f.use %></dd></div>
+              <div><dt>硬體</dt><dd><%= f.hw %></dd></div>
+              <div><dt>要注意</dt><dd><%= f.note %></dd></div>
+            </dl>
+            <button type="button" class="df-card-go df-js" data-go="<%= f.id %>">看位元 →</button>
+          </article>
+        <% }) %>
+      </div>
+    <% }) %>
+  </section>
+
+  <section class="df-sec wrap" id="df-sources" data-section="SOURCES">
+    <header class="df-head">
+      <p class="kicker">06 — Sources</p>
+      <h2>規格與資料來源</h2>
+    </header>
+    <ul class="df-sources">
+      <li>IEEE 754-2019：FP32、FP16 的編碼。BF16：Kalamkar et al., <a href="https://arxiv.org/abs/1905.12322" target="_blank" rel="noopener">A Study of BFLOAT16 for Deep Learning Training</a>（2019）。</li>
+      <li>Micikevicius et al., <a href="https://arxiv.org/abs/2209.05433" target="_blank" rel="noopener">FP8 Formats for Deep Learning</a>（2022）；OCP 8-bit Floating Point Specification（OFP8）Rev 1.0（2023）。</li>
+      <li>Noune et al.（Graphcore）, <a href="https://arxiv.org/abs/2206.02915" target="_blank" rel="noopener">8-bit Numerical Formats for Deep Neural Networks</a>（2022）：FNUZ 系列。</li>
+      <li>OCP Microscaling Formats（MX）Specification v1.0（2023）；Rouhani et al., <a href="https://arxiv.org/abs/2310.10537" target="_blank" rel="noopener">Microscaling Data Formats for Deep Learning</a>（2023）。MXINT4 的定義照 microsoft/microxcaling 函式庫。</li>
+      <li>NVIDIA, Introducing NVFP4 for Efficient and Accurate Low-Precision Inference（NVIDIA Technical Blog, 2025）：16 個值一個 E4M3 scale 加 per-tensor FP32 scale。</li>
+      <li>Dettmers et al., <a href="https://arxiv.org/abs/2305.14314" target="_blank" rel="noopener">QLoRA: Efficient Finetuning of Quantized LLMs</a>（2023）：NF4 的 16 個值照 bitsandbytes 的實作。</li>
+      <li>Gustafson &amp; Yonemoto, Beating Floating Point at its Own Game: Posit Arithmetic（2017）；Posit Working Group, Standard for Posit Arithmetic（2022）。</li>
+    </ul>
+    <p class="df-method"><b>數字怎麼算的</b>8 bits 以下（和 FP16、BF16）的格式把全部編碼解碼一次，總表和圖都從這份清單算；FP32、TF32 用公式。量化一律 round-to-nearest-even，超過最大值就飽和。MX 的 scale 照規格取 2^(⌊log₂ amax⌋ − emax)；NVFP4 的 per-tensor scale 是 amax ÷ (448 × 6)，block scale 再量化成 E4M3；NF4 每個 block 除以 absmax 後查最近的值。資料用固定種子產生，重新抽樣會換種子。</p>
+  </section>
+</div>

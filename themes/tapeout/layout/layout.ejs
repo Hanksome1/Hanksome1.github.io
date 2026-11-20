@@ -35,6 +35,7 @@
   <% if (page.layout === 'rope') { %><%- js('js/explainer-core') %><%- js('js/rope') %><% } %>
   <% if (page.layout === 'cfg') { %><%- js('js/cfg') %><% } %>
   <% if (page.layout === 'lora') { %><%- js('js/explainer-core') %><%- js('js/lora') %><% } %>
+  <% if (page.layout === 'number-formats') { %><%- js('js/number-formats') %><% } %>
   <% if (page.layout === 'explainer') { %><%- js('js/explainer-core') %><%- js('js/explainer-page') %><%- js('attachments/vault/' + page.explainer.script) %><% } %>
   <%- js('js/graph') %>
   <% if (page.content && page.content.indexOf('type="WaveDrom"') > -1) { %>
