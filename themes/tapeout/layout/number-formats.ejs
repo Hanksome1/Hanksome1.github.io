@@ -167,7 +167,7 @@
   <header class="df-hero wrap">
     <p class="kicker">§ Lab — Number formats</p>
     <h1 class="df-title">加速器的數值格式，<em>放在一起比</em></h1>
-    <p class="df-lede">FP8 有兩種，MX 有六種，NVFP4 跟 MXFP4 長得很像，NF4 是查表，posit 的指數長度會變。這一頁把常見的 <%= formats.length %> 種格式放進同一套座標：總表、值域與精度分佈、拿同一組資料實際量化一次比誤差，最後可以一個 bit 一個 bit 點開來看怎麼解碼。</p>
+    <p class="df-lede">FP8 有兩種，MX 有六種，NVFP4 跟 MXFP4 長得很像，NF4 是查表，posit 的指數長度會變。這一頁先用一段捲動動畫，拿 π 和一個 token 的 256 個 channel 把這些差別走一遍；後面再把常見的 <%= formats.length %> 種格式放進同一套座標：總表、值域與精度分佈、拿同一組資料實際量化一次比誤差，最後可以一個 bit 一個 bit 點開來看怎麼解碼。</p>
     <dl class="df-meta">
       <div><dt>格式</dt><dd><%= formats.length %> 種：浮點、整數、posit、查表、block scaling</dd></div>
       <div><dt>規格</dt><dd>IEEE 754 · OCP OFP8 · OCP MX v1.0 · Posit 2022</dd></div>
@@ -181,7 +181,109 @@
       <a class="df-js" href="#df-bits"><span>04</span>位元</a>
       <a href="#df-notes"><span>05</span>格式筆記</a>
     </nav>
+    <p class="ft-hint df-js">往下捲看動畫，或按 Auto-play ↓</p>
   </header>
+
+  <%# 捲動解說（js/number-formats-tour.js）。說明文字寫在這裡，沒有 JS 時依序排好；畫面上的數字由 JS 現場算，這裡寫的數字要跟它一致 %>
+  <div class="ft" data-ft>
+    <section class="ft-track">
+      <div class="ft-stage">
+        <svg class="ft-world" data-world role="img" aria-label="數值格式的動畫解說：π 的 32 個 bit 拆成符號、指數、mantissa，mantissa 變短時格子變粗，E4M3 與 E5M2 的取捨，INT8 在線性與 log 座標，outlier 撐開 per-tensor 的 INT4，MXFP4 與 NVFP4 的 block scale，NF4 的分位數格點，posit 的 regime，最後是所有格式的 SQNR 總覽"></svg>
+        <aside class="ft-panel">
+          <div class="ft-top">
+            <p class="ft-status"><i></i><span data-status>Overview</span></p>
+            <button type="button" class="ft-play" data-play aria-label="自動播放"><span class="ft-play-icon" aria-hidden="true"></span><span data-play-label>Auto-play</span></button>
+          </div>
+          <ol class="ft-stops">
+            <li><button type="button" data-stop="fields"><span>01</span>Bits<i></i></button></li>
+            <li><button type="button" data-stop="shrink"><span>02</span>Shrink<i></i></button></li>
+            <li><button type="button" data-stop="tradeoff"><span>03</span>E vs M<i></i></button></li>
+            <li><button type="button" data-stop="int"><span>04</span>INT8<i></i></button></li>
+            <li><button type="button" data-stop="scale"><span>05</span>Scale<i></i></button></li>
+            <li><button type="button" data-stop="block"><span>06</span>Block<i></i></button></li>
+            <li><button type="button" data-stop="nf4"><span>07</span>NF4<i></i></button></li>
+            <li><button type="button" data-stop="posit"><span>08</span>Posit<i></i></button></li>
+            <li><button type="button" data-stop="wrap"><span>09</span>Summary<i></i></button></li>
+          </ol>
+          <!-- 說明文字寫在 HTML 裡：沒有 JS 時就是依序排好的內容 -->
+          <div class="ft-caps">
+            <article class="ft-cap is-on" data-cap="intro">
+              <p class="kicker">Overview</p>
+              <h2>一個數，32 個 bit</h2>
+              <p>加速器上的每一個數都只有固定幾個 bit。先拿 π 當例子：FP32 用 32 個 bit 存它，存進去的是 3.1415927，已經不是真正的 π。</p>
+              <p class="hl"><b>接下來</b>把 π 一路壓到 4 bits，再看 FP8、INT8、block scaling、NF4、posit 各自怎麼分配這幾個 bit。</p>
+            </article>
+            <article class="ft-cap" data-cap="fields">
+              <p class="kicker">Stop 01 — Bits</p>
+              <h2>符號、指數、mantissa</h2>
+              <p><b>符號</b>1 個 bit，0 是正數。</p>
+              <p><b>指數</b>8 個 bit 存 128，減掉 bias 127 得到 1，決定 π 落在 [2¹, 2²) = [2, 4) 這個 2 倍區間（binade）。</p>
+              <p class="hl"><b>mantissa</b>23 個 bit 把 [2, 4) 等分成 2²³ 格，π 落在大約 0.5708 的位置：值 = 2¹ × (1 + 0.5708)。</p>
+            </article>
+            <article class="ft-cap" data-cap="shrink">
+              <p class="kicker">Stop 02 — Fewer bits</p>
+              <h2>mantissa 越短，格子越粗</h2>
+              <p>BF16 留著 8 個指數 bit、mantissa 剩 7 bits，[2, 4) 裡剩 128 格；FP8 E4M3 剩 3 bits、8 格；FP4 E2M1 剩 1 bit，只有 2 和 3 兩格。</p>
+              <p class="hl"><b>π 存成</b>3.140625（BF16，−0.031%）→ 3.25（E4M3，+3.45%）→ 3（FP4，−4.51%）。</p>
+              <p class="xs">指數也跟著變短，上面那條線是能表示的範圍（值域）：FP4 只剩 0.5 到 6。</p>
+            </article>
+            <article class="ft-cap" data-cap="tradeoff">
+              <p class="kicker">Stop 03 — Exponent vs mantissa</p>
+              <h2>同樣 8 bits，怎麼分</h2>
+              <p><b>E4M3</b>4 個指數 bit、3 個 mantissa bit：每個 binade 8 個值，值域 17.8 個 binade，最大值 448。</p>
+              <p><b>E5M2</b>一個 mantissa bit 換成指數 bit：值域變成 31.8 個 binade，每個 binade 只剩 4 個值。</p>
+              <p class="hl"><b>用法</b>前向的 weight 和 activation 用 E4M3；梯度的大小差很多，用 E5M2。</p>
+              <p class="xs">E4M3 不放 ∞，指數全 1 那一排也拿來表示數字，只有 S.1111.111 是 NaN，所以最大值是 448。</p>
+            </article>
+            <article class="ft-cap" data-cap="int">
+              <p class="kicker">Stop 04 — INT8</p>
+              <h2>換成線性座標看 INT8</h2>
+              <p>INT8 把 448 等分成 127 格，每格 3.53。在 log 座標上它是一條斜坡：越大的數格子越密，比 3.53 小就沒有格子了。</p>
+              <p>換成線性座標，INT8 的格子等距；E4M3 的 126 個正值有 93 個擠在最大值的 1/16（28）以下。</p>
+              <p class="hl"><b>所以</b>最大值附近 INT8 有 6 bits 精度，E4M3 只有 3 bits；但 INT8 只撐 7 個 binade，小值很快就變成 0。</p>
+            </article>
+            <article class="ft-cap" data-cap="scale">
+              <p class="kicker">Stop 05 — Per-tensor scale</p>
+              <h2>兩個 outlier 撐開整個 tensor</h2>
+              <p>一個 token 有 256 個 channel。INT4 只有 ±7 共 15 格，per-tensor absmax 把整個 tensor 的最大值對到 7。</p>
+              <p>channel 7 和 141 慢慢變大到 20 倍：格距跟著變大，其他 254 個 channel 一個一個掉進 0 那一格。最後把縱軸拉回 ±4.2，只看得到 0 那一條格線。</p>
+              <p class="hl"><b>整個 tensor</b>32 個 token × 256 個 channel：變成 0 的比例 22.9% → 99.3%，SQNR 15.2 dB → 7.0 dB。</p>
+            </article>
+            <article class="ft-cap" data-cap="block">
+              <p class="kicker">Stop 06 — Block scaling</p>
+              <h2>每一段各自一個 scale</h2>
+              <p><b>MXFP4</b>每 32 個 channel 一個 E8M0 scale（2 的冪次），元素是 FP4。只有含 channel 7、141 的兩段格子變粗，其他段各自貼著自己的最大值。</p>
+              <p><b>NVFP4</b>切成 16 個一段，scale 換成有 3 bits mantissa 的 E4M3，最大值可以對到 6 附近，不用只能取 2 的冪次。</p>
+              <p class="hl"><b>SQNR</b>INT4 per-tensor 7.0 dB → MXFP4 15.2 dB（4.25 bits / 值）→ NVFP4 21.0 dB（4.5 bits / 值）。</p>
+            </article>
+            <article class="ft-cap" data-cap="nf4">
+              <p class="kicker">Stop 07 — NF4</p>
+              <h2>照常態分佈擺格點</h2>
+              <p>NF4 的 16 個值是 N(0, 1) 的分位數，縮放到 [−1, 1]：相鄰兩個值之間的機率一樣（著色的每一塊面積一樣），所以靠近 0 比較密。</p>
+              <p>FP4 E2M1 除以 6 之後其實很像，差在 0.5 以上：FP4 只有 0.5、0.67、1，NF4 有 0.44、0.56、0.72、1。INT4 是等距的 15 格。</p>
+              <p class="hl"><b>同樣每 64 個值一個 absmax</b>常態資料上 NF4 20.8 dB、FP4 19.7 dB、INT4 19.3 dB。前面 INT4 的 15.2 dB 大多是輸在 per-tensor scale。</p>
+            </article>
+            <article class="ft-cap" data-cap="posit">
+              <p class="kicker">Stop 08 — Posit</p>
+              <h2>指數長度會變的 posit</h2>
+              <p>Posit8 把指數拆成 regime 和 2 bits 的 exponent。regime 是一串相同的 bit，數字離 1 越遠，regime 越長，留給 fraction 的 bits 就越少。</p>
+              <p>所以精度是一個三角形：2⁻⁴ 到 2⁴ 之間有 3 bits fraction，跟 E4M3 一樣；往外每 4 個 binade 少 1 bit。</p>
+              <p class="hl"><b>值域</b>48 個 binade（2⁻²⁴ 到 2²⁴），比 FP16 的 40 還大；代價是離 1 越遠越粗，要配一個把資料縮到 1 附近的 scale。</p>
+            </article>
+            <article class="ft-cap" data-cap="wrap">
+              <p class="kicker">Stop 09 — Summary</p>
+              <h2>全部放在一起</h2>
+              <p>13 個格式，同一組 8192 個數各量化一次：深色是常態分佈，淺色是兩個 channel 放大 20 倍的版本。</p>
+              <p>FP8 和 NVFP4 幾乎不受 outlier 影響；其他 block 格式和 NF4 掉 1 到 7 dB；per-tensor 的 INT8、INT4、FP4 掉 8 到 15 dB。</p>
+              <p class="hl"><b>往下</b>是可以自己選格式、換資料分佈和 scale 方式的互動版本。</p>
+            </article>
+          </div>
+          <dl class="ft-facts" data-facts></dl>
+        </aside>
+        <p class="ft-more" aria-hidden="true">繼續往下捲 <span>↓</span></p>
+      </div>
+    </section>
+  </div>
 
   <script type="application/json" data-df-formats><%- JSON.stringify(cfg).replace(/</g, '\\u003c') %></script>
 

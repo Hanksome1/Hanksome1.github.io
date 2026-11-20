@@ -282,6 +282,8 @@
     return byId;
   }
   var FMT = CFG.formats, byId = prep(CFG);
+  // 上面的捲動動畫（js/number-formats-tour.js）用同一份數學和格式表
+  window.DFMath = { decode: decode, quantize: quantize, makeData: makeData, binCount: binCount, floorLog2: floorLog2, rne: rne, byId: byId };
 
   var PRESETS = {
     default: ['fp16', 'bf16', 'fp8e4m3', 'fp8e5m2', 'int8', 'posit8', 'fp4', 'int4', 'nf4', 'mxfp8e4m3', 'mxfp4', 'mxint8', 'nvfp4'],

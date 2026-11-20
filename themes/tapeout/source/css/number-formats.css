@@ -279,3 +279,166 @@
 @media (prefers-reduced-motion: reduce) {
   .df-chip, .df-seg button, .df-btn, .df-bit, .df-pick-toggle i { transition: none; }
 }
+
+/* ==========================================================================
+   捲動解說（js/number-formats-tour.js）
+   .is-live 之後 .ft-track 才拉長、舞台才釘住；沒有 JS 就只剩說明文字。照 kroquant.css 的接法。
+   ========================================================================== */
+.ft { --panel-w: 340px; }
+.ft-hint { margin: 16px 0 0; font: 500 12px var(--font-mono); letter-spacing: 0.04em; color: var(--ink-3); }
+.ft-track { position: relative; }
+.ft-world, .ft-more, .ft-stops, .ft-top, .ft-facts { display: none; }
+.ft-caps { display: grid; gap: 32px; }
+.ft:not(.is-live) .ft-track { max-width: calc(var(--wrap) + var(--gutter) * 2); margin: 0 auto; padding: 24px var(--gutter) 24px; }
+.ft:not(.is-live) .ft-cap { max-width: 44em; }
+
+.ft.is-live .ft-track { height: 1500svh; }
+.ft.is-live .ft-stage {
+  position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h));
+  display: grid; grid-template-columns: calc(var(--panel-w) + max(0px, (100vw - var(--wrap)) / 2 - var(--gutter))) minmax(0, 1fr);
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden;
+}
+.ft.is-live .ft-world { display: block; grid-column: 1 / -1; grid-row: 1; width: 100%; height: 100%; }
+.ft.is-live .ft-panel {
+  grid-column: 1; grid-row: 1; position: relative; z-index: 2; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 18px 22px 18px max(var(--gutter), calc((100vw - var(--wrap)) / 2));
+  background: linear-gradient(90deg, var(--bg) 82%, color-mix(in srgb, var(--bg) 0%, transparent));
+}
+.ft.is-live .ft-top { display: flex; align-items: center; gap: 10px; }
+.ft.is-live .ft-stops, .ft.is-live .ft-facts { display: grid; }
+.ft.is-live .ft-caps { gap: 0; flex: 1; min-height: 0; overflow: hidden; }
+.ft.is-live .ft-cap { grid-area: 1 / 1; align-self: start; opacity: 0; translate: 0 8px; pointer-events: none; }
+.ft.is-ready .ft-cap { transition: opacity 0.3s, translate 0.3s var(--ease); }
+.ft.is-live .ft-cap.is-on { opacity: 1; translate: none; pointer-events: auto; }
+
+/* 減少動態：不釘舞台，SVG 停在最後的總覽放在文字上面 */
+.ft.is-static .ft-world { display: block; width: 100%; height: min(70svh, 560px); margin: 0 0 32px; border-block: 1px solid var(--line); }
+
+.ft-status { display: flex; align-items: center; gap: 8px; margin: 0; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--bg) 80%, transparent); font: 500 11.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+.ft-status i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.ft-play { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; padding: 6px 12px; border: 1px solid var(--line-2); border-radius: 999px; background: none; cursor: pointer; font: 500 11.5px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-2); white-space: nowrap; }
+.ft-play:hover { border-color: var(--ink); color: var(--ink); }
+.ft-play-icon { width: 0; height: 0; border-left: 7px solid currentColor; border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
+.ft-play[data-state="run"] .ft-play-icon { width: 7px; height: 9px; border: 0; border-left: 2.5px solid currentColor; border-right: 2.5px solid currentColor; }
+
+.ft-stops { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px 6px; margin: 0; padding: 0; list-style: none; }
+.ft-stops button { position: relative; display: flex; flex-direction: column; gap: 1px; width: 100%; padding: 3px 0 7px; border: 0; background: none; cursor: pointer; text-align: left; font: 500 10.5px var(--font-mono); letter-spacing: 0.02em; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ft-stops button span { font-size: 10px; }
+.ft-stops button i { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--line); overflow: hidden; }
+.ft-stops button i::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+.ft-stops button.is-on, .ft-stops button:hover { color: var(--ink); }
+.ft-stops button.is-on span { color: var(--accent); }
+
+.ft-cap h2 { margin: 8px 0 0; font-size: clamp(21px, 2vw, 26px); line-height: 1.22; font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; }
+.ft-cap p:not(.kicker) { margin: 10px 0 0; padding-left: 12px; font-size: 14px; line-height: 1.7; color: var(--ink-2); border-left: 2px solid var(--line-2); }
+.ft-cap p b { display: block; font: 600 10.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.ft-cap p.hl { border-left-color: var(--accent); }
+.ft-cap p.hl b { color: var(--accent); }
+.ft-cap p.xs { font-size: 12.5px; color: var(--ink-3); border-left-style: dashed; }
+
+.ft-facts { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); margin: 0; border-top: 1px dashed var(--line-2); font: 500 12px var(--font-mono); }
+.ft-facts > * { margin: 0; padding: 6px 8px 5px 0; border-bottom: 1px dashed var(--line); min-width: 0; overflow-wrap: anywhere; }
+.ft-facts dt { color: var(--ink-3); font-size: 10.5px; letter-spacing: 0.04em; }
+.ft-facts dd { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.ft-facts .hl { color: var(--accent); }
+.ft-facts .ng { color: var(--ink-3); }
+
+.ft.is-live .ft-more { display: block; position: absolute; right: max(var(--gutter), calc((100vw - var(--wrap)) / 2)); bottom: 16px; z-index: 2; margin: 0; font: 500 11.5px var(--font-mono); letter-spacing: 0.06em; color: var(--ink-3); transition: opacity 0.3s; opacity: 0; }
+.ft.is-live.is-end .ft-more { opacity: 1; }
+.ft-more span { display: inline-block; color: var(--accent); animation: ft-bob 1.6s var(--ease) infinite; }
+@keyframes ft-bob { 50% { transform: translateY(3px); } }
+
+/* ---------- SVG 世界：顏色全部吃變數 ---------- */
+.ft-world text { font-family: var(--font-mono); font-size: 14px; font-weight: 500; fill: var(--ink-2); }
+.ft-world .t-b { fill: var(--ink); font-weight: 600; font-size: 15px; }
+.ft-world .t-d { fill: var(--ink-3); font-size: 12px; }
+.ft-world .t-s { fill: var(--ink-2); font-size: 12.5px; }
+.ft-world .t-h { fill: var(--accent); font-weight: 600; font-size: 13px; }
+.ft-world .nm { fill: var(--ink); font-weight: 600; font-size: 14px; }
+.ft-world .mid { text-anchor: middle; } .ft-world .end { text-anchor: end; }
+.ft-world path, .ft-world rect, .ft-world line, .ft-world circle { vector-effect: non-scaling-stroke; }
+.ft-world .axis { stroke: var(--ink-2); stroke-width: 1; }
+.ft-world .axis-l { stroke: var(--line-2); stroke-width: 1; }
+.ft-world .gl { stroke: var(--line); stroke-width: 1; }
+.ft-world .band { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+.ft-world .f-h { fill: var(--accent); }
+.ft-world .lead { fill: none; stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; }
+.ft-world .pi-l { stroke: var(--accent); stroke-width: 2; }
+.ft-world .qdot { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+.ft-world .grid-t { stroke: var(--ink-2); stroke-width: 1; }
+.ft-world .dense { fill: color-mix(in srgb, var(--ink-2) 22%, transparent); }
+.ft-world .rng-a { stroke: var(--ink); stroke-width: 2; }
+.ft-world .zone { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 3; }
+/* bit 格：符號 accent、指數 / regime 深色、mantissa / fraction 淺色；1 是實心 */
+.ft-world .cell rect { fill: color-mix(in srgb, var(--c2) 8%, var(--surface)); stroke: color-mix(in srgb, var(--c2) 45%, var(--line)); stroke-width: 1; transition: fill 0.15s; }
+.ft-world .cell text { font-size: 14px; fill: var(--ink-3); }
+.ft-world .cell.on rect { fill: var(--c2); stroke: var(--c2); }
+.ft-world .cell.on text { fill: var(--bg); font-weight: 600; }
+.ft-world .cell.t-s { --c2: var(--accent); }
+.ft-world .cell.t-e, .ft-world .cell.t-r { --c2: var(--ink); }
+.ft-world .cell.t-x { --c2: var(--ink-2); }
+.ft-world .cell.t-m, .ft-world .cell.t-f { --c2: var(--ink-3); }
+.ft-world .cell.dim { opacity: 0.3; }
+.ft-world .cell.hot rect { stroke-width: 2; }
+.ft-world .brk { fill: none; stroke: var(--ink-3); stroke-width: 1.2; }
+.ft-world .brk[data-t="s"] { stroke: var(--accent); }
+.ft-world .brk[data-t="e"], .ft-world .brk[data-t="r"] { stroke: var(--ink); }
+/* lane：家族顏色 */
+.ft-world [data-family="float"] { --c: var(--f-float); }
+.ft-world [data-family="int"] { --c: var(--f-int); }
+.ft-world [data-family="other"] { --c: var(--f-other); }
+.ft-world .rng { stroke: var(--c); stroke-width: 2.5; stroke-linecap: round; }
+.ft-world .rng-sub { stroke-dasharray: 2 3; stroke-linecap: butt; }
+.ft-world .tk { stroke: var(--c); stroke-width: 1; }
+.ft-world .tk-b { stroke: var(--c); stroke-width: 2; }
+.ft-world .stairs { fill: color-mix(in srgb, var(--c) 18%, transparent); stroke: color-mix(in srgb, var(--c) 70%, transparent); stroke-width: 1; stroke-linejoin: round; }
+/* 256 個 channel */
+.ft-world .plot { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+.ft-world .stem { stroke: color-mix(in srgb, var(--ink-3) 70%, transparent); stroke-width: 1.6; }
+.ft-world .stem-o { stroke: var(--accent); stroke-width: 2; }
+.ft-world .lvl { fill: none; stroke: color-mix(in srgb, var(--f-float) 55%, transparent); stroke-width: 1; }
+.ft-world .lvl-i { stroke: color-mix(in srgb, var(--f-int) 60%, transparent); }
+.ft-world .qm { stroke: var(--ink); stroke-width: 2; }
+.ft-world .qz { stroke: var(--accent); stroke-width: 2.4; }
+.ft-world .bnd { fill: none; stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 4 3; }
+/* NF4 */
+.ft-world .curve { fill: none; stroke: var(--f-other); stroke-width: 2; }
+.ft-world .slice { fill: color-mix(in srgb, var(--f-other) 20%, transparent); }
+/* 總覽 */
+.ft-world .bar-g { fill: var(--c, var(--ink-2)); }
+.ft-world .bar-o { fill: color-mix(in srgb, var(--c, var(--ink-2)) 35%, var(--surface)); }
+
+/* 矮的寬螢幕：說明欄收掉次要段落 */
+@media (min-width: 901px) and (max-height: 860px) {
+  .ft.is-live .ft-panel { gap: 10px; }
+  .ft.is-live .ft-cap h2 { font-size: 20px; }
+  .ft.is-live .ft-cap p:not(.kicker) { margin-top: 8px; font-size: 13px; line-height: 1.6; }
+  .ft.is-live .ft-cap p.xs { display: none; }
+  .ft.is-live .ft-facts > :nth-child(n+9) { display: none; }
+}
+
+/* 窄螢幕：SVG 佔滿舞台，說明疊在下面 */
+@media (max-width: 900px) {
+  .ft.is-live .ft-track { height: 1100svh; }
+  .ft.is-live .ft-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .ft.is-live .ft-world { grid-row: 1 / -1; }
+  .ft.is-live .ft-panel {
+    grid-row: 2; gap: 8px; padding: 10px var(--gutter) 12px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent); border-top: 1px solid var(--line-2);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .ft.is-live .ft-caps { flex: none; max-height: 34svh; }
+  .ft-stops { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+  .ft-stops button { font-size: 0; padding-bottom: 6px; }
+  .ft-stops button span { font-size: 10px; }
+  .ft-cap h2 { font-size: 18px; margin-top: 4px; }
+  .ft.is-live .ft-cap p:not(.kicker) { margin-top: 6px; font-size: 12.5px; line-height: 1.55; }
+  .ft.is-live .ft-cap p.xs { display: none; }
+  .ft.is-live .ft-facts, .ft.is-live .ft-more { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ft.is-ready .ft-cap { transition: none; }
+  .ft-more span { animation: none; }
+  .ft-world .cell rect { transition: none; }
+}
