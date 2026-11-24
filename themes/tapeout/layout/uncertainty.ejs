@@ -1,0 +1,136 @@
+<header class="un-hero wrap">
+  <p class="kicker">§ Explainer — Quantum mechanics / Shankar Ch. 9</p>
+  <h1>測不準關係<br>擠窄一邊，<em>另一邊就變寬</em></h1>
+  <p class="un-lede">Δx·Δp ≥ ħ/2 不是儀器不夠好，而是「一個態」本身的性質。往下捲，看這條不等式從數波峰的直覺、量測的定義、Schwarz 不等式一路推出來，再看等號成立時的高斯波包、氫原子的大小，最後是能量和時間。</p>
+  <dl class="un-meta">
+    <div><dt>Units</dt><dd>ħ = m = ω = 1；原子那段用原子單位</dd></div>
+    <div><dt>Core inequality</dt><dd>ΔΩ · ΔΛ ≥ ½ |⟨[Ω, Λ]⟩|</dd></div>
+    <div><dt>Companion</dt><dd>課堂互動頁（滑桿版）</dd></div>
+  </dl>
+  <p class="un-hint">往下捲，或按「自動播放」。每一段上方那一行是正在推的式子，亮起來的那一項就是畫面上正在動的東西 ↓</p>
+</header>
+
+<div class="ex un" data-explainer>
+  <section class="ex-track">
+    <div class="ex-stage">
+      <svg class="explainer-world un-world" data-world role="img" aria-label="測不準關係動畫：數波峰、量測的分布、Schwarz 不等式、複數平面上的實部與虛部、最小波包的條件、不同波形的乘積、氫原子大小的估計、Mandelstam–Tamm 關係和壽命與譜線寬。完整數字也寫在各段說明和頁尾。"></svg>
+      <aside class="ex-panel" aria-label="動畫段落與說明">
+        <div class="ex-top">
+          <p class="ex-status"><i></i><span data-status>Overview</span></p>
+          <button type="button" class="ex-play" data-play aria-label="自動播放動畫"><span class="ex-play-icon" aria-hidden="true"></span><span data-play-label>自動播放</span></button>
+        </div>
+        <ol class="ex-stops">
+          <li><button type="button" data-stop="waves"><span>01</span>數波峰<i></i></button></li>
+          <li><button type="button" data-stop="spread"><span>02</span>什麼是 Δ<i></i></button></li>
+          <li><button type="button" data-stop="schwarz"><span>03</span>Schwarz<i></i></button></li>
+          <li><button type="button" data-stop="split"><span>04</span>實部虛部<i></i></button></li>
+          <li><button type="button" data-stop="cmin"><span>05</span>等號條件<i></i></button></li>
+          <li><button type="button" data-stop="shapes"><span>06</span>各種波形<i></i></button></li>
+          <li><button type="button" data-stop="atom"><span>07</span>原子大小<i></i></button></li>
+          <li><button type="button" data-stop="mt"><span>08</span>能量時間<i></i></button></li>
+          <li><button type="button" data-stop="life"><span>09</span>壽命線寬<i></i></button></li>
+        </ol>
+        <div class="ex-caps">
+          <article class="ex-cap is-on" data-cap="intro">
+            <p class="kicker">Overview — One state, two spreads</p>
+            <h3>同一個波包，兩種寬度</h3>
+            <p>左上是高斯波包的位置分布 <span class="m">|ψ(x)|²</span>，左下是同一個態的動量分布 <span class="m">|φ(p)|²</span>。把位置擠窄到 <strong>Δx = 0.40</strong>，動量就攤開到 <strong>Δp = 1.25</strong>。</p>
+            <p>右邊是 (Δx, Δp) 平面。高斯的點一直沿著 <span class="m">ΔxΔp = ħ/2</span> 這條雙曲線走；灰色的禁區是任何態都進不去的地方。接下來九站，就是在證明這個禁區。</p>
+          </article>
+          <article class="ex-cap" data-cap="waves">
+            <p class="kicker">Stop 01 — Shankar 9.1 · Heuristic</p>
+            <h3>窗口越短，波數越說不準</h3>
+            <p>真正的波長是 1（<span class="m">k₀ = 2π</span>）。在長度 Δx 的窗口裡數完整的波長，只能數到整數 n，剩下不足一個的那段（藍色虛線）看不準，所以 <span class="m">k</span> 只知道在 <span class="m">2πn/Δx</span> 和 <span class="m">2π(n+1)/Δx</span> 之間，寬度就是 <strong>Δk ≈ 2π/Δx</strong>。</p>
+            <p>下面是窗口裡那段波的頻譜：窗口從 6.8 縮到 1.25，主峰跟著從細針變成一大片。乘上 <span class="m">k = p/ħ</span>，就是 <strong>Δx·Δp ~ h</strong>，這是數量級的估計，精確的係數要等下一站。</p>
+          </article>
+          <article class="ex-cap" data-cap="spread">
+            <p class="kicker">Stop 02 — Definition of ΔΩ</p>
+            <h3>Δ 是同一個態量很多次的標準差</h3>
+            <p>準備很多份同樣的態 <span class="m">ψ</span>（這裡 ⟨x⟩ = 0.8、Δx = 0.7），每份量一次位置。一次只得到一個數字，量了 80 次，直方圖才長成 <span class="m">|ψ|²</span> 的樣子。</p>
+            <p>寬度的定義是 <span class="m">(ΔΩ)² = ⟨(Ω − ⟨Ω⟩)²⟩ = ⟨Ω²⟩ − ⟨Ω⟩²</span>。下面兩條長條相減，多出來的那段就是 <strong>(Δx)²</strong>。如果 ψ 是 Ω 的本徵態，每次量到的都一樣，ΔΩ = 0。</p>
+          </article>
+          <article class="ex-cap" data-cap="schwarz">
+            <p class="kicker">Stop 03 — Shankar 9.2 · Schwarz inequality</p>
+            <h3>把兩個寬度，看成兩個向量的長度</h3>
+            <p>令 <span class="m">Ω̃ = Ω − ⟨Ω⟩</span>、<span class="m">Λ̃ = Λ − ⟨Λ⟩</span>，再令 <span class="m">V₁ = Ω̃|ψ⟩</span>、<span class="m">V₂ = Λ̃|ψ⟩</span>。因為 Ω̃ 是 Hermitian，<span class="m">⟨V₁|V₁⟩ = ⟨ψ|Ω̃²|ψ⟩ = (ΔΩ)²</span>：寬度就是向量的長度。</p>
+            <p>Schwarz 不等式說內積的大小不會超過長度乘積。夾角從 100° 轉到 0°，右邊的內積長條才追上乘積：<strong>只有兩個向量平行時等號才成立</strong>。這裡畫成平面向量只是幫助想像，真正的內積是複數，下一站就要處理它。</p>
+          </article>
+          <article class="ex-cap" data-cap="split">
+            <p class="kicker">Stop 04 — Anticommutator + commutator</p>
+            <h3>虛部是對易子給的，拿不掉</h3>
+            <p>把 <span class="m">Ω̃Λ̃ = ½{Ω̃, Λ̃} + ½[Ω̃, Λ̃]</span>。反對易子是 Hermitian，期望值是實數；對易子是 <span class="m">iΓ</span>，期望值是純虛數。所以 <span class="m">z = ⟨Ω̃Λ̃⟩</span> 剛好拆成互相垂直的兩支箭頭，<span class="m">|z|² = (實部)² + (虛部)² ≥ (½⟨Γ⟩)²</span>。</p>
+            <p>例子是帶相位彎曲 <span class="m">e^(iκx²/2)</span> 的高斯：右邊相空間的橢圓是斜的，表示 x 和 p 有相關，這個相關就是實部。κ 從 1 轉回 0，橢圓立正、實部歸零，<strong>ΔxΔp 從 0.71 降到 0.50</strong>；虛部永遠卡在 ħ/2。</p>
+          </article>
+          <article class="ex-cap" data-cap="cmin">
+            <p class="kicker">Stop 05 — Shankar 9.3 · Minimum packet</p>
+            <h3>平行，而且實部要是零</h3>
+            <p>等號要兩件事：Schwarz 的等號（<span class="m">P̃|ψ⟩ = c X̃|ψ⟩</span>）和上一站的實部為零。第一條在位置表象是 <span class="m">−iħψ′ = cxψ</span>，解出 <strong>ψ(x) = ψ(0) e^(icx²/2ħ)</strong>。</p>
+            <p>看 c 在單位圓上走：Im c &lt; 0 時 |ψ| 往兩邊爆開；c 是實數時 |ψ| 不衰減，只剩相位在轉，都不能歸一化。Im c &gt; 0 才是高斯，乘積是 <span class="m">ħ/(2 sin α)</span>，α = 30° 時是 1.00ħ。第二條把 c 推到虛軸上（α = 90°），乘積才降到 <strong>0.50ħ</strong>。</p>
+          </article>
+          <article class="ex-cap" data-cap="shapes">
+            <p class="kicker">Stop 06 — Other shapes</p>
+            <h3>換個形狀，就碰不到地板</h3>
+            <p>每一列是一個實數波形，用數值積分算 <span class="m">Δx = √(⟨x²⟩ − ⟨x⟩²)</span>、<span class="m">Δp = √⟨ψ′|ψ′⟩</span>。只有高斯剛好 0.500；sech 和三角形已經很接近，還是多一點；有兩個峰、或有節點的振子激發態，乘積直接變成 1.5、2.5。</p>
+            <p>一般的最小波包是 <span class="m">ψ ∝ e^(i⟨P⟩(x−⟨X⟩)/ħ) e^(−(x−⟨X⟩)²/2Δ²)</span>：平移位置、加上平均動量都不會改變乘積，因為只動到相位和中心。振子的基態就是 <span class="m">Δ² = ħ/mω</span> 的那一個。</p>
+          </article>
+          <article class="ex-cap" data-cap="atom">
+            <p class="kicker">Stop 07 — Shankar 9.4 · Size of the atom</p>
+            <h3>電子為什麼不掉進原子核</h3>
+            <p>把 <span class="m">⟨1/r⟩</span> 粗估成 <span class="m">1/√3 Δx</span>，再取最好的情況 <span class="m">ΔPₓ = ħ/2Δx</span>，能量就只剩 Δx 一個變數。擠窄（Δx = 0.45 a₀），位能變深，但動能 <span class="m">∝ 1/Δx²</span> 長得更快；放鬆，位能又不夠深。</p>
+            <p>最低點在 <strong>Δx = 3√3/4 a₀ ≈ 1.30 a₀</strong>，能量 <span class="m">−2me⁴/9ħ² ≈ −6.05 eV</span>。真實的 −13.6 eV 差了 9/4 倍：氫的基態是 <span class="m">e^(−r/a₀)</span> 不是高斯，⟨1/r⟩ 那一步也只是估計。但尺度（約一個 a₀）是對的。</p>
+          </article>
+          <article class="ex-cap" data-cap="mt">
+            <p class="kicker">Stop 08 — Shankar 9.5 · Energy and time</p>
+            <h3>時間不是算符，換一個問法</h3>
+            <p>沒有 [T, H] 可以代。Mandelstam–Tamm 的問法是：用 Ehrenfest <span class="m">d⟨A⟩/dt = ⟨[A, H]⟩/iħ</span> 加上本站的不等式，得到 <span class="m">|d⟨A⟩/dt| ≤ (2/ħ) ΔA ΔE</span>。定義 <span class="m">Δtₐ = ΔA / |d⟨A⟩/dt|</span>，就是「平均值移動一個寬度要多久」。</p>
+            <p>振子態 <span class="m">(|0⟩ + |1⟩)/√2</span>：ΔE = ½，⟨X⟩ 來回擺。擺到兩端時幾乎不動，Δtₓ 變得很長；穿過中間時最快，乘積最小，是 <strong>1/√2 ≈ 0.71ħ</strong>，還是在 ħ/2 之上。</p>
+          </article>
+          <article class="ex-cap" data-cap="life">
+            <p class="kicker">Stop 09 — Lifetime and line width</p>
+            <h3>衰變得慢，能量就定得準</h3>
+            <p>一個會衰變的態 <span class="m">ψ(t) = e^(−iE₀t/ħ) e^(−t/2τ)</span>（t ≥ 0）。左邊的包絡越拖越長，右邊的能量分布 <span class="m">P(E)</span> 就越窄，是一個 Lorentzian。</p>
+            <p>τ 從 1 拉到 4 再回到 2，半高半寬一直是 <strong>ΔE = ħ/2τ</strong>，所以 <strong>τ·ΔE = ħ/2</strong>。注意 Lorentzian 的變異數發散，這裡的 ΔE 是半寬，不是上一站的標準差；這是譜線形狀的敘述，跟 Mandelstam–Tamm 不是同一個定理，只是給出同一個尺度 ħ。</p>
+          </article>
+        </div>
+        <dl class="ex-facts" data-facts></dl>
+      </aside>
+      <p class="ex-more" aria-hidden="true">下一步推導 <span>↓</span></p>
+    </div>
+  </section>
+</div>
+
+<footer class="un-outro wrap">
+  <p class="kicker">§ Keep these three things</p>
+  <h2>寬度是向量長度，下限來自對易子</h2>
+  <div class="un-takeaways">
+    <div><span>01 / DERIVATION</span><h3>Schwarz + 拆實部虛部</h3><p>(ΔΩ)²(ΔΛ)² ≥ |⟨Ω̃Λ̃⟩|² ≥ ¼|⟨[Ω, Λ]⟩|²。第一步丟掉「不平行」，第二步丟掉「相關」。</p></div>
+    <div><span>02 / EQUALITY</span><h3>兩步都不丟 → 高斯</h3><p>P̃ψ = cX̃ψ 且 c 純虛數：ψ ∝ e^(−x²/2Δ²)。任何別的形狀、任何相位彎曲都在 ħ/2 之上。</p></div>
+    <div><span>03 / SCALE</span><h3>估計用的尺度</h3><p>氫原子：Δx ≈ 1.3 a₀；振盪：ΔE·Δtₓ ≥ ħ/2；衰變：τ·ΔE = ħ/2。這些都是用測不準在估「多大、多快」。</p></div>
+  </div>
+  <details class="un-calc">
+    <summary>核對本頁的數字</summary>
+    <div class="un-table-scroll"><table>
+      <thead><tr><th>段落</th><th>算式</th><th>值</th></tr></thead>
+      <tbody>
+        <tr><td>高斯</td><td>Δx = σ，Δp = 1/2σ</td><td>乘積 0.500 ħ</td></tr>
+        <tr><td>相位彎曲</td><td>Cov(x,p) = κσ²，Δp² = 1/4σ² + κ²σ²（σ² = ½）</td><td>κ = 1：0.707 ħ</td></tr>
+        <tr><td>c = e^(iα)</td><td>ΔxΔp = ħ / (2 sin α)</td><td>α = 30°：1.00 ħ；90°：0.50 ħ</td></tr>
+        <tr><td>sech / 三角形 / 雙峰</td><td>數值積分（格距 0.002）</td><td>0.524 / 0.548 / 2.10 ħ</td></tr>
+        <tr><td>振子 |1⟩ / |2⟩</td><td>(n + ½)ħ</td><td>1.5 / 2.5 ħ</td></tr>
+        <tr><td>氫原子</td><td>E(Δx) = 3/8Δx² − 1/√3Δx（Hartree）</td><td>Δx = 1.299 a₀，E = −2/9 Hartree = −6.05 eV</td></tr>
+        <tr><td>Mandelstam–Tamm</td><td>ΔE·Δtₓ = ½ √(1 − cos²t/2) · √2 / |sin t|</td><td>最小 1/√2 ≈ 0.707 ħ（ωt = π/2）</td></tr>
+        <tr><td>壽命</td><td>P(E) 半高半寬 = 1/2τ</td><td>τ·ΔE = 0.50 ħ</td></tr>
+      </tbody>
+    </table></div>
+    <p>動畫裡的曲線、長條和讀數都由同一組常數即時計算。量測那一段的 80 個點用固定種子的亂數產生，所以樣本平均和寬度會跟理論值差一點。</p>
+  </details>
+  <div class="un-sources">
+    <p class="kicker">§ Sources & next</p>
+    <ul>
+      <li>R. Shankar, <em>Principles of Quantum Mechanics</em>, 2nd ed., Ch. 9 “The Heisenberg Uncertainty Relations”（9.1–9.5）。</li>
+      <li><a href="https://claude.ai/artifact/Q2h4Y5W1vfbXnUrkSqbrdU" target="_blank" rel="noopener">課堂互動頁：Uncertainty Relations</a>：同一章的滑桿版，可以自己拉參數、做 lab。</li>
+      <li>L. Mandelstam &amp; I. Tamm, “The uncertainty relation between energy and time in non-relativistic quantum mechanics”, <em>J. Phys. USSR</em> 9, 249 (1945)。</li>
+    </ul>
+    <p>回到 <a href="<%- url_for('/notes/') %>">所有筆記</a>。</p>
+  </div>
+</footer>

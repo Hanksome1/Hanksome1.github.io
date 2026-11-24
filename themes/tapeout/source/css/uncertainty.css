@@ -1,0 +1,111 @@
+.is-uncertainty .statusbar { display: none; }
+.un-hero { padding-top: clamp(40px, 7vw, 88px); padding-bottom: 36px; }
+.un-hero h1 { margin: 18px 0 0; font-size: clamp(32px, 5.3vw, 66px); line-height: 1.12; font-weight: 600; letter-spacing: -.035em; }
+.un-hero h1 em { color: var(--accent); font-family: var(--font-serif); font-weight: 400; }
+.un-lede { max-width: 42em; margin: 22px 0 0; color: var(--ink-2); font-size: clamp(16px, 1.5vw, 19px); line-height: 1.8; }
+.un-meta { display: grid; grid-template-columns: repeat(3, 1fr); margin: 28px 0 0; border-block: 1px solid var(--line-2); }
+.un-meta > div { min-width: 0; padding: 12px 16px 14px 0; }
+.un-meta > div + div { border-left: 1px solid var(--line); padding-left: 16px; }
+.un-meta dt, .un-hint, .un-takeaways span { color: var(--ink-3); font: 500 11px var(--font-mono); letter-spacing: .05em; }
+.un-meta dt { text-transform: uppercase; }
+.un-meta dd { margin: 6px 0 0; font-size: 14px; }
+.un-hint { margin-top: 20px; line-height: 1.8; }
+.un .ex-stops { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.un .ex-status { font-size: 10px; }
+.un .ex-play { font-size: 11px; }
+.un { --un-math: "STIX Two Text", "STIX Two Math", "Cambria Math", Cambria, "Times New Roman", "Noto Serif TC", "Songti TC", serif; }
+.un .ex-cap .m { font-family: var(--un-math); font-style: normal; font-size: 1.04em; color: var(--ink); white-space: nowrap; }
+
+/* ---------- SVG world ---------- */
+.un-world text { fill: var(--ink-2); font: 500 16px var(--font-mono); font-variant-numeric: tabular-nums; }
+.un-world .mid { text-anchor: middle; }
+.un-world .end { text-anchor: end; }
+.un-world .t-b { fill: var(--ink); font-weight: 600; }
+.un-world .t-h { fill: var(--accent); font-weight: 600; }
+.un-world .t-n { fill: var(--neg); font-weight: 600; }
+.un-world .t-s { fill: var(--ink-3); font-size: 13.5px; }
+.un-world .t-title { fill: var(--ink); font-size: 24px; font-weight: 600; }
+.un-world .halo { paint-order: stroke; stroke: var(--bg); stroke-width: 6px; stroke-linejoin: round; }
+
+/* The formula strip: each term lights up when the picture is moving it. */
+.un-world .eq { fill: var(--ink-2); font: 400 22px var(--un-math); }
+.un-world .eq.small { font-size: 15.5px; fill: var(--ink-3); }
+.un-world .eq tspan { transition: fill .2s; }
+.un-world .eq .c-a { fill: color-mix(in srgb, var(--accent) 70%, var(--ink-3)); }
+.un-world .eq .c-n { fill: color-mix(in srgb, var(--neg) 70%, var(--ink-3)); }
+.un-world .eq .is-hot { fill: var(--accent); font-weight: 600; }
+.un-world .eq .c-n.is-hot { fill: var(--neg); }
+.un-world .eq.small tspan:last-child { fill: var(--ink); }
+
+.un-world path, .un-world rect, .un-world line, .un-world circle { vector-effect: non-scaling-stroke; }
+.un-world .axis { stroke: var(--line-2); stroke-width: 1; }
+.un-world .guide { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 4; fill: none; }
+.un-world .floor { stroke: var(--neg); stroke-width: 1.2; stroke-dasharray: 6 5; }
+.un-world .mean { stroke: var(--accent); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.un-world .fillcurve { stroke-width: 1.8; stroke-linejoin: round; }
+.un-world .fillcurve.fa { fill: color-mix(in srgb, var(--accent) 16%, transparent); stroke: var(--accent); }
+.un-world .fillcurve.fn { fill: color-mix(in srgb, var(--neg) 16%, transparent); stroke: var(--neg); }
+.un-world .curve-ink { fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linejoin: round; }
+.un-world .curve-a { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
+.un-world .curve-n { fill: none; stroke: var(--neg); stroke-width: 2; stroke-linejoin: round; }
+.un-world .thin { stroke-width: 1.3; }
+.un-world .curve-ink.thin { stroke: var(--ink-3); }
+.un-world .wave { fill: none; stroke: var(--accent); stroke-width: 2.4; }
+.un-world .wave.faint { stroke: var(--line-2); stroke-width: 1.4; }
+.un-world .window { fill: color-mix(in srgb, var(--accent) 8%, transparent); stroke: var(--accent); stroke-width: 1; stroke-dasharray: 5 4; }
+.un-world .ruler { fill: var(--accent); }
+.un-world .ruler.alt { fill: color-mix(in srgb, var(--accent) 55%, var(--bg)); }
+.un-world .ruler.rest { fill: none; stroke: var(--neg); stroke-width: 1.4; stroke-dasharray: 3 3; }
+.un-world .brk { fill: none; stroke-width: 1.6; }
+.un-world .brk.ba { stroke: var(--accent); }
+.un-world .brk.bn { stroke: var(--neg); }
+.un-world .dot { fill: var(--accent); stroke: var(--bg); stroke-width: 2; }
+.un-world .dot.ink { fill: var(--ink); }
+.un-world .forbid { fill: color-mix(in srgb, var(--ink-3) 14%, transparent); }
+.un-world .hyper { fill: none; stroke: var(--ink); stroke-width: 2; }
+.un-world .hist { fill: color-mix(in srgb, var(--accent) 45%, var(--surface)); }
+.un-world .barbox { fill: var(--surface); stroke: var(--line-2); stroke-width: 1; }
+.un-world .bar-a { fill: var(--accent); }
+.un-world .vec { stroke-width: 3; stroke-linecap: round; }
+.un-world .vec.va { stroke: var(--accent); }
+.un-world .vec.vn { stroke: var(--neg); }
+.un-world .vec.vi { stroke: var(--ink); stroke-width: 2; }
+.un-world .proj { stroke: var(--neg); stroke-width: 5; stroke-linecap: round; opacity: .45; }
+.un-world .arc { fill: none; stroke: var(--ink-3); stroke-width: 1.2; }
+.un-world .bound { fill: none; stroke: var(--ink-3); stroke-width: 1.4; stroke-dasharray: 5 4; }
+.un-world .ellipse { fill: color-mix(in srgb, var(--accent) 18%, transparent); stroke: var(--accent); stroke-width: 1.8; }
+.un-world .boxdash { fill: none; stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; }
+.un-world .okzone { fill: color-mix(in srgb, var(--accent) 7%, transparent); }
+.un-world .unit { fill: none; stroke: var(--line-2); stroke-width: 1; }
+.un-world .imaxis { stroke: var(--accent); stroke-width: 3; opacity: .5; }
+.un-world .band { fill: color-mix(in srgb, var(--accent) 10%, transparent); }
+.un-world .envelope { fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-dasharray: 5 4; }
+.un-world .hw { stroke: var(--neg); stroke-width: 2.4; stroke-linecap: round; }
+
+/* ---------- outro ---------- */
+.un-outro { padding-top: 52px; padding-bottom: 64px; }
+.un-outro h2 { margin: 12px 0 26px; font-size: clamp(26px, 3vw, 36px); font-weight: 600; letter-spacing: -.025em; }
+.un-takeaways { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.un-takeaways > div { padding-top: 14px; border-top: 2px solid var(--accent); }
+.un-takeaways h3 { font-size: 18px; font-weight: 600; margin: 12px 0 8px; }
+.un-takeaways p, .un-calc p, .un-sources { color: var(--ink-2); font-size: 14px; line-height: 1.8; }
+.un-calc { margin-top: 32px; padding: 16px 0; border-block: 1px solid var(--line-2); }
+.un-calc summary { cursor: pointer; font-size: 15px; font-weight: 500; }
+.un-table-scroll { overflow-x: auto; }
+.un-calc table { border-collapse: collapse; margin-top: 18px; width: 100%; font: 500 13px/1.8 var(--font-mono); }
+.un-calc th, .un-calc td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.un-calc th { color: var(--ink-3); }
+.un-sources { margin-top: 32px; }
+.un-sources a { text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.un-sources ul { padding-left: 20px; }
+@media (max-width: 900px) {
+  .un.is-live .ex-cap p + p { display: none; }
+}
+@media (max-width: 600px) {
+  .un-meta { grid-template-columns: 1fr; }
+  .un-meta > div { display: flex; align-items: baseline; gap: 18px; padding: 10px 0; }
+  .un-meta > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+  .un-meta dt { flex: 0 0 132px; }
+  .un-meta dd { margin: 0; font-size: 13px; }
+  .un-takeaways { grid-template-columns: 1fr; gap: 20px; }
+}
