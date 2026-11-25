@@ -1,0 +1,10 @@
+.is-ddpm-forward .statusbar { display: none; }
+
+/* this page's own figure styles (the shared vocabulary is in mathwalk.css) */
+.mw .fig .leg-a { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; fill: none; }
+.mw .fig .leg-b { stroke: var(--c2); stroke-width: 3; stroke-linecap: round; fill: none; }
+.mw .fig .hyp { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; fill: none; }
+.mw .fig .bar { fill: color-mix(in srgb, var(--ink) 16%, transparent); stroke: none; }
+.mw .fig .pdf { fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linejoin: round; }
+.mw .fig .path { fill: none; stroke: var(--ink-2); stroke-width: 0.9; opacity: 0.6; stroke-linejoin: round; }
+.mw .fig .zero { stroke: var(--line-2); stroke-width: 1; }

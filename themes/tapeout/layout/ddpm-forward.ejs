@@ -1,0 +1,10 @@
+<%#
+  /lab/ddpm-forward/: the markup lives in _partial/ddpm-forward.ejs; texify turns its $…$ / $$…$$ into KaTeX
+  at build time. \T{key}{…} marks a term the stage can colour, zoom into or annotate (engine: mathwalk.js).
+%><%- texify(partial('_partial/ddpm-forward'), {
+  '\\T': '\\htmlClass{t-#1}{#2}',
+  '\\ab': '\\bar\\alpha',
+  '\\eps': '\\epsilon',
+  '\\N': '\\mathcal{N}',
+  '\\I': '\\mathbf{I}'
+}) %>

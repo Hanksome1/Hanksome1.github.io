@@ -1,0 +1,164 @@
+<header class="mw-hero wrap mw-up">
+  <p class="kicker">§ Walkthrough — 機率 / 擴散模型</p>
+  <h1>DDPM 前向過程<br>一步一步<em>併成一步</em></h1>
+  <p class="mw-lede">DDPM 每一步只加一點雜訊：$q(x_t \mid x_{t-1}) = \N(\sqrt{1-\beta_t}\,x_{t-1},\ \beta_t\I)$。那為什麼可以一次跳到第 $t$ 步，$q(x_t \mid x_0) = \N(\sqrt{\ab_t}\,x_0,\ (1-\ab_t)\I)$？這一頁把它推一次，再代入 DDPM 的線性排程跑數字。右邊一次只放一個式子，上面小字是它從哪一式來；講到哪一項，那一項就變色或推近，底下標出它的意思和代入的數字。</p>
+  <dl class="mw-meta">
+    <div><dt>排程</dt><dd>線性，$\beta$ 從 $10^{-4}$ 到 $0.02$，$T = 1000$</dd></div>
+    <div><dt>代入</dt><dd>$t = 10, 250, 1000$，一個像素 $x_0 = 0.8$</dd></div>
+    <div><dt>方法</dt><dd>重參數化、獨立高斯相加</dd></div>
+  </dl>
+  <p class="mw-hint">往下捲 ↓<button class="hero-play" type="button" data-play-hero hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z"/></svg>自動播放</button></p>
+</header>
+
+<div class="mw" data-mw>
+  <div class="mw-text">
+    <nav class="rail" aria-label="播放與章節">
+      <div class="rail-row">
+        <div class="player" data-player data-l-idle="自動播放" data-l-run="暫停" data-l-done="重播">
+          <button class="pl-btn" type="button" data-play><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z"/></svg><span data-play-label>自動播放</span></button>
+          <span class="pl-spd" role="group" aria-label="播放速度"><button type="button" data-spd="0.5">0.5×</button><button type="button" data-spd="1">1×</button><button type="button" data-spd="1.5">1.5×</button><button type="button" data-spd="2">2×</button></span>
+        </div>
+        <span class="rail-c" data-hud-c></span>
+      </div>
+      <ol class="chaps" data-chaps></ol>
+    </nav>
+
+    <!-- notes that need math: a step's note '#id' copies this span's rendered HTML -->
+    <div class="mw-src" hidden>
+      <span data-note="n-eps">$\eps_{t-1} \sim \N(0, \I)$</span>
+      <span data-note="n-ab">$\ab_{250} = 0.524$</span>
+      <span data-note="n-b1">$10^{-4}$</span>
+    </div>
+
+    <section class="step" data-step="overview"><div class="step-in">
+      <p class="kicker">00 · 概觀</p>
+      <h2>一整面黑板</h2>
+      <p>右邊是整段推導，6 行。先看一步怎麼加雜訊 <i class="mr ch" data-ch="one">01</i>，再把兩步併成一步 <i class="mr ch" data-ch="two">02</i>；同一招一路併到 $x_0$，就是閉式解 <i class="mr ch" data-ch="closed">03</i>。</p>
+      <p>接著代入 DDPM 的線性排程 <i class="mr ch" data-ch="sched">04</i>，把 $t = 10$、$250$、$1000$ 代進黑板 <i class="mr ch" data-ch="run">05</i>。往下捲，一次看一式。</p>
+      <div data-board>$$\begin{aligned}
+\T{r1}{q(x_t \mid x_{t-1})} &\T{r1}{{} = \N\big(\sqrt{1-\beta_t}\,x_{t-1},\ \beta_t\I\big)} \\
+\T{r2}{x_t} &\T{r2}{{} = \sqrt{\alpha_t}\,x_{t-1} + \sqrt{1-\alpha_t}\,\eps_{t-1}} \\[8pt]
+\T{r3}{x_t} &\T{r3}{{} = \sqrt{\alpha_t\alpha_{t-1}}\,x_{t-2} + \sqrt{\alpha_t(1-\alpha_{t-1})}\,\eps_{t-2}} \\
+ &\T{r3}{\qquad {} + \sqrt{1-\alpha_t}\,\eps_{t-1}} \\
+\T{r4}{x_t} &\T{r4}{{} = \sqrt{\alpha_t\alpha_{t-1}}\,x_{t-2} + \sqrt{1-\alpha_t\alpha_{t-1}}\,\bar\eps_{t-2}} \\[8pt]
+\T{r5}{x_t} &\T{r5}{{} = \sqrt{\ab_t}\,x_0 + \sqrt{1-\ab_t}\,\eps} \\
+\T{r6}{q(x_t \mid x_0)} &\T{r6}{{} = \N\big(\sqrt{\ab_t}\,x_0,\ (1-\ab_t)\I\big)}
+\end{aligned}$$</div>
+    </div></section>
+
+    <section class="step" data-step="onestep"><div class="step-in">
+      <p class="kicker">01 · 一步</p>
+      <h2>一步：縮一點，加一點雜訊</h2>
+      <p>前向過程是一條固定的馬可夫鏈，沒有要學的參數。每一步拿上一步的 $x_{t-1}$ 乘上 $\sqrt{1-\beta_t}$，縮小一點，再加上變異數 $\beta_t$ 的高斯雜訊。$\beta_1, \dots, \beta_T$ 是事先排好的一串小數字，叫排程。</p>
+      <p>例子取 $t = 250$：DDPM 的線性排程給 $\beta_{250} = 0.00506$，所以 $x_{249}$ 先乘 $0.99747$，再加上標準差 $\sqrt{0.00506} = 0.0711$ 的雜訊。一步只動一點點。</p>
+      <div data-eq="q1">$$q(x_t \mid x_{t-1}) = \N\big(\T{m}{\sqrt{1-\beta_t}\,x_{t-1}},\ \T{v}{\beta_t\I}\big)$$</div>
+    </div></section>
+
+    <section class="step" data-step="reparam"><div class="step-in">
+      <p class="kicker">01 · 一步</p>
+      <h2>寫成「平均 + 標準差 × 雜訊」</h2>
+      <p>從高斯抽一個樣本，等於抽一個標準常態 $\eps$，乘上標準差再加上平均。順手記 $\alpha_t = 1 - \beta_t$，式子短一點。$\eps_{t-1}$ 每一步重新抽，彼此獨立，也跟 $x_{t-1}$ 獨立。</p>
+      <p>$t = 250$：$\alpha_{250} = 0.99494$，$\sqrt{\alpha_{250}} = 0.99747$，雜訊前面的係數 $\sqrt{1-\alpha_{250}} = 0.0711$。</p>
+      <div data-eq="x1">$$x_t = \T{sa}{\sqrt{\alpha_t}}\,x_{t-1} + \T{sb}{\sqrt{1-\alpha_t}}\,\T{e}{\eps_{t-1}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="var"><div class="step-in">
+      <p class="kicker">01 · 一步</p>
+      <h2>為什麼要縮：變異數守在 1</h2>
+      <p>兩邊取變異數。$\eps_{t-1}$ 跟 $x_{t-1}$ 獨立，變異數直接相加。如果 $\mathrm{Var}[x_{t-1}] = 1$，右邊是 $\alpha_t + (1-\alpha_t) = 1$：乘 $\sqrt{\alpha_t}$ 少掉的變異數，剛好被加進來的雜訊補回去，每一步都守在 1。</p>
+      <p>$t = 250$：縮掉 $1 - 0.99494 = 0.00506$，雜訊補回 $0.00506$。下圖從 $\mathrm{Var}[x_0] = 1$ 走 1000 步：有乘 $\sqrt{1-\beta_t}$ 一直是 1；不乘、只加雜訊，變異數是 $1 + \sum \beta_s$，到 $t = 1000$ 漲到 $1 + 10.05 = 11.05$。</p>
+      <div data-eq="v1">$$\mathrm{Var}[x_t] = \T{a}{\alpha_t}\,\T{p}{\mathrm{Var}[x_{t-1}]} + \T{n}{(1-\alpha_t)}$$</div>
+    </div></section>
+
+    <section class="step" data-step="expand"><div class="step-in">
+      <p class="kicker">02 · 兩步併一步</p>
+      <h2>把 $x_{t-1}$ 也展開</h2>
+      <p>$x_{t-1}$ 也是從上一步來的：$x_{t-1} = \sqrt{\alpha_{t-1}}\,x_{t-2} + \sqrt{1-\alpha_{t-1}}\,\eps_{t-2}$。代進去，$x_t$ 就直接用 $x_{t-2}$ 和兩塊雜訊寫出來。</p>
+      <p>$t = 250$：括號裡是第 249 步，$\alpha_{249} = 0.99496$，雜訊係數 $\sqrt{1-\alpha_{249}} = 0.0710$。</p>
+      <div data-eq="x2a">$$x_t = \sqrt{\alpha_t}\,\big(\T{sub}{\sqrt{\alpha_{t-1}}\,x_{t-2} + \sqrt{1-\alpha_{t-1}}\,\eps_{t-2}}\big) + \sqrt{1-\alpha_t}\,\eps_{t-1}$$</div>
+    </div></section>
+
+    <section class="step" data-step="split"><div class="step-in">
+      <p class="kicker">02 · 兩步併一步</p>
+      <h2>乘開：一個訊號，兩塊雜訊</h2>
+      <p>把 $\sqrt{\alpha_t}$ 乘進括號。$x_{t-2}$ 的係數是 $\sqrt{\alpha_t\alpha_{t-1}}$；第一塊雜訊 $\eps_{t-2}$ 被外面的 $\sqrt{\alpha_t}$ 又縮了一次，係數變成 $\sqrt{\alpha_t(1-\alpha_{t-1})}$。兩塊雜訊都是平均 0 的高斯，而且互相獨立。</p>
+      <p>$t = 250$：兩塊雜訊的標準差是 $0.0708$ 和 $0.0711$。下圖把它們畫成兩段長度。</p>
+      <div data-eq="x2b">$$x_t = \sqrt{\alpha_t\alpha_{t-1}}\,x_{t-2} + \T{n1}{\sqrt{\T{n1a}{\alpha_t}\T{n1b}{(1-\alpha_{t-1})}}\,\eps_{t-2}} + \T{n2}{\sqrt{1-\alpha_t}\,\eps_{t-1}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="merge"><div class="step-in">
+      <p class="kicker">02 · 兩步併一步</p>
+      <h2>獨立的高斯相加：變異數相加</h2>
+      <p>兩個獨立、平均 0 的高斯加起來還是高斯，變異數相加，標準差不能直接加。兩塊的變異數加起來是 $\alpha_t - \alpha_t\alpha_{t-1} + 1 - \alpha_t$，中間的 $\alpha_t$ 消掉，剩 $1 - \alpha_t\alpha_{t-1}$。</p>
+      <p>$t = 250$：$0.005015 + 0.005060 = 0.010075$，合起來的標準差 $\sqrt{0.010075} = 0.1004$，不是 $0.0708 + 0.0711 = 0.1419$。把標準差想成長度：獨立的兩塊互相垂直，合起來是斜邊。</p>
+      <div data-eq="vsum">$$\T{s1}{\alpha_t(1-\alpha_{t-1})} + \T{s2}{(1-\alpha_t)} = \T{s}{1-\alpha_t\alpha_{t-1}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="merged"><div class="step-in">
+      <p class="kicker">02 · 兩步併一步</p>
+      <h2>兩步併成一步，形狀沒變</h2>
+      <p>兩塊雜訊換成一塊：$\bar\eps_{t-2} \sim \N(0, \I)$，前面乘合起來的標準差 $\sqrt{1-\alpha_t\alpha_{t-1}}$。結果跟一步的式子長得一樣：$x_{t-2}$ 前面是 $\sqrt{\alpha_t\alpha_{t-1}}$，兩個係數平方加起來還是 1。</p>
+      <p>$t = 250$：$\sqrt{\alpha_{250}\alpha_{249}} = 0.99495$，雜訊係數 $0.1004$。從第 248 步跳到第 250 步，只要抽一次雜訊。</p>
+      <div data-eq="x2">$$x_t = \T{c}{\sqrt{\alpha_t\alpha_{t-1}}}\,x_{t-2} + \T{m}{\sqrt{1-\alpha_t\alpha_{t-1}}}\,\bar\eps_{t-2}$$</div>
+    </div></section>
+
+    <section class="step" data-step="closed"><div class="step-in">
+      <p class="kicker">03 · 閉式解</p>
+      <h2>同一招，一路併到 $x_0$</h2>
+      <p>假設 $x_{t-1} = \sqrt{\ab_{t-1}}\,x_0 + \sqrt{1-\ab_{t-1}}\,\eps$，代進一步的式子，照上一章把兩塊雜訊併起來，變異數是 $\alpha_t(1-\ab_{t-1}) + (1-\alpha_t) = 1 - \ab_t$。所以定義 $\ab_t = \alpha_1\alpha_2\cdots\alpha_t$，每個 $t$ 都是同一個形狀。</p>
+      <p>$t = 250$：$\ab_{250} = 0.524$，$x_0$ 的係數 $\sqrt{\ab_{250}} = 0.724$，雜訊係數 $\sqrt{1-\ab_{250}} = 0.690$。下圖是一個像素 $x_0 = 0.8$ 一步一步走的 6 條路徑：橘線是 $0.8\sqrt{\ab_t}$，藍色帶是平均 $\pm 2\sqrt{1-\ab_t}$。</p>
+      <div data-eq="xt">$$x_t = \T{sab}{\sqrt{\ab_t}}\,x_0 + \T{nab}{\sqrt{1-\ab_t}}\,\eps, \qquad \T{def}{\ab_t = \alpha_1\alpha_2\cdots\alpha_t}$$</div>
+    </div></section>
+
+    <section class="step" data-step="q0"><div class="step-in">
+      <p class="kicker">03 · 閉式解</p>
+      <h2>閉式解：一次跳到任何 $t$</h2>
+      <p>寫回分布：給定 $x_0$，$x_t$ 是平均 $\sqrt{\ab_t}\,x_0$、變異數 $1-\ab_t$ 的高斯。訓練時要第 $t$ 步的樣本，不用從 $x_0$ 走 $t$ 步，抽一個 $\eps$ 直接算。</p>
+      <p>$x_0 = 0.8$、$t = 250$：平均 $0.724 \times 0.8 = 0.579$，變異數 $0.476$。下圖右邊是 4000 條路徑一步一步走到 $t = 250$ 的直方圖，曲線是閉式解 $\N(0.579,\ 0.476)$，兩者疊在一起。</p>
+      <div data-eq="q0">$$q(x_t \mid x_0) = \N\big(\T{mu}{\sqrt{\ab_t}\,x_0},\ \T{cov}{(1-\ab_t)\I}\big)$$</div>
+    </div></section>
+
+    <section class="step" data-step="sched"><div class="step-in">
+      <p class="kicker">04 · 線性排程</p>
+      <h2>DDPM 的線性排程</h2>
+      <p>DDPM 取 $T = 1000$，$\beta_t$ 從 $\beta_1 = 10^{-4}$ 線性加到 $\beta_T = 0.02$：前面的步加很少雜訊，後面加多一點。$\ab_t = \prod_{s \le t}(1-\beta_s)$，每一步都乘一個略小於 1 的數。</p>
+      <p>$\beta_{250} = 0.00506$，$\beta_{1000} = 0.02$。乘到 $t = 260$，$\ab_t$ 掉到 $0.5$ 以下，$x_0$ 的係數 $\sqrt{\ab_t}$ 和雜訊係數 $\sqrt{1-\ab_t}$ 在這裡交叉：才走四分之一，訊號和雜訊就一樣大了。</p>
+      <div data-eq="beta">$$\beta_t = \T{b1}{\beta_1} + \T{fr}{\frac{t-1}{T-1}}\,\big(\T{bT}{\beta_T} - \beta_1\big)$$</div>
+    </div></section>
+
+    <section class="step" data-step="sweep"><div class="step-in">
+      <p class="kicker">04 · 線性排程</p>
+      <h2>$t$ 從 0 掃到 1000</h2>
+      <p>往下捲，$t$ 從 0 走到 1000。$x_0 = 0.8$ 的分布從一根尖刺開始，一邊變寬一邊往 0 移：平均 $0.8\sqrt{\ab_t} \to 0$，變異數 $1-\ab_t \to 1$，最後變成標準常態 $\N(0, 1)$。</p>
+      <p>直方圖是 4000 條路徑走出來的，曲線是閉式解，每個 $t$ 都對得上，差的一點是抽樣誤差。$t = 700$ 時 $\sqrt{\ab_t}$ 已經只剩 $0.0835$，後面 300 步幾乎都在純雜訊裡；Improved DDPM 就是因為這點改用 cosine 排程。</p>
+    </div></section>
+
+    <section class="step" data-step="run"><div class="step-in">
+      <p class="kicker">05 · 代入三個時間步</p>
+      <h2>把 $t = 10, 250, 1000$ 代進黑板</h2>
+      <p>回到黑板，一欄一個 $t$。每一格是那一行新出現的數字：第 1 行的 $\beta_t$，第 2 行每步縮小的 $\sqrt{\alpha_t}$，第 3 行兩塊雜訊的標準差，第 4 行合起來的標準差，第 5 行 $x_0$ 的係數 $\sqrt{\ab_t}$，第 6 行的變異數 $1-\ab_t$。</p>
+      <p>$t = 10$ 幾乎沒動，$\sqrt{\ab_t} = 0.99905$；$t = 250$ 訊號和雜訊差不多大。$t = 1000$ 在第 5 行只剩 $0.00635$：$x_0$ 留下不到 1%，$x_T$ 幾乎就是 $\N(0, \I)$。這是故意的，取樣才能從純雜訊出發；代價是反向過程要把這些全部補回來。</p>
+    </div></section>
+
+    <section class="step" data-step="end"><div class="step-in">
+      <p class="kicker">06 · 回顧</p>
+      <h2>整面黑板，填上三個 t</h2>
+      <p>整段推導只用了一件事：獨立的高斯相加，變異數相加。每一步的縮小 $\sqrt{1-\beta_t}$ 和雜訊 $\beta_t$ 搭配好，平方和一直是 1，所以兩步能併成一步，$t$ 步也能併成一步。橘色是 $t = 1000$ 把 $x_0$ 丟掉的地方。</p>
+    </div></section>
+  </div>
+
+  <div class="mw-stage" data-stage role="img" aria-label="推導舞台：一次一個式子，開頭和結尾是整面黑板">
+    <div class="mw-board-host" data-board-host></div><div class="mw-eqs" data-eqs></div>
+    <svg class="mw-ov" data-ov aria-hidden="true"></svg><div class="mw-notes" data-notes aria-hidden="true"></div>
+    <div class="mw-figwrap" data-figwrap aria-hidden="true"><p class="mw-fig-title" data-fig-title></p><div class="mw-figs" data-figs></div></div>
+  </div>
+</div>
+
+<footer class="mw-outro wrap mw-up">
+  <p class="kicker">Sources</p>
+  <ul class="mw-sources">
+    <li>Ho, Jain &amp; Abbeel, <a href="https://arxiv.org/abs/2006.11239">Denoising Diffusion Probabilistic Models</a>, NeurIPS 2020：前向過程、閉式解 $q(x_t \mid x_0)$，以及線性排程 $\beta_1 = 10^{-4}$ 到 $\beta_T = 0.02$、$T = 1000$。</li>
+    <li>Nichol &amp; Dhariwal, <a href="https://arxiv.org/abs/2102.09672">Improved Denoising Diffusion Probabilistic Models</a>, ICML 2021：線性排程後段接近純雜訊，改用 cosine 排程。</li>
+    <li>圖上和黑板上的數字都由頁面上的程式從排程算出來；直方圖是固定亂數種子走出來的 4000 條路徑。</li>
+  </ul>
+</footer>

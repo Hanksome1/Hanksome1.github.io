@@ -37,6 +37,7 @@
   <% if (page.layout === 'lora') { %><%- js('js/explainer-core') %><%- js('js/lora') %><% } %>
   <% if (page.layout === 'uncertainty') { %><%- js('js/explainer-core') %><%- js('js/uncertainty') %><% } %>
   <% if (page.layout === 'uncertainty-derivation') { %><%- js('js/mathwalk') %><%- js('js/uncertainty-derivation') %><% } %>
+  <% if (page.layout === 'ddpm-forward') { %><%- js('js/mathwalk') %><%- js('js/ddpm-forward') %><% } %>
   <% if (page.layout === 'explainer') { %><%- js('js/explainer-core') %><%- js('js/explainer-page') %><%- js('attachments/vault/' + page.explainer.script) %><% } %>
   <%- js('js/graph') %>
   <% if (page.content && page.content.indexOf('type="WaveDrom"') > -1) { %>

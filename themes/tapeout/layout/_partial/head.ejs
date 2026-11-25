@@ -79,6 +79,7 @@
 <% if (page.layout === 'lora') { %><%- css('css/lora') %><% } %>
 <% if (page.layout === 'uncertainty') { %><%- css('css/explainer') %><%- css('css/uncertainty') %><% } %>
 <% if (page.layout === 'uncertainty-derivation') { %><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:wght@400;600&display=swap"><%- css('katex/katex.min') %><%- css('css/mathwalk') %><%- css('css/uncertainty-derivation') %><% } %>
+<% if (page.layout === 'ddpm-forward') { %><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:wght@400;600&display=swap"><%- css('katex/katex.min') %><%- css('css/mathwalk') %><%- css('css/ddpm-forward') %><% } %>
 <% if (page.layout === 'explainer') { %><%- css('css/explainer') %><% if (page.explainer.style) { %><%- css('attachments/vault/' + page.explainer.style) %><% } %><% } %>
 <% if (page.content && page.content.indexOf('class="katex') > -1) { %><%- css('katex/katex.min') %><% } %>
 <% var ga = theme.analytics && theme.analytics.google; if (ga) { %>

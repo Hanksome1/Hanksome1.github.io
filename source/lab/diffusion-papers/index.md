@@ -1,8 +1,8 @@
 ---
 title: Diffusion 相關論文閱讀
-summary: text-to-image 模型背後的論文：text encoder 怎麼讀 prompt、guidance 為什麼每步要算兩次、attention 怎麼知道位置、怎麼算得快，MLP 為什麼換成 SwiGLU，怎麼用 LoRA 微調，模型怎麼壓到 4 bit。每一篇都是可以捲動的動畫。
+summary: text-to-image 模型背後的論文：雜訊怎麼一步一步加上去、text encoder 怎麼讀 prompt、guidance 為什麼每步要算兩次、attention 怎麼知道位置、怎麼算得快，MLP 為什麼換成 SwiGLU，怎麼用 LoRA 微調，模型怎麼壓到 4 bit。每一篇都是可以捲動的動畫。
 date: 2026-10-31
-updated: 2026-11-05
+updated: 2026-11-25
 layout: post
 # kind: note 讓這一頁跟 source/_posts/notes/ 的筆記一起列在 /notes/
 kind: note
@@ -21,6 +21,7 @@ papers:
   - { date: '2022-05', url: /lab/flash-attention/, paper: FlashAttention }
   - { date: '2021-06', url: /lab/lora/, paper: LoRA }
   - { date: '2021-04', url: /lab/rope/, paper: RoPE → MRoPE }
+  - { date: '2020-06', url: /lab/ddpm-forward/, paper: DDPM 前向過程 }
   - { date: '2020-02', url: /lab/swiglu/, paper: SwiGLU }
 ---
 
@@ -36,4 +37,5 @@ papers:
 - [[flash-attention|FlashAttention]]（2022.05）：把 attention 切成 tile 留在晶片上算完，不再來回搬 HBM。
 - [[lora|LoRA]]（2021.06）：凍結原本的權重，只訓練兩個瘦矩陣 B、A，部署時再合併回去。
 - [[rope|RoPE → MRoPE]]（2021.04）：q、k 依位置轉一個角度，attention 就看得到相對距離；MRoPE 再分給 t、h、w 三個軸。
+- [[ddpm-forward|DDPM 前向過程]]（2020.06）：每一步只加一點雜訊，為什麼能一次跳到任何 t；把閉式解 q(x_t|x_0) 推一次，再代入線性排程跑數字。
 - [[lab/swiglu/index|SwiGLU]]（2020.02）：MLP 多一條投影當閘門，hidden 縮成 8/3·d，參數和 FLOPs 都不變。
