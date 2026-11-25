@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>公式解：一式一式推一次</title>
+<meta name="description" content="用配方法推出一元二次方程的公式解，一次一式，再把三組係數代進去。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=STIX+Two+Text:wght@400;600&display=swap">
+<link rel="stylesheet" href="katex.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="engine.css">
+<style>
+/* this page's own figure styles (the shared vocabulary is in engine.css) */
+.mw .fig .whole { fill: none; stroke: var(--accent); stroke-width: 2.6; }
+</style>
+<script type="text/x-tex-macros">
+\h = \tfrac{b}{2a}
+</script>
+</head>
+<body>
+
+<header class="mw-hero wrap mw-up">
+  <p class="kicker">§ Walkthrough — 代數 / 一元二次方程</p>
+  <h1>公式解<br>一式一式<em>推一次</em></h1>
+  <p class="mw-lede">$ax^2 + bx + c = 0$ 的根為什麼是 $\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$？這一頁用配方法把它推一次。右邊一次只放一個式子，上面小字是它從哪一式來；講到哪一項，那一項就變色或推近，底下標出它的意思和代入的數字。</p>
+  <dl class="mw-meta">
+    <div><dt>例子</dt><dd>$x^2 - 2x - 3 = 0$</dd></div>
+    <div><dt>代入</dt><dd>三組係數，其中一組沒有實根</dd></div>
+    <div><dt>方法</dt><dd>配方</dd></div>
+  </dl>
+  <p class="mw-hint">往下捲 ↓<button class="hero-play" type="button" data-play-hero hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z"/></svg>自動播放</button></p>
+</header>
+
+<div class="mw" data-mw>
+  <div class="mw-text">
+    <nav class="rail" aria-label="播放與章節">
+      <div class="rail-row">
+        <div class="player" data-player data-l-idle="自動播放" data-l-run="暫停" data-l-done="重播">
+          <button class="pl-btn" type="button" data-play><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z"/></svg><span data-play-label>自動播放</span></button>
+          <span class="pl-spd" role="group" aria-label="播放速度"><button type="button" data-spd="0.5">0.5×</button><button type="button" data-spd="1">1×</button><button type="button" data-spd="1.5">1.5×</button><button type="button" data-spd="2">2×</button></span>
+        </div>
+        <span class="rail-c" data-hud-c></span>
+      </div>
+      <ol class="chaps" data-chaps></ol>
+    </nav>
+
+    <!-- notes that need math: a step's note '#n-ca' copies this span's rendered HTML -->
+    <div class="mw-src" hidden>
+      <span data-note="n-ca">$-\tfrac{c}{a} = 3$</span>
+    </div>
+
+    <section class="step" data-step="overview"><div class="step-in">
+      <p class="kicker">00 · 概觀</p>
+      <h2>一整面黑板</h2>
+      <p>右邊是整段推導，6 行。先把方程整理成 $x^2$ 開頭 <i class="mr ch" data-ch="tidy">01</i>，補一塊把左邊變成完全平方 <i class="mr ch" data-ch="square">02</i>，最後開根號 <i class="mr ch" data-ch="root">03</i>。</p>
+      <p>接著把三組係數代進去，看每一行的值 <i class="mr ch" data-ch="run">04</i>。往下捲，一次看一式。</p>
+      <div data-board>$$\begin{aligned}
+\T{r1}{ax^2 + bx + c} &\T{r1}{{} = 0} \\
+\T{r2}{x^2 + \tfrac{b}{a}x} &\T{r2}{{} = -\tfrac{c}{a}} \\[8pt]
+\T{r3}{x^2 + \tfrac{b}{a}x + \big(\h\big)^2} &\T{r3}{{} = \big(\h\big)^2 - \tfrac{c}{a}} \\
+\T{r4}{\big(x + \h\big)^2} &\T{r4}{{} = \dfrac{b^2 - 4ac}{4a^2}} \\[8pt]
+\T{r5}{x + \h} &\T{r5}{{} = \pm\dfrac{\sqrt{b^2 - 4ac}}{2a}} \\
+\T{r6}{x} &\T{r6}{{} = \dfrac{-b \pm \sqrt{b^2 - 4ac}}{2a}}
+\end{aligned}$$</div>
+    </div></section>
+
+    <section class="step" data-step="std"><div class="step-in">
+      <p class="kicker">01 · 整理</p>
+      <h2>從一般式開始</h2>
+      <p>$a \ne 0$，不然就不是二次方程。根就是拋物線 $y = ax^2 + bx + c$ 碰到 x 軸的地方。</p>
+      <p>例子 $x^2 - 2x - 3 = 0$：$a = 1$、$b = -2$、$c = -3$，拋物線在 $x = 3$ 和 $x = -1$ 穿過 x 軸。</p>
+      <div data-eq="std">$$\T{q}{\T{a}{a}x^2 + \T{b}{b}x + \T{c}{c}} = 0$$</div>
+    </div></section>
+
+    <section class="step" data-step="divide"><div class="step-in">
+      <p class="kicker">01 · 整理</p>
+      <h2>除以 a，常數搬到右邊</h2>
+      <p>兩邊除以 $a$，讓 $x^2$ 前面是 1；再把常數搬到右邊。左邊剩 $x^2$ 和一個一次項，一次項的係數是 $\tfrac{b}{a}$。</p>
+      <p>例子：$\tfrac{b}{a} = -2$，右邊 $-\tfrac{c}{a} = 3$。下圖把 $x^2$ 畫成邊長 $x$ 的正方形，$\tfrac{b}{a}x$ 是旁邊的長方形，切成兩半，一半搬到下面。</p>
+      <div data-eq="tidy">$$\T{lhs}{x^2 + \T{ba}{\tfrac{b}{a}}\,x} = \T{ca}{-\tfrac{c}{a}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="complete"><div class="step-in">
+      <p class="kicker">02 · 配方</p>
+      <h2>補上缺的那一角</h2>
+      <p>兩個半邊長方形圍著正方形，右下角缺一塊邊長 $\h$ 的小正方形。兩邊同時加上 $\big(\h\big)^2$，等式不變，左邊就補成一個完整的正方形。</p>
+      <p>例子：$\h = -1$，補上的角落是 $1$，右邊變成 $1 + 3 = 4$。</p>
+      <div data-eq="sq">$$x^2 + \tfrac{b}{a}x + \T{add}{\big(\h\big)^2} = \T{add2}{\big(\h\big)^2} - \tfrac{c}{a}$$</div>
+    </div></section>
+
+    <section class="step" data-step="fold"><div class="step-in">
+      <p class="kicker">02 · 配方</p>
+      <h2>左邊是完全平方</h2>
+      <p>補完的正方形邊長是 $x + \h$，所以左邊寫成 $\big(x + \h\big)^2$。右邊通分成 $\frac{b^2 - 4ac}{4a^2}$，分子 $b^2 - 4ac$ 叫判別式。</p>
+      <p>例子：判別式 $= 4 + 12 = 16$，右邊 $= 16/4 = 4$。</p>
+      <div data-eq="fold">$$\T{sq}{\big(x + \h\big)^2} = \frac{\T{disc}{b^2 - 4ac}}{\T{den}{4a^2}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="sweep"><div class="step-in">
+      <p class="kicker">02 · 配方</p>
+      <h2>判別式決定有幾個根</h2>
+      <p>左邊是平方，不會是負的。右邊的分母 $4a^2$ 也是正的，所以判別式是負的時候，等式不可能成立：沒有實根。</p>
+      <p>往下捲，$c$ 從 $-3$ 加到 $3$：拋物線往上移，判別式 $4 - 4c$ 變小，兩個根往頂點靠攏；$c = 1$ 時剛好碰到 x 軸，之後就離開了。</p>
+    </div></section>
+
+    <section class="step" data-step="root"><div class="step-in">
+      <p class="kicker">03 · 開根號</p>
+      <h2>頂點，加減一段距離</h2>
+      <p>兩邊開根號要記得 $\pm$，再把 $\h$ 移到右邊。$-\h$ 是拋物線頂點的位置，$\frac{\sqrt{b^2 - 4ac}}{2a}$ 是根離頂點多遠：兩個根對稱地站在頂點兩邊。</p>
+      <p>例子：頂點在 $x = 1$，距離 $\sqrt{16}/2 = 2$，根是 $1 + 2 = 3$ 和 $1 - 2 = -1$。</p>
+      <div data-eq="root">$$x = \T{v}{-\h} \pm \T{d}{\frac{\sqrt{b^2 - 4ac}}{2a}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="run"><div class="step-in">
+      <p class="kicker">04 · 代入三組</p>
+      <h2>把推導當函式跑三次</h2>
+      <p>回到黑板，把第 2 到 6 行當成一個函式，餵三組係數進去；每一格是那一行等號右邊的值。</p>
+      <p>$2x^2 + 3x - 2$ 的右邊不是整數，照樣一路算到 $0.5$ 和 $-2$。$x^2 + 2x + 5$ 在第 4 行右邊變成 $-4$：一個平方等於負數，從這一行開始就沒有實根。</p>
+    </div></section>
+
+    <section class="step" data-step="end"><div class="step-in">
+      <p class="kicker">05 · 回顧</p>
+      <h2>整面黑板，填上三組係數</h2>
+      <p>整段推導只做了一件事：補一個角，讓左邊變成完全平方。判別式的正負決定開不開得了根號；橘色是 $x^2 + 2x + 5$ 斷掉的地方。</p>
+    </div></section>
+  </div>
+
+  <div class="mw-stage" data-stage role="img" aria-label="推導舞台：一次一個式子，開頭和結尾是整面黑板">
+    <div class="mw-board-host" data-board-host></div><div class="mw-eqs" data-eqs></div>
+    <svg class="mw-ov" data-ov aria-hidden="true"></svg><div class="mw-notes" data-notes aria-hidden="true"></div>
+    <div class="mw-figwrap" data-figwrap aria-hidden="true"><p class="mw-fig-title" data-fig-title></p><div class="mw-figs" data-figs></div></div>
+  </div>
+</div>
+
+<footer class="mw-outro wrap mw-up">
+  <p class="kicker">Sources</p>
+  <ul class="mw-sources">
+    <li>配方法：任何一本高中代數課本。圖上的數字都由頁面上的程式從 $a, b, c$ 算出來。</li>
+  </ul>
+</footer>
+
+<script src="engine.js"></script>
+<script>
+(function () {
+  // ---------- the worked examples: every number on the page is computed from these ----------
+  var EX = [
+    { name: 'x² − 2x − 3', a: 1, b: -2, c: -3 },
+    { name: '2x² + 3x − 2', a: 2, b: 3, c: -2 },
+    { name: 'x² + 2x + 5', a: 1, b: 2, c: 5 }
+  ];
+  function num(v, d) { var p = Math.pow(10, d == null ? 4 : d); return String(Math.round(v * p) / p).replace('-', '−'); }
+  function solve(e) {
+    var h = e.b / (2 * e.a), d = e.b * e.b - 4 * e.a * e.c, q = d / (4 * e.a * e.a), r = Math.sqrt(Math.max(0, q));
+    return { ba: e.b / e.a, ca: -e.c / e.a, h: h, d: d, q: q, real: d >= 0, r: r, x1: -h + r, x2: -h - r };
+  }
+  var S = EX.map(solve), A = S[0];
+
+  // the blackboard's columns: the right-hand side of rows 2–6 for each example
+  var columns = EX.map(function (e, i) {
+    var s = S[i];
+    return {
+      name: e.name,
+      values: { 2: num(s.ca), 3: num(s.q), 4: num(s.q), 5: s.real ? '±' + num(s.r) : '—', 6: s.real ? num(s.x1) + ', ' + num(s.x2) : '無實根' },
+      mark: s.real ? [] : [4, 5, 6]
+    };
+  });
+
+  // the sweep: a = 1, b = −2, c from −3 to 3
+  var sweep = [];
+  for (var i = 0; i <= 24; i++) { var c = -3 + i * 0.25; sweep.push({ vars: { c: c, d: 4 - 4 * c } }); }
+
+  var chapters = [
+    { id: 'map', n: '00', name: '概觀' },
+    { id: 'tidy', n: '01', name: '整理', rows: [1, 2] },
+    { id: 'square', n: '02', name: '配方', rows: [3, 4] },
+    { id: 'root', n: '03', name: '開根號', rows: [5, 6] },
+    { id: 'run', n: '04', name: '代入三組', rows: [2, 6], bracket: false },
+    { id: 'end', n: '05', name: '回顧' }
+  ];
+  var steps = [
+    { id: 'overview', ch: 'map', board: { mode: 'overview', rows: [1, 6] }, h: 1.4 },
+    { id: 'std', ch: 'tidy', eq: 'std', hot: ['q'], notes: [['q', '例子：' + EX[0].name]], fig: 'par', h: 1.2 },
+    { id: 'divide', ch: 'tidy', eq: 'tidy', from: 'std', say: '兩邊除以 a，常數搬到右邊', hot: ['ba'],
+      notes: [['ba', '一次項係數 = ' + num(A.ba), 'hot'], ['ca', '#n-ca']], fig: 'box', figMode: 'split', h: 1.3 },
+    { id: 'complete', ch: 'square', eq: 'sq', from: 'tidy', say: '兩邊加上同一塊', zoom: 'add', hot: ['add', 'add2'],
+      notes: [['add', '補上的角落 = ' + num(A.h * A.h), 'hot']], fig: 'box', figMode: 'fill', h: 1.3 },
+    { id: 'fold', ch: 'square', eq: 'fold', from: 'sq', say: '左邊剛好是一個正方形', hot: ['sq'],
+      notes: [['sq', '邊長 x + b/2a', 'hot'], ['disc', '判別式 = ' + num(A.d)], ['den', '正的']], fig: 'box', figMode: 'whole', h: 1.3 },
+    { id: 'sweep', ch: 'square', eq: 'fold', hot: ['disc'],
+      notes: [['disc', function (st) { var v = (st.ev || sweep[0]).vars; return 'c = ' + num(v.c) + '，判別式 = ' + num(v.d); }, 'hot']],
+      fig: 'par', figMode: 'sweep', scrub: { trace: 'sweep' }, h: 2.4 },
+    { id: 'root', ch: 'root', eq: 'root', from: 'fold', say: '開根號，再把 b/2a 移過去', hot: ['d'],
+      notes: [['v', '頂點 x = ' + num(-A.h)], ['d', '根離頂點 ' + num(A.r), 'hot']], fig: 'par', figMode: 'roots', h: 1.3 },
+    { id: 'run', ch: 'run', board: { mode: 'run', rows: [2, 6] }, h: 3 },
+    { id: 'end', ch: 'end', board: { mode: 'end', rows: [1, 6] }, h: 1.3 }
+  ];
+
+  // ---------- figures: make(api) builds the SVG once; set(st) only changes attributes ----------
+  var W = 600, H = 270;
+  function M(api, g, x, y, s, cls, anchor) { return api.T(g, x, y, s, 'mx' + (cls ? ' ' + cls : ''), anchor); }
+
+  // y = x² + bx + c on a fixed grid; modes: plain (the example), sweep (c follows the trace), roots (vertex ± distance)
+  var X0 = -2.4, X1 = 4.4, Y0 = -5, Y1 = 7;
+  function fx(x) { return 30 + (x - X0) / (X1 - X0) * 390; }
+  function fy(y) { return 240 - (y - Y0) / (Y1 - Y0) * 225; }
+  function parab(a, b, c) {
+    var d = '';
+    for (var i = 0; i <= 90; i++) { var x = X0 + (X1 - X0) * i / 90; d += (i ? 'L' : 'M') + fx(x).toFixed(1) + ' ' + fy(a * x * x + b * x + c).toFixed(1); }
+    return d;
+  }
+  var par = { title: 'Fig · y = ax² + bx + c', trace: 'sweep', make: function (api) {
+    var s = api.svg('par', W, H), clip = api.el('clipPath', { id: 'par-clip' }, s.firstChild);
+    api.R(clip, fx(X0), fy(Y1), fx(X1) - fx(X0), fy(Y0) - fy(Y1));
+    api.P(s, 'M' + fx(X0) + ' ' + fy(0) + 'H' + fx(X1), 'axis');
+    api.P(s, 'M' + fx(0) + ' ' + fy(Y0) + 'V' + fy(Y1), 'axis');
+    [-2, -1, 1, 2, 3, 4].forEach(function (x) { api.T(s, fx(x), fy(0) + 16, String(x).replace('-', '−'), 'lab', 'middle'); });
+    var g = api.el('g', { 'clip-path': 'url(#par-clip)' }, s);
+    var vline = api.P(g, 'M0 0', 'guide'), curve = api.P(g, 'M0 0', 'curve');
+    var dist = [api.P(s, 'M0 0', 'curve-a'), api.P(s, 'M0 0', 'curve-a')];
+    var roots = [api.el('circle', { r: 5, class: 'dot dot-a' }, s), api.el('circle', { r: 5, class: 'dot dot-a' }, s)];
+    var vdot = api.el('circle', { r: 4.5, class: 'dot dot-z' }, s);
+    var t1 = M(api, s, 450, 70, '', 'md'), t2 = M(api, s, 450, 112, ''), t3 = M(api, s, 450, 150, ''), cap = api.T(s, 450, 190, '', 'lab');
+    return { node: s, set: function (st) {
+      // the curve glides between trace events (frac); the printed numbers are the current event's, like the note above
+      var a = 1, b = -2, c = -3, mode = st.mode, cg = c;
+      if (mode === 'sweep' && st.ev) { c = st.ev.vars.c; cg = api.lerp(c, st.next.vars.c, st.frac); }
+      var d = b * b - 4 * a * c, h = b / (2 * a), r = d >= 0 ? Math.sqrt(d) / (2 * a) : 0;
+      var dg = b * b - 4 * a * cg, rg = dg >= 0 ? Math.sqrt(dg) / (2 * a) : 0;
+      api.set(curve, 'd', parab(a, b, cg));
+      [-h + rg, -h - rg].forEach(function (x, i) {
+        api.set(roots[i], 'cx', fx(x).toFixed(1)); api.set(roots[i], 'cy', fy(0).toFixed(1));
+        api.sop(roots[i], dg >= 0 ? 1 : 0);
+      });
+      var showV = mode === 'roots';
+      api.set(vline, 'd', 'M' + fx(-h).toFixed(1) + ' ' + fy(Y0) + 'V' + fy(Y1));
+      api.sop(vline, showV ? 1 : 0); api.sop(vdot, showV ? 1 : 0);
+      api.set(vdot, 'cx', fx(-h).toFixed(1)); api.set(vdot, 'cy', fy(cg - b * b / (4 * a)).toFixed(1));
+      var k = showV ? api.ease(api.seg(st.t, 0.35, 0.8)) : 0;
+      [1, -1].forEach(function (sg, i) {
+        api.set(dist[i], 'd', 'M' + fx(-h).toFixed(1) + ' ' + (fy(0) - 7) + 'H' + fx(-h + sg * r * k).toFixed(1));
+        api.sop(dist[i], showV ? 1 : 0);
+      });
+      api.txt(t1, 'y = x² − 2x ' + (c < 0 ? '− ' + num(-c, 2) : '+ ' + num(c, 2)));
+      api.txt(t2, mode === 'roots' ? '頂點 x = ' + num(-h) : '判別式 = ' + num(d, 2));
+      api.cls(t2, 'hl', mode === 'sweep');
+      api.txt(t3, mode === 'roots' ? '距離 = ' + num(r) : d > 1e-9 ? '根：' + num(-h + r, 2) + ', ' + num(-h - r, 2) : d > -1e-9 ? '根：' + num(-h) + '（重根）' : '沒有實根');
+      api.cls(t3, 'hl', mode === 'roots');
+      api.txt(cap, mode === 'sweep' ? '拋物線往上移，根往頂點靠攏' : mode === 'roots' ? '兩個根對稱地站在頂點兩邊' : '根 = 拋物線碰到 x 軸的地方');
+    } };
+  } };
+
+  // the area model of x² + (b/a)x: a square, a strip cut in half, the missing corner, the whole square
+  var box = { title: 'Fig · 把 x² + (b/a)x 補成正方形', make: function (api) {
+    var s = api.svg('box', W, H), u = 150, w = 56, ox = 90, oy = 34;
+    var sq = api.R(s, ox, oy, u, u, 'sq'), r1 = api.R(s, ox + u, oy, w, u, 'sq-a'), r2 = api.R(s, ox + u + w, oy, w, u, 'sq-a');
+    var corner = api.R(s, ox + u, oy + u, w, w, 'sq-a'), whole = api.R(s, ox, oy, u + w, u + w, 'whole');
+    M(api, s, ox + u / 2, oy + u / 2 + 10, 'x²', 'big', 'middle');
+    M(api, s, ox + u / 2, oy - 10, 'x', 'sm', 'middle');
+    M(api, s, ox + u + w / 2, oy - 10, 'b/2a', 'sm', 'middle');
+    var cl = M(api, s, ox + u + w / 2, oy + u + w / 2 + 6, '(b/2a)²', 'sm hl', 'middle');
+    var side = M(api, s, ox + u + w + 14, oy + (u + w) / 2 + 6, 'x + b/2a', 'hl');
+    var t1 = M(api, s, 420, 96, '', 'md'), t2 = api.T(s, 420, 132, '', 'lab');
+    return { node: s, set: function (st) {
+      var mode = st.mode, k = mode === 'split' ? api.ease(api.seg(st.t, 0.3, 0.75)) : 1;
+      // the right half of the strip swings down under the square
+      api.set(r2, 'x', (ox + u + w - k * (u + w)).toFixed(1)); api.set(r2, 'y', (oy + k * u).toFixed(1));
+      api.set(r2, 'width', (w + k * (u - w)).toFixed(1)); api.set(r2, 'height', (u - k * (u - w)).toFixed(1));
+      api.set(r1, 'class', mode === 'split' ? 'sq-a' : 'sq'); api.set(r2, 'class', mode === 'split' ? 'sq-a' : 'sq');
+      var kc = mode === 'fill' ? api.ease(api.seg(st.t, 0.3, 0.7)) : mode === 'whole' ? 1 : 0;
+      api.sop(corner, kc); api.sop(cl, kc);
+      api.set(corner, 'class', mode === 'whole' ? 'sq' : 'sq-a');
+      api.cls(cl, 'hl', mode === 'fill');
+      api.sop(whole, mode === 'whole' ? 1 : 0); api.sop(side, mode === 'whole' ? 1 : 0);
+      api.txt(t1, mode === 'split' ? 'x² + (b/a)·x' : mode === 'fill' ? '+ (b/2a)²' : '= (x + b/2a)²');
+      api.txt(t2, mode === 'split' ? '長方形切成兩半，一半搬到下面' : mode === 'fill' ? '缺的那一角，兩邊都加上' : '補完是邊長 x + b/2a 的正方形');
+    } };
+  } };
+
+  MathWalk({
+    chapters: chapters, steps: steps, traces: { sweep: sweep }, figs: { par: par, box: box },
+    board: MathWalk.blackboard({ columns: columns })
+  });
+})();
+</script>
+</body>
+</html>

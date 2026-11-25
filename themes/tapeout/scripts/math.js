@@ -595,7 +595,8 @@ hexo.extend.helper.register('texify', function (html, macros) {
     trust: ({ command }) => command === '\\htmlClass' || command === '\\htmlData',
     throwOnError: true
   });
-  return String(html || '').replace(/\$\$([\s\S]+?)\$\$|\$([^$]+?)\$/g, (all, d, i) => {
+  return String(html || '').replace(/\\\$|\$\$([\s\S]+?)\$\$|\$([^$]+?)\$/g, (all, d, i) => {
+    if (all === '\\$') return '$';   // \$ = a literal dollar sign
     const tex = (d || i).trim();
     try {
       return katex.renderToString(tex, opts(!!d)).replace(ITALIC_GAP, '$1');

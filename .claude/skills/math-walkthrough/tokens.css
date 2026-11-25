@@ -1,0 +1,32 @@
+/* Standalone page base for build.js: the blog theme's tokens and the few base rules engine.css expects.
+   Blog pages don't use this file; the theme already provides all of it. */
+:root {
+  --bg: #f3f0e8; --bg-2: #ebe7dc; --surface: #faf8f3; --ink: #151513; --ink-2: #4b4840; --ink-3: #888376;
+  --line: #ddd7c9; --line-2: #c5bead; --accent: #ff5418; --accent-ink: #ffffff; --accent-soft: rgba(255, 84, 24, 0.14);
+  --font-sans: "IBM Plex Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "Noto Sans TC", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: "Instrument Serif", "Noto Serif TC", "Songti TC", Georgia, serif;
+  --header-h: 0px; --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c0d0b; --bg-2: #131512; --surface: #141613; --ink: #ecebe4; --ink-2: #b4b1a7; --ink-3: #75736a;
+    --line: #252722; --line-2: #363931; --accent: #ff6a2c; --accent-soft: rgba(255, 106, 44, 0.16);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c0d0b; --bg-2: #131512; --surface: #141613; --ink: #ecebe4; --ink-2: #b4b1a7; --ink-3: #75736a;
+  --line: #252722; --line-2: #363931; --accent: #ff6a2c; --accent-soft: rgba(255, 106, 44, 0.16);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--font-sans); }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+.wrap { width: 100%; max-width: 1320px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
+.kicker {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0;
+  font: 500 12px/1.4 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2);
+}
+.kicker::before { content: ""; width: 8px; height: 8px; background: var(--accent); flex: none; }

@@ -1,6 +1,6 @@
 ---
 name: scroll-explainer
-description: 做捲動驅動的動畫解說頁（scrollytelling）：一個釘住的舞台、一條捲動進度 p 驅動整段 SVG 動畫、鏡頭推拉、停靠站與說明欄、自動播放。適用於「生成解說動畫」、「做一個像首頁開場那樣的動畫」、「用動畫比較兩個模型 / 架構 / 流程」、「把 X 畫成可以捲動看的 explainer」、把一段技術流程做成互動頁面。整理自 Hank 部落格首頁的 tapeout 開場（晶棒 → 晶圓 → APR → 封裝）和 Ideogram 4 vs SD 3.5 的兩版比較頁。
+description: 做捲動驅動的動畫解說頁（scrollytelling）：一個釘住的舞台、一條捲動進度 p 驅動整段 SVG 動畫、鏡頭推拉、停靠站與說明欄、自動播放。適用於「生成解說動畫」、「做一個像首頁開場那樣的動畫」、「用動畫比較兩個模型 / 架構 / 流程」、「把 X 畫成可以捲動看的 explainer」、把一段技術流程做成互動頁面。整理自 Hank 部落格首頁的 tapeout 開場（晶棒 → 晶圓 → APR → 封裝）和 Ideogram 4 vs SD 3.5 的兩版比較頁。一步一步的公式推導用 math-walkthrough。
 ---
 
 # Scroll explainer
@@ -18,7 +18,7 @@ description: 做捲動驅動的動畫解說頁（scrollytelling）：一個釘�
 
 最小可跑的骨架在 [skeleton.html](skeleton.html)：從它開始改，不要從零寫。
 
-要做的是一門課或一個大專案的入口頁（把很多篇筆記串成一條故事、黑底發表會式），用 `keynote-tour`。
+要做的是一門課或一個大專案的入口頁（把很多篇筆記串成一條故事、黑底發表會式），用 `keynote-tour`。一式一式講公式推導用 `math-walkthrough`。
 
 ## 成品放哪裡
 

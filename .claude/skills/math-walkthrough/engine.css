@@ -1,0 +1,202 @@
+/* mathwalk engine styles: prose steps on the left, a pinned paper stage on the right.
+   Colour rule: everything is ink; one accent marks the term being talked about; --c2 only when two things are compared.
+   Uses the theme's tokens (--bg, --ink*, --line*, --accent*, --font-*, --header-h, --ease). Page-specific figure styles
+   go in the page's own CSS. The skill .claude/skills/math-walkthrough ships this same file as engine.css. */
+:root {
+  --math: "STIX Two Text", "STIX Two Math", "Cambria Math", Cambria, "Times New Roman", "Noto Serif TC", "Songti TC", serif;
+  --c2: #2f67d0; --paper: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --c2: #7ea6ff; --paper: var(--surface); }
+}
+:root[data-theme="dark"] { --c2: #7ea6ff; --paper: var(--surface); }
+
+/* upright letters (no math italic): KaTeX's Latin from its roman font; lowercase Greek falls back to STIX Two */
+.mw .katex .mathnormal, .mw-up .katex .mathnormal { font-family: KaTeX_Main, "STIX Two Text", "Times New Roman", serif; font-style: normal; }
+
+/* layout: text column + pinned stage */
+.mw { position: relative; }
+.mw:not(.is-live) { max-width: 760px; margin: 0 auto; padding: 0 16px 40px; }
+.mw:not(.is-live) .mw-stage { display: none; }
+.mw:not(.is-live) .step { padding: 28px 0; border-top: 1px solid var(--line); }
+.mw:not(.is-live) [data-eq], .mw:not(.is-live) [data-board] { margin: 16px 0 0; overflow-x: auto; overflow-y: hidden; }
+.mw.is-live { display: grid; grid-template-columns: minmax(340px, 31vw) minmax(0, 1fr); border-top: 1px solid var(--line); }
+.mw.is-live .mw-text { grid-column: 1; grid-row: 1; padding: 0 36px 46svh max(20px, 3.4vw); }
+.mw.is-live .mw-stage {
+  grid-column: 2; grid-row: 1; align-self: start; position: sticky; top: var(--header-h); height: calc(100svh - var(--header-h)); overflow: hidden;
+  border-left: 1px solid var(--line); background: var(--paper);
+}
+.mw.is-live .step { min-height: calc(var(--h, 1) * 86svh); }
+.mw.is-live .step-in { position: sticky; top: calc(var(--header-h) + max(14svh, 104px)); opacity: 0.28; transition: opacity 0.35s var(--ease); }
+.mw.is-live .step.is-on .step-in { opacity: 1; }
+.mw .step-in { max-width: 420px; }
+.mw .step h2 { margin: 8px 0 0; font: 600 21px/1.4 var(--font-sans); }
+.mw .step p { margin: 12px 0 0; font-size: 15px; line-height: 1.8; color: var(--ink-2); }
+.mw .step .katex { font-size: 1.08em; color: var(--ink); }
+.mw .step h2 .katex { font-size: 1em; }
+.mr.ch {
+  display: inline-grid; place-items: center; height: 18px; margin: 0 2px; padding: 0 5px; border-radius: 4px;
+  background: var(--accent-soft); color: var(--accent); font: 600 10.5px/1 var(--font-mono); font-style: normal; vertical-align: 1px; cursor: help;
+}
+
+/* stage: equations and the board are placed by transform from (0, 0) */
+.mw-eqs, .mw-board-host, .mw-notes { position: absolute; inset: 0; pointer-events: none; }
+.mw-stage [data-eq], .mw-bwrap { position: absolute; left: 0; top: 0; transform-origin: 0 0; width: max-content; white-space: nowrap; color: var(--ink); visibility: hidden; }
+.mw-stage [data-eq] { font-size: 21px; }
+.mw-stage [data-board] { font-size: 18px; }
+.mw-stage .katex-display { margin: 0; }
+.mw-stage .katex-display > .katex { text-align: left; }
+.mw-blayer { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; }
+
+/* term states */
+.mw-stage .katex-html, .mw-stage .katex-html * { transition: color 0.3s var(--ease); }
+.mw-stage [data-eq].is-zoom .katex-html { color: var(--ink-3); }
+.mw-stage [data-eq].is-zoom .is-focus { color: var(--ink); }
+.mw-stage [data-eq] .is-hot2 { color: var(--c2); }
+.mw-stage [data-eq] .is-hot { color: var(--accent); }
+
+/* caption between the previous equation and this one; notes under terms */
+.mw-say { position: absolute; left: 0; top: 0; font: 500 12.5px/20px var(--font-sans); color: var(--ink-3); white-space: nowrap; }
+.mw-say::before { content: "↓  "; }
+.mw-note { position: absolute; left: 0; top: 0; font: 13px/1.45 var(--font-sans); color: var(--ink-2); white-space: nowrap; }
+.mw-note .katex { font-size: 1.08em; color: inherit; }
+.mw-note.is-hot { color: var(--accent); }
+.mw-note.is-hot2 { color: var(--c2); }
+.mw-note b { font-weight: 600; color: var(--ink); }
+.mw-note .num { font-family: KaTeX_Main, var(--math); font-size: 1.12em; }
+.mw-ov { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.mw-ov .brk { fill: none; stroke: var(--ink-3); stroke-width: 1.2; }
+.mw-ov .brk.is-hot { stroke: var(--accent); }
+.mw-ov .brk.is-hot2 { stroke: var(--c2); }
+
+/* figure zone at the bottom of the stage */
+.mw-figwrap { position: absolute; left: 0; top: 0; border-top: 1px solid var(--line); visibility: hidden; }
+.mw-fig-title { position: absolute; top: 9px; left: 0; margin: 0; font: 500 10.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.mw-figs { position: absolute; left: 0; right: 0; top: 30px; bottom: 0; }
+.mw .fig { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; visibility: hidden; }
+.mw .fig text { font: 12px var(--font-mono); fill: var(--ink-2); }
+.mw .fig .ah { fill: var(--ink-3); }
+.mw .fig .wire { fill: none; stroke: var(--ink-3); stroke-width: 1.4; }
+.mw .fig .wire.is-on { stroke: var(--accent); stroke-width: 2; }
+
+/* figure vocabulary: ink for everything, the accent for what the step is about, --c2 only for the second of a pair */
+.mw .fig .mx { font: 400 17px var(--math); fill: var(--ink); }
+.mw .fig .mx.big { font-size: 34px; }
+.mw .fig .mx.md { font-size: 19px; }
+.mw .fig .mx.sm { font-size: 15px; fill: var(--ink-2); }
+.mw .fig .mx.hl, .mw .fig .num.hl { fill: var(--accent); }
+.mw .fig .mx.c2, .mw .fig .num.c2 { fill: var(--c2); }
+.mw .fig .lab { font: 12.5px var(--font-sans); fill: var(--ink-3); }
+.mw .fig .num { font: 600 13px var(--font-mono); fill: var(--ink); }
+.mw .fig .num.no { fill: var(--ink-3); font-weight: 400; }
+.mw .fig .axis { stroke: var(--line-2); stroke-width: 1; fill: none; }
+.mw .fig .guide { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 4; fill: none; }
+.mw .fig .curve { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
+.mw .fig .curve.thin { stroke-width: 1.1; opacity: .75; }
+.mw .fig .curve.ghost { stroke: var(--ink-3); stroke-dasharray: 4 4; }
+.mw .fig .curve-a { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.mw .fig .curve-b { fill: none; stroke: var(--c2); stroke-width: 2; stroke-linejoin: round; }
+.mw .fig .area-a { fill: color-mix(in srgb, var(--accent) 20%, transparent); }
+.mw .fig .area-b { fill: color-mix(in srgb, var(--c2) 16%, transparent); }
+.mw .fig .sq { fill: color-mix(in srgb, var(--ink) 5%, transparent); stroke: var(--ink-2); stroke-width: 1.2; }
+.mw .fig .sq-a { fill: color-mix(in srgb, var(--accent) 18%, transparent); stroke: var(--accent); stroke-width: 1.2; }
+.mw .fig .sq-b { fill: color-mix(in srgb, var(--c2) 16%, transparent); stroke: var(--c2); stroke-width: 1.2; }
+.mw .fig .brk { fill: none; stroke: var(--ink-2); stroke-width: 1.4; }
+.mw .fig .dot { stroke: var(--paper); stroke-width: 2; }
+.mw .fig .dot-a { fill: var(--accent); }
+.mw .fig .dot-b { fill: var(--c2); }
+.mw .fig .dot-z { fill: var(--ink); }
+.mw .fig .strike { stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; }
+
+/* blackboard decoration (MathWalk.blackboard): chapter brackets, one value column per example, the band on the row being filled */
+.mw-bwrap .is-dim { color: var(--ink-3); }
+.mw-grp { position: absolute; left: 0; top: 0; box-sizing: border-box; width: 112px; padding: 1px 0 0 10px; border-left: 2px solid var(--line-2); transition: border-color 0.3s var(--ease), opacity 0.3s var(--ease); }
+.mw-grp .mw-gn { display: block; font: 600 11px/1.3 var(--font-mono); color: var(--ink-2); }
+.mw-grp .mw-gl { display: block; margin-top: 3px; font: 12px/1.3 var(--font-sans); color: var(--ink-3); white-space: nowrap; }
+.mw-grp.is-hot { border-color: var(--accent); }
+.mw-grp.is-hot .mw-gn, .mw-grp.is-hot .mw-gl { color: var(--accent); }
+.mw-grp.is-dim { opacity: 0.4; }
+.mw-grp.is-narrow { width: 30px; padding-left: 6px; }
+.mw-grp.is-narrow .mw-gl { display: none; }
+.mw-bwrap .is-out, .mw-grp.is-out { opacity: 0.12; }
+.mw-colh { position: absolute; left: 0; top: 0; font: 500 12px/18px var(--font-sans); color: var(--ink-3); white-space: nowrap; visibility: hidden; }
+.mw-colh.is-hot { color: var(--ink); font-weight: 600; }
+.mw-cell { position: absolute; left: 0; top: 0; font: 18px/22px KaTeX_Main, var(--math); color: var(--ink); white-space: nowrap; visibility: hidden; }
+.mw-cell.is-mark { color: var(--accent); }
+.mw-band { position: absolute; left: 0; top: 0; border-radius: 6px; background: var(--accent-soft); visibility: hidden; }
+
+/* hero and sources around the walkthrough (blog pages wrap them in .wrap) */
+.mw-hero { padding-top: clamp(40px, 7vw, 88px); padding-bottom: 36px; }
+.mw-hero h1 { margin: 18px 0 0; font-size: clamp(32px, 5.3vw, 66px); line-height: 1.12; font-weight: 600; letter-spacing: -.035em; }
+.mw-hero h1 em { color: var(--accent); font-family: var(--font-serif); font-weight: 400; }
+.mw-lede { max-width: 42em; margin: 22px 0 0; color: var(--ink-2); font-size: clamp(16px, 1.5vw, 19px); line-height: 1.8; }
+.mw-lede a, .mw-meta a, .mw .step a, .mw-sources a { text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.mw-lede .katex, .mw-meta .katex, .mw-sources .katex { font-size: 1.05em; color: var(--ink); }
+.mw-meta { display: grid; grid-template-columns: repeat(3, 1fr); margin: 28px 0 0; border-block: 1px solid var(--line-2); }
+.mw-meta > div { min-width: 0; padding: 12px 16px 14px 0; }
+.mw-meta > div + div { border-left: 1px solid var(--line); padding-left: 16px; }
+.mw-meta dt, .mw-hint { color: var(--ink-3); font: 500 11px var(--font-mono); letter-spacing: .05em; }
+.mw-meta dt { text-transform: uppercase; }
+.mw-meta dd { margin: 6px 0 0; font-size: 14px; }
+.mw-hint { margin: 20px 0 0; line-height: 1.8; }
+.mw-outro { padding-top: 48px; padding-bottom: 64px; border-top: 1px solid var(--line); }
+.mw-sources { max-width: 52em; margin: 14px 0 0; padding-left: 20px; color: var(--ink-2); font-size: 14px; line-height: 1.8; }
+@media (max-width: 600px) {
+  .mw-meta { grid-template-columns: 1fr; }
+  .mw-meta > div { display: flex; align-items: baseline; gap: 18px; padding: 10px 0; }
+  .mw-meta > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+  .mw-meta dt { flex: 0 0 120px; }
+  .mw-meta dd { margin: 0; font-size: 13px; }
+}
+
+/* rail at the top of the text column: player + chapter progress */
+.mw .rail { display: none; }
+.mw.is-live .rail {
+  display: block; position: sticky; top: var(--header-h); z-index: 4;
+  margin: 0 -36px 11svh calc(-1 * max(20px, 3.4vw)); padding: 16px 36px 12px max(20px, 3.4vw);
+  background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.rail-row { display: flex; align-items: center; gap: 10px; }
+.rail-c { margin-left: auto; font: 500 11px var(--font-mono); color: var(--ink-3); white-space: nowrap; }
+.chaps { display: flex; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+.chaps li { flex: var(--n, 1) 1 0; min-width: 0; }
+.chaps button { position: relative; width: 100%; padding: 0 0 8px; border: 0; background: none; text-align: left; font: 500 10.5px var(--font-mono); color: var(--ink-3); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chaps button .cn { margin-right: 5px; }
+.chaps button:not(.is-on) .cl { display: none; }
+.chaps button i { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; border-radius: 2px; background: var(--line-2); overflow: hidden; }
+.chaps button i::after { content: ""; position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+.chaps button.is-on { color: var(--ink); }
+.chaps button.is-on i::after { background: var(--accent); }
+.chaps button:hover { color: var(--accent); }
+.chaps button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.player { display: flex; align-items: center; gap: 6px; }
+.player[hidden], .hero-play[hidden] { display: none; }
+.pl-btn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px 4px 9px; border: 0; border-radius: 999px; background: var(--ink); color: var(--bg); font: 600 11.5px var(--font-mono); cursor: pointer; white-space: nowrap; }
+.pl-btn svg { width: 12px; height: 12px; fill: currentColor; }
+.pl-btn:hover, .player.is-run .pl-btn { background: var(--accent); color: #fff; }
+.pl-spd { display: flex; }
+.pl-spd button { padding: 4px 7px; border: 0; border-radius: 999px; background: none; font: 500 11px var(--font-mono); color: var(--ink-3); cursor: pointer; }
+.pl-spd button[aria-pressed="true"] { background: var(--bg-2); color: var(--ink); font-weight: 600; }
+.pl-spd button:hover { color: var(--accent); }
+.player button:focus-visible, .hero-play:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hero-play { display: inline-flex; align-items: center; gap: 7px; margin-left: 14px; padding: 6px 14px 6px 11px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--surface); font: 600 12px var(--font-mono); color: var(--ink); cursor: pointer; vertical-align: middle; }
+.hero-play svg { width: 11px; height: 11px; fill: var(--accent); }
+.hero-play:hover { border-color: var(--accent); color: var(--accent); }
+
+/* narrow: stage on top, text below */
+@media (max-width: 900px) {
+  .mw.is-live { display: flex; flex-direction: column; }
+  .mw.is-live .mw-stage { order: -1; align-self: stretch; width: 100%; height: 58svh; z-index: 3; border-left: 0; border-bottom: 1px solid var(--line-2); }
+  .mw.is-live .mw-text { padding: 0 16px 34svh; }
+  .mw.is-live .step { min-height: calc(var(--h, 1) * 55svh); }
+  .mw.is-live .step-in { position: sticky; top: calc(var(--header-h) + 58svh + 52px); }
+  .mw .step p { font-size: 14px; line-height: 1.7; }
+  .mw.is-live .rail { top: calc(var(--header-h) + 58svh); margin: 0 -16px 2svh; padding: 8px 16px; }
+  .chaps { display: none; }
+  .pl-btn { padding: 5px 9px; }
+  .pl-btn span { display: none; }
+  .mw-note { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mw.is-live .step-in, .mw-stage .katex-html, .mw-stage .katex-html * { transition: none; }
+}

@@ -3,9 +3,11 @@
    derivation as one aligned board.
    Equations are KaTeX rendered at build time (the texify helper). A term is a \htmlClass{t-<key>}{…} span,
    which a step can colour (hot / hot2), zoom into (zoom) or annotate from below (notes).
-   The page calls MathWalk({ chapters, steps, traces, figs, board }).
+   The page calls MathWalk({ chapters, steps, traces, figs, board }); board is usually MathWalk.blackboard({ columns })
+   (chapter brackets + one value column per worked example, defined at the bottom of this file).
    Every frame is a function of (step i, local t) read from the scroll position: no stored animation state,
-   so scrolling back, jumping chapters and autoplay all render the same picture. */
+   so scrolling back, jumping chapters and autoplay all render the same picture.
+   The skill .claude/skills/math-walkthrough ships this same file as engine.js: change both together. */
 (function () {
   'use strict';
   window.MathWalk = function (opts) {
@@ -20,6 +22,7 @@
     var figWrap = stage.querySelector('[data-figwrap]'), figHost = stage.querySelector('[data-figs]');
     var figTitle = stage.querySelector('[data-fig-title]');
     var TR = opts.traces || {};
+    if (opts.board && opts.board.trace && !TR.board) TR.board = opts.board.trace;   // the blackboard's fill order
 
     // ---------- helpers ----------
     function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
@@ -67,10 +70,12 @@
       }
       [].forEach.call(root.querySelectorAll('.mw-text [data-note]'), function (e) { noteSrc[e.getAttribute('data-note')] = e; e.parentNode.removeChild(e); });
     }
-    // a term's box: the span and everything inside it (KaTeX raises scripts with relative positioning), in natural px
+    // a term's box: the span and everything inside it (KaTeX raises scripts with relative positioning), in natural px.
+    // KaTeX draws stretchy marks (√, long arrows, braces) as 400em-wide SVGs clipped by a .hide-tail span: measure that span.
     function boxOf(sp, r0) {
       var b = null;
       [sp].concat([].slice.call(sp.querySelectorAll('*'))).forEach(function (n) {
+        if (n !== sp && !n.classList.contains('hide-tail') && n.closest('.hide-tail')) return;
         var r = n.getBoundingClientRect();
         if (r.width > 0.5 && r.height > 0.5) b = union(b, { x: r.left - r0.left, y: r.top - r0.top, w: r.width, h: r.height });
       });
@@ -116,6 +121,7 @@
     var steps = opts.steps.map(function (c, i) {
       var sec = root.querySelector('[data-step="' + c.id + '"]');
       if (!sec) throw new Error('no <section data-step="' + c.id + '">');
+      if (c.board && c.board.mode === 'run' && !c.scrub && TR.board) c.scrub = { trace: 'board' };
       sec.style.setProperty('--h', c.h || 1);
       return { cfg: c, i: i, section: sec };
     });
@@ -196,10 +202,13 @@
       ns.forEach(function (q) { sty(q.n.el, 'transform', 'translate(' + r2(q.x) + 'px,' + r2(base + 12) + 'px)'); });
       if (st.say) sty(st.say, 'transform', 'translate(' + r2(cx - st.say.offsetWidth / 2) + 'px,' + r2(st.sayY) + 'px)');
     }
+    // the board's frame: the rows in b.rows, plus what the decor draws around them (decor.extent), or the step's left/right/top
     function layoutBoard(st) {
       var b = st.cfg.board, Z = st.zone.eq, rows = rowsBox(b.rows ? b.rows[0] : 1, b.rows ? b.rows[1] : 99);
-      var x0 = -pick(b.left), x1 = Math.max(rows.x + rows.w, b.wide ? board.w : 0) + pick(b.right);
-      var y0 = rows.y - pick(b.top), y1 = rows.y + rows.h + 6;
+      var ext = boardDecor && boardDecor.extent ? boardDecor.extent(b, rows) : {};
+      var x0 = b.left != null ? -pick(b.left) : ext.x0 != null ? ext.x0 : Math.min(0, rows.x);
+      var x1 = Math.max(rows.x + rows.w, b.wide ? board.w : 0, ext.x1 || 0) + pick(b.right);
+      var y0 = rows.y - (b.top != null ? pick(b.top) : ext.top != null ? ext.top : 8), y1 = rows.y + rows.h + 6;
       var s = Math.min(b.smax || 1.2, Z.w / (x1 - x0), Z.h / (y1 - y0));
       st.poses = {};
       st.board = { x: Z.x + Z.w / 2 - (x0 + x1) / 2 * s, y: Z.y + Z.h / 2 - (y0 + y1) / 2 * s, s: s, o: 1 };
@@ -460,7 +469,7 @@
       autoplay = makeAutoplay();
       measure();
       if (board && opts.board) {
-        api.board = board;
+        api.board = board; api.chapters = opts.chapters || [];
         boardDecor = opts.board(api);
         measure();   // the decor may have added labels that the layout reads
       }
@@ -478,5 +487,110 @@
       document.fonts.load('20px KaTeX_Main'), document.fonts.load('20px KaTeX_Size1'), document.fonts.load('20px KaTeX_Size2'),
       document.fonts.load('20px "STIX Two Text"', 'ψ'), document.fonts.ready]) : Promise.resolve();
     Promise.race([fonts, new Promise(function (r) { setTimeout(r, 2000); })]).then(init, init);
+  };
+
+  /* MathWalk.blackboard({ columns, colWidth }): the standard board decoration. Board rows are \T{r<n>}{…} spans.
+     · chapters with rows: [a, b] get a bracket (number + name) left of those rows; the overview board lights them in turn
+       (bracket: false skips one, e.g. a chapter that only reruns earlier rows).
+     · columns: [{ name, values: { <row>: 'text' }, mark: [<row>, …] }], one per worked example, placed right of the rows
+       that have values. The 'run' board fills them row by row, column by column (its scrub defaults to the trace
+       'board', made here), fades the rows outside board.rows and moves a band to the row being filled; the 'end' board
+       shows every value. Rows in mark are drawn in the accent: where that example loses something or breaks. */
+  window.MathWalk.blackboard = function (cfg) {
+    cfg = cfg || {};
+    var COLS = cfg.columns || [], order = [];
+    COLS.forEach(function (col, c) {
+      Object.keys(col.values || {}).map(Number).sort(function (a, b) { return a - b; })
+        .forEach(function (row) { order.push({ vars: { col: c, row: row } }); });
+    });
+    function make(api) {
+      var B = api.board, L = B.layer, groups = [], cells = [], heads = [], at = {}, vrows = [], colW = 0;
+      var band = api.div('mw-band', L);
+      order.forEach(function (e, i) {
+        at[e.vars.col + ':' + e.vars.row] = i;
+        if (vrows.indexOf(e.vars.row) < 0) vrows.push(e.vars.row);
+      });
+      vrows.sort(function (a, b) { return a - b; });
+      api.chapters.forEach(function (c) {
+        if (!c.rows || c.bracket === false) return;
+        var g = api.div('mw-grp', L);
+        g.innerHTML = '<span class="mw-gn">' + api.esc(c.n) + '</span><span class="mw-gl">' + api.esc(c.name) + '</span>';
+        groups.push({ c: c, el: g });
+      });
+      COLS.forEach(function (col, c) {
+        var h = api.div('mw-colh', L);
+        api.txt(h, col.name); heads.push(h);
+        Object.keys(col.values || {}).forEach(function (row) {
+          var e = api.div('mw-cell', L);
+          api.txt(e, col.values[row]);
+          cells.push({ c: c, row: +row, el: e, mark: (col.mark || []).indexOf(+row) > -1 });
+        });
+      });
+      vrows.forEach(function (n) { if (!B.rows['r' + n]) console.error('mathwalk: a column has a value for row ' + n + ', but the board has no \\T{r' + n + '}{…}'); });
+      function box(n) { return B.rows['r' + n]; }
+      function colsX() { var x = 0; vrows.forEach(function (n) { if (box(n)) x = Math.max(x, box(n).x + box(n).w); }); return x + 34; }
+      function left(narrow) { return groups.length ? (narrow ? 44 : 132) : 0; }
+      function showCols(mode, narrow) { return COLS.length > 0 && (mode === 'run' || (mode === 'end' && !narrow)); }
+      function px(e, x, y) { api.sty(e, 'transform', 'translate(' + Math.round(x * 10) / 10 + 'px,' + Math.round(y * 10) / 10 + 'px)'); }
+      return {
+        extent: function (b) {
+          var narrow = api.view.narrow, n = showCols(b.mode, narrow) ? (narrow ? 1 : COLS.length) : 0;
+          colW = cfg.colWidth || 28 + Math.max.apply(null, [44].concat(heads.concat(cells.map(function (q) { return q.el; })).map(function (e) { return e.offsetWidth; })));
+          return { x0: -left(narrow), x1: n ? colsX() + n * colW - 12 : 0, top: n ? 40 : 8 };
+        },
+        set: function (st) {
+          var b = st.cfg.board, mode = b.mode, narrow = st.narrow, t = st.t, x0 = colsX();
+          var lit = null;   // rows lit by the overview walk or by hovering a chapter chip
+          if (mode === 'overview' && groups.length) {
+            var gi = Math.min(groups.length - 1, Math.floor((t - 0.12) / (0.7 / groups.length)));
+            if (t > 0.12 && t < 0.86) lit = groups[gi].c.rows;
+          }
+          if (st.hover) api.chapters.forEach(function (c) { if (c.id === st.hover && c.rows) lit = c.rows; });
+          var cur = mode === 'run' && st.ev ? st.ev.vars : null, e = cur && st.sc ? st.sc.e : -1, span = mode === 'run' ? b.rows : null;
+          function out(a, z) { return !!span && (z < span[0] || a > span[1]); }
+          Object.keys(B.spans).forEach(function (k) {
+            if (!/^r\d+$/.test(k)) return;
+            var n = +k.slice(1), dim = !!lit && (n < lit[0] || n > lit[1]), o = out(n, n);
+            B.spans[k].forEach(function (sp) { api.cls(sp, 'is-dim', dim); api.cls(sp, 'is-out', o); });
+          });
+          groups.forEach(function (g) {
+            var a = box(g.c.rows[0]), z = box(g.c.rows[1]), same = !!lit && lit[0] === g.c.rows[0] && lit[1] === g.c.rows[1];
+            if (!a || !z) return;
+            px(g.el, -left(narrow), a.y);
+            api.sty(g.el, 'height', Math.round(z.y + z.h - a.y) + 'px');
+            api.cls(g.el, 'is-hot', same);
+            api.cls(g.el, 'is-dim', !!lit && !same);
+            api.cls(g.el, 'is-out', out(g.c.rows[0], g.c.rows[1]));
+            api.cls(g.el, 'is-narrow', narrow);
+          });
+          // value columns (narrow: only the column being filled)
+          var show = showCols(mode, narrow), top = vrows.length ? box(vrows[0]) : null;
+          heads.forEach(function (h, c) {
+            if (top) px(h, x0 + (narrow ? 0 : c) * colW, top.y - 30);
+            api.sop(h, show && (!narrow || (cur && c === cur.col)) ? (cur && c > cur.col ? 0.35 : 1) : 0);
+            api.cls(h, 'is-hot', !!cur && c === cur.col);
+          });
+          cells.forEach(function (q) {
+            var bx = box(q.row), done = mode === 'end' || (!!cur && at[q.c + ':' + q.row] <= e);
+            if (!bx) return;
+            px(q.el, x0 + (narrow ? 0 : q.c) * colW, bx.y + bx.h / 2 - 11);
+            api.sop(q.el, show && done && (!narrow || q.c === cur.col) ? 1 : 0);
+            api.cls(q.el, 'is-mark', q.mark);
+            api.cls(q.el, 'is-now', !!cur && q.c === cur.col && q.row === cur.row);
+          });
+          // the band glides to the next row over the second half of an event
+          if (cur && box(cur.row)) {
+            var nx = st.next ? st.next.vars : cur, a1 = box(cur.row), a2 = nx.col === cur.col && box(nx.row) ? box(nx.row) : a1;
+            var kk = api.ease(api.seg(st.frac || 0, 0.55, 1));
+            px(band, -14, api.lerp(a1.y, a2.y, kk) - 4);
+            api.sty(band, 'height', Math.round(api.lerp(a1.h, a2.h, kk) + 8) + 'px');
+            api.sty(band, 'width', Math.round(x0 + (narrow ? 1 : COLS.length) * colW) + 'px');
+            api.sop(band, api.seg(t, 0.05, 0.12));
+          } else api.sop(band, 0);
+        }
+      };
+    }
+    make.trace = order;
+    return make;
   };
 })();
