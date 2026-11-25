@@ -1,0 +1,83 @@
+.is-uncertainty-derivation .statusbar { display: none; }
+
+/* ---------- hero ---------- */
+.ud-hero { padding-top: clamp(40px, 7vw, 88px); padding-bottom: 36px; }
+.ud-hero h1 { margin: 18px 0 0; font-size: clamp(32px, 5.3vw, 66px); line-height: 1.12; font-weight: 600; letter-spacing: -.035em; }
+.ud-hero h1 em { color: var(--accent); font-family: var(--font-serif); font-weight: 400; }
+.ud-lede { max-width: 42em; margin: 22px 0 0; color: var(--ink-2); font-size: clamp(16px, 1.5vw, 19px); line-height: 1.8; }
+.ud-lede a, .ud-meta a, .ud .step a, .ud-sources a { text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.ud-lede .katex, .ud-meta .katex, .ud-sources .katex { font-size: 1.05em; color: var(--ink); }
+.ud-meta { display: grid; grid-template-columns: repeat(3, 1fr); margin: 28px 0 0; border-block: 1px solid var(--line-2); }
+.ud-meta > div { min-width: 0; padding: 12px 16px 14px 0; }
+.ud-meta > div + div { border-left: 1px solid var(--line); padding-left: 16px; }
+.ud-meta dt, .ud-hint { color: var(--ink-3); font: 500 11px var(--font-mono); letter-spacing: .05em; }
+.ud-meta dt { text-transform: uppercase; }
+.ud-meta dd { margin: 6px 0 0; font-size: 14px; }
+.ud-hint { margin: 20px 0 0; line-height: 1.8; }
+
+/* ---------- the board: chapter brackets on the left, the three states' numbers on the right ---------- */
+.ud .mw-bwrap .is-dim { color: var(--ink-3); }
+.ud .mw-bwrap .is-out, .ud-grp.is-out { opacity: 0.12; }
+.ud-grp { position: absolute; left: 0; top: 0; box-sizing: border-box; width: 112px; padding: 1px 0 0 10px; border-left: 2px solid var(--line-2); transition: border-color 0.3s var(--ease), opacity 0.3s var(--ease); }
+.ud-grp .ud-gn { display: block; font: 600 11px/1.3 var(--font-mono); color: var(--ink-2); }
+.ud-grp .ud-gl { display: block; margin-top: 3px; font: 12px/1.3 var(--font-sans); color: var(--ink-3); white-space: nowrap; }
+.ud-grp.is-hot { border-color: var(--accent); }
+.ud-grp.is-hot .ud-gn, .ud-grp.is-hot .ud-gl { color: var(--accent); }
+.ud-grp.is-dim { opacity: 0.4; }
+.ud-grp.is-narrow { width: 30px; padding-left: 6px; }
+.ud-grp.is-narrow .ud-gl { display: none; }
+.ud-head { position: absolute; left: 0; top: 0; font: 500 12px/18px var(--font-sans); color: var(--ink-3); white-space: nowrap; }
+.ud-head.is-hot { color: var(--ink); font-weight: 600; }
+.ud-cell { position: absolute; left: 0; top: 0; font: 18px/22px KaTeX_Main, var(--math); color: var(--ink); white-space: nowrap; }
+.ud-cell.is-loss { color: var(--accent); }
+.ud-band { position: absolute; left: 0; top: 0; border-radius: 6px; background: var(--accent-soft); visibility: hidden; }
+
+/* ---------- figures: ink, one accent, --c2 only for the second of a pair ---------- */
+.ud .fig .mx { font: 400 17px var(--math); fill: var(--ink); }
+.ud .fig .mx.big { font-size: 34px; }
+.ud .fig .mx.md { font-size: 19px; }
+.ud .fig .mx.sm { font-size: 15px; fill: var(--ink-2); }
+.ud .fig .mx.hl, .ud .fig .num.hlt { fill: var(--accent); }
+.ud .fig .mx.c2 { fill: var(--c2); }
+.ud .fig .lab { font: 12.5px var(--font-sans); fill: var(--ink-3); }
+.ud .fig .num { font: 600 13px var(--font-mono); fill: var(--ink); }
+.ud .fig .num.no { fill: var(--ink-3); font-weight: 400; }
+.ud .fig .axis { stroke: var(--line-2); stroke-width: 1; fill: none; }
+.ud .fig .guide { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 4; fill: none; }
+.ud .fig .curve { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
+.ud .fig .curve.thin { stroke-width: 1.1; opacity: .75; }
+.ud .fig .curve.ghost { stroke: var(--ink-3); stroke-dasharray: 4 4; }
+.ud .fig .curve-a { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.ud .fig .curve-exact { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-dasharray: 2 5; stroke-linecap: round; opacity: .7; }
+.ud .fig .area-a { fill: color-mix(in srgb, var(--accent) 20%, transparent); }
+.ud .fig .mean { stroke: var(--accent); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.ud .fig .brk { fill: none; stroke: var(--ink-2); stroke-width: 1.4; }
+.ud .fig .vec { stroke-width: 3; stroke-linecap: round; fill: none; }
+.ud .fig .vec.va { stroke: var(--accent); }
+.ud .fig .vec.vb { stroke: var(--c2); stroke-width: 2; }
+.ud .fig .arc, .ud .fig .circ { fill: none; stroke: var(--ink-3); stroke-width: 1.2; }
+.ud .fig .okzone { fill: color-mix(in srgb, var(--accent) 7%, transparent); }
+.ud .fig .dot { stroke: var(--paper); stroke-width: 2; }
+.ud .fig .dot-a { fill: var(--accent); }
+.ud .fig .dot-b { fill: var(--c2); }
+.ud .fig .dot-z { fill: var(--ink); }
+.ud .fig .ghost-dot { fill: var(--ink-3); }
+.ud .fig .sq-a { fill: color-mix(in srgb, var(--accent) 18%, transparent); stroke: var(--accent); stroke-width: 1.2; }
+.ud .fig .sq-b { fill: color-mix(in srgb, var(--c2) 16%, transparent); stroke: var(--c2); stroke-width: 1.2; }
+.ud .fig .leg { stroke: var(--ink); stroke-width: 2; fill: none; }
+.ud .fig .leg-a { stroke: var(--accent); stroke-width: 2.4; fill: none; }
+.ud .fig .leg-b { stroke: var(--c2); stroke-width: 2.4; fill: none; }
+.ud .fig .strike { stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; }
+.ud .fig .win { fill: color-mix(in srgb, var(--accent) 9%, transparent); stroke: var(--accent); stroke-width: 1.2; }
+.ud .fig .nowin { fill: none; }
+
+/* ---------- outro ---------- */
+.ud-outro { padding-top: 48px; padding-bottom: 64px; border-top: 1px solid var(--line); }
+.ud-sources { max-width: 52em; margin: 14px 0 0; padding-left: 20px; color: var(--ink-2); font-size: 14px; line-height: 1.8; }
+@media (max-width: 600px) {
+  .ud-meta { grid-template-columns: 1fr; }
+  .ud-meta > div { display: flex; align-items: baseline; gap: 18px; padding: 10px 0; }
+  .ud-meta > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+  .ud-meta dt { flex: 0 0 120px; }
+  .ud-meta dd { margin: 0; font-size: 13px; }
+}

@@ -31,6 +31,15 @@ function mathConfig() {
   return Object.assign({ enable: true, macros: {} }, hexo.theme.config.math);
 }
 
+// 全站巨集：預設的加上 _config.tapeout.yml 的 math.macros（鍵可以不寫反斜線）
+function siteMacros() {
+  const macros = Object.assign({}, DEFAULT_MACROS);
+  Object.entries(mathConfig().macros || {}).forEach(([k, v]) => {
+    macros[k.startsWith('\\') ? k : '\\' + k] = String(v);
+  });
+  return macros;
+}
+
 // ── 1. 抽出數學式 ─────────────────────────────────────────────
 
 const ENVS = 'equation|align|gather|alignat|multline|flalign|eqnarray|displaymath';
@@ -448,11 +457,7 @@ hexo.extend.filter.register('after_post_render', function (data) {
     return m;
   });
 
-  const macros = Object.assign({}, DEFAULT_MACROS);
-  Object.entries(mathConfig().macros || {}).forEach(([k, v]) => {
-    macros[k.startsWith('\\') ? k : '\\' + k] = String(v);
-  });
-  const ctx = { labels, macros, warn };
+  const ctx = { labels, macros: siteMacros(), warn };
   const html = items.map(it => (it.ref ? renderRef(it, ctx) : renderMath(it, ctx)));
 
   // marked 的 breaks: true 會在區塊數學式前後、\label 那一行後面留下 <br>
@@ -573,6 +578,32 @@ hexo.extend.helper.register('math_toc', function (content, options) {
     return out + heading.slice(pos);
   });
   return this.toc(src, options).replace(/￼(\d+)￼/g, (_, i) => stash[i]);
+});
+
+// 版面（.ejs）裡的數學式：texify(html, macros) 把 $…$ 與 $$…$$ 換成 KaTeX。文章走上面的 filter，這個給 lab 頁用。
+// 另外允許 \htmlClass / \htmlData，動畫頁用來標出式子裡的某一項（例如 \htmlClass{t-avg}{\langle\Omega\rangle}）。
+// lab 頁的字母是正體（mathwalk.css 把 .mathnormal 換成 KaTeX_Main），所以拿掉 KaTeX 給斜體字母留的右邊距，
+// 不然 ⟨P⟩ 的 P 和 ⟩ 之間會多一段空白。
+const ITALIC_GAP = /(<span class="mord mathnormal") style="margin-right:[\d.]+em;"/g;
+hexo.extend.helper.register('texify', function (html, macros) {
+  const m = Object.assign(siteMacros(), macros || {});
+  const opts = display => ({
+    displayMode: display,
+    macros: m,
+    globalGroup: true,
+    strict: 'ignore',
+    trust: ({ command }) => command === '\\htmlClass' || command === '\\htmlData',
+    throwOnError: true
+  });
+  return String(html || '').replace(/\$\$([\s\S]+?)\$\$|\$([^$]+?)\$/g, (all, d, i) => {
+    const tex = (d || i).trim();
+    try {
+      return katex.renderToString(tex, opts(!!d)).replace(ITALIC_GAP, '$1');
+    } catch (err) {
+      hexo.log.warn(`[texify] ${err.message}`);
+      return `<code class="math-error">${escapeHTML(tex)}</code>`;
+    }
+  });
 });
 
 // 從 node_modules 複製 KaTeX 的 CSS 與字型，版本永遠和伺服器端算出來的 HTML 一致

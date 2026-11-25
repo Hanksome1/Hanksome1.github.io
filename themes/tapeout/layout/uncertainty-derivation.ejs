@@ -1,0 +1,11 @@
+<%#
+  /lab/uncertainty-derivation/: the markup lives in _partial/uncertainty-derivation.ejs; texify turns its $…$ / $$…$$ into KaTeX
+  at build time. \T{key}{…} marks a term the stage can colour, zoom into or annotate (engine: mathwalk.js).
+%><%- texify(partial('_partial/uncertainty-derivation'), {
+  '\\T': '\\htmlClass{t-#1}{#2}',
+  '\\Ot': '\\tilde{\\Omega}',
+  '\\Lt': '\\tilde{\\Lambda}',
+  '\\Xt': '\\tilde{\\mathrm{X}}',
+  '\\Pt': '\\tilde{\\mathrm{P}}',
+  '\\av': '\\langle #1\\rangle'
+}) %>

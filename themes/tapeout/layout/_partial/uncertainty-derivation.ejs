@@ -1,0 +1,195 @@
+<header class="ud-hero wrap mw-up">
+  <p class="kicker">§ Walkthrough — Quantum mechanics / Shankar Ch. 9</p>
+  <h1>測不準關係<br>一式一式<em>推一次</em></h1>
+  <p class="ud-lede"><a href="<%- url_for('/lab/uncertainty/') %>">圖解版</a>用動畫看 $\Delta X\,\Delta P \ge \hbar/2$ 在說什麼；這一頁把 Shankar §9.2–9.3 的推導一式一式攤開。右邊一次只放一個式子，上面小字是它從哪一式來；講到哪一項，那一項就變色或推近，底下標出它的意思和代入的數字。</p>
+  <dl class="ud-meta">
+    <div><dt>Units</dt><dd>$\hbar = 1$；例子的 $\langle X\rangle = 0.8$、$\langle P\rangle = 1.2$</dd></div>
+    <div><dt>Test inputs</dt><dd>高斯、chirp 高斯、諧振子 $|1\rangle$</dd></div>
+    <div><dt>Companion</dt><dd><a href="<%- url_for('/lab/uncertainty/') %>">圖解版：測不準關係</a></dd></div>
+  </dl>
+  <p class="ud-hint">往下捲 ↓<button class="hero-play" type="button" data-play-hero hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z"/></svg>自動播放</button></p>
+</header>
+
+<div class="mw ud" data-mw>
+  <div class="mw-text">
+    <nav class="rail" aria-label="播放與章節">
+      <div class="rail-row">
+        <div class="player" data-player data-l-idle="自動播放" data-l-run="暫停" data-l-done="重播">
+          <button class="pl-btn" type="button" data-play><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z"/></svg><span data-play-label>自動播放</span></button>
+          <span class="pl-spd" role="group" aria-label="播放速度"><button type="button" data-spd="0.5">0.5×</button><button type="button" data-spd="1">1×</button><button type="button" data-spd="1.5">1.5×</button><button type="button" data-spd="2">2×</button></span>
+        </div>
+        <span class="rail-c" data-hud-c></span>
+      </div>
+      <ol class="chaps" data-chaps></ol>
+    </nav>
+
+    <div class="mw-src" hidden>
+      <span data-note="n-Ot">平均值是 0 的 $\Omega$</span>
+      <span data-note="n-bra">$\psi^*(x)$</span>
+      <span data-note="n-op">乘上 $(x - \av{X})^2$</span>
+      <span data-note="n-ket">$\psi(x)$</span>
+      <span data-note="n-nrm">$= \lVert \Ot\psi \rVert^2$</span>
+    </div>
+
+    <section class="step" data-step="overview"><div class="step-in">
+      <p class="kicker">00 · 概觀</p>
+      <h2>一整面黑板</h2>
+      <p>右邊是整段推導，13 行。前 8 行證明一般的不等式：先定義不確定量 <i class="mr ch" data-ch="def">01</i>，用 Schwarz 把乘積壓成一個內積 <i class="mr ch" data-ch="schwarz">02</i>，再把內積拆成實部和虛部、丟掉實部 <i class="mr ch" data-ch="split">03</i>。</p>
+      <p>接著把三個具體的 ψ 代進去，看每一行的值怎麼變 <i class="mr ch" data-ch="run">04</i>。最後 5 行是 §9.3：兩個 ≥ 都取等號，解出來就是高斯 <i class="mr ch" data-ch="min">05</i>。往下捲，一次看一式。</p>
+      <div data-board>$$\begin{aligned}
+\T{r1}{\Ot} &\T{r1}{{} = \Omega - \av{\Omega}} \\
+\T{r2}{(\Delta\Omega)^2} &\T{r2}{{} = \langle\psi|\Ot^2|\psi\rangle = \langle\Ot\psi|\Ot\psi\rangle} \\[6pt]
+\T{r3}{(\Delta\Omega)^2(\Delta\Lambda)^2} &\T{r3}{{} = \langle\Ot\psi|\Ot\psi\rangle\,\langle\Lt\psi|\Lt\psi\rangle} \\
+&\T{r4}{{} \ge \big|\langle\psi|\Ot\Lt|\psi\rangle\big|^2} \\[6pt]
+\T{r5}{\langle\psi|\Ot\Lt|\psi\rangle} &\T{r5}{{} = \tfrac12\av{[\Ot,\Lt]_+} + \tfrac12\av{[\Omega,\Lambda]}} \\
+\T{r6}{(\Delta\Omega)^2(\Delta\Lambda)^2} &\T{r6}{{} \ge \tfrac14\av{[\Ot,\Lt]_+}^2 + \tfrac14\av{\Gamma}^2} \\
+&\T{r7}{{} \ge \tfrac14\av{\Gamma}^2} \\
+\T{r8}{\Delta X\,\Delta P} &\T{r8}{{} \ge \hbar/2} \\[12pt]
+\T{r9}{\Lt|\psi\rangle} &\T{r9}{{} = c\,\Ot|\psi\rangle, \qquad \av{[\Ot,\Lt]_+} = 0} \\
+\T{r10}{\big({-i\hbar}\,\tfrac{d}{dx} - \av{P}\big)\psi} &\T{r10}{{} = c\,(x - \av{X})\,\psi} \\
+\T{r11}{\psi(x)} &\T{r11}{{} = \psi(\av{X})\,e^{\,i\av{P}(x-\av{X})/\hbar}\,e^{\,ic\,(x-\av{X})^2/2\hbar}} \\
+\T{r12}{c} &\T{r12}{{} = i\,|c|} \\
+\T{r13}{\psi(x)} &\T{r13}{{} = \psi(\av{X})\,e^{\,i\av{P}(x-\av{X})/\hbar}\,e^{-|c|\,(x-\av{X})^2/2\hbar}}
+\end{aligned}$$</div>
+    </div></section>
+
+    <section class="step" data-step="tilde"><div class="step-in">
+      <p class="kicker">01 · 定義</p>
+      <h2>先把平均值減掉</h2>
+      <p>全部的假設只有一條：$\Omega$、$\Lambda$ 是 Hermitian，對易子寫成 $[\Omega,\Lambda] = i\Gamma$，$\Gamma$ 也是 Hermitian。第一步定義 $\Ot$：把 $\Omega$ 減掉它在這個態的平均值 $\av{\Omega}$。$\av{\Omega}$ 只是一個數，所以 $\Ot$ 還是 Hermitian。</p>
+      <p>對分布來說這只是平移：例子的位置平均 $\av{X} = 0.80$，減掉之後平均變成 0，形狀和寬度都沒變。之後的 Δ 只量「離平均多遠」，跟波包在哪裡無關。</p>
+      <div data-eq="def">$$\T{Ot}{\Ot} = \Omega - \T{avg}{\av{\Omega}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="delta"><div class="step-in">
+      <p class="kicker">01 · 定義</p>
+      <h2>$\langle\psi|\Ot^2|\psi\rangle$ 拆成三塊</h2>
+      <p>不確定量的定義是 $\Ot^2$ 在 ψ 的期望值。推近看這三塊：bra $\langle\psi|$ 在 X 基底是 $\psi^*(x)$；中間的 $\Xt^2$ 就是乘上 $(x-\av{X})^2$；ket $|\psi\rangle$ 是 $\psi(x)$。</p>
+      <p>三個乘起來積分，就是「離平均的距離平方」用 $|\psi|^2$ 加權的平均。下圖的面積從左邊一路積過來，停在 $(\Delta X)^2 = 0.490$。同一個態的 $(\Delta P)^2 = 0.824$。</p>
+      <div data-eq="var">$$\T{lhs}{(\Delta\Omega)^2} = \T{bk}{\T{bra}{\langle\psi|}\,\T{op}{\Ot^2}\,\T{ket}{|\psi\rangle}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="norm"><div class="step-in">
+      <p class="kicker">02 · Schwarz</p>
+      <h2>把一個 $\Ot$ 搬進 bra</h2>
+      <p>把 $\Ot^2$ 拆成 $\Ot\,\Ot$，讓左邊那個跳進 bra：因為 $\Ot$ 是 Hermitian，$\langle\psi|\Ot$ 就是 $\Ot|\psi\rangle$ 這個向量的 bra。</p>
+      <p>於是 $(\Delta\Omega)^2$ 變成一個向量的長度平方 $\lVert\Ot\psi\rVert^2$。例子裡 $\lVert\Xt\psi\rVert^2 = 0.490$、$\lVert\Pt\psi\rVert^2 = 0.824$。</p>
+      <div data-eq="norm">$$(\Delta\Omega)^2 = \T{mid}{\langle\psi|\,\T{a}{\Ot}\,\Ot\,|\psi\rangle} = \T{nrm}{\langle\T{b}{\Ot}\psi|\Ot\psi\rangle}$$</div>
+    </div></section>
+
+    <section class="step" data-step="schwarz"><div class="step-in">
+      <p class="kicker">02 · Schwarz</p>
+      <h2>第一個 ≥：Schwarz 不等式</h2>
+      <p>兩個不確定量相乘，就是兩個向量的長度平方相乘。Schwarz 不等式說它不小於兩個向量內積的絕對值平方，差的就是夾角的 $\cos^2\theta$。</p>
+      <p>下圖左邊是諧振子 $|1\rangle$：兩個向量夾 70.5°，$\cos^2\theta = 0.111$，2.250 只剩 0.250。右邊是 chirp 高斯：$\Pt\psi$ 剛好是 $\Xt\psi$ 的倍數，兩個向量平行，這一步一點都沒丟。</p>
+      <div data-eq="sch">$$\T{lhs}{(\Delta\Omega)^2(\Delta\Lambda)^2} = \T{len}{\langle\Ot\psi|\Ot\psi\rangle\,\langle\Lt\psi|\Lt\psi\rangle} \mathrel{\T{ge}{\ge}} \T{inr}{\big|\langle\Ot\psi|\Lt\psi\rangle\big|^2}$$</div>
+    </div></section>
+
+    <section class="step" data-step="split"><div class="step-in">
+      <p class="kicker">03 · 拆實虛</p>
+      <h2>對稱的一半、反對稱的一半</h2>
+      <p>內積寫回期望值就是 $\langle\psi|\Ot\Lt|\psi\rangle$。把 $\Ot\Lt$ 拆成反對易子和對易子各一半，跟把複數拆成 $z = \frac{z+z^*}{2} + \frac{z-z^*}{2}$ 是同一件事。</p>
+      <p>兩個 Hermitian 算符的反對易子還是 Hermitian，期望值是實數 a；對易子是 anti-Hermitian，期望值是純虛數 ib。例子的 $\langle\Xt\Pt\rangle = 0.392 + 0.500\,i$。</p>
+      <div data-eq="split">$$\langle\psi|\Ot\Lt|\psi\rangle = \T{re}{\frac12\av{[\Ot,\Lt]_+}} + \T{im}{\frac12\av{[\Ot,\Lt]}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="comm"><div class="step-in">
+      <p class="kicker">03 · 拆實虛</p>
+      <h2>常數項會互相抵消</h2>
+      <p>對易子裡的平均值可以拿掉：$[\Ot,\Lt] = [\Omega,\Lambda]$。把兩個乘積展開成八項，含 $\av{\Omega}$ 或 $\av{\Lambda}$ 的都是「數字乘算符」，可以換位置，兩兩抵消。</p>
+      <p>剩下 $\Omega\Lambda - \Lambda\Omega = i\Gamma$。所以虛部跟選哪個 ψ 無關，永遠是 $\tfrac12\av{\Gamma}$；對 X、P 來說就是 $\hbar/2$。</p>
+      <div data-eq="comm">$$\T{ct}{[\Ot,\Lt]} = \T{c0}{[\Omega,\Lambda]} = \T{ig}{i\Gamma}$$</div>
+    </div></section>
+
+    <section class="step" data-step="pyth"><div class="step-in">
+      <p class="kicker">03 · 拆實虛</p>
+      <h2>$|a+ib|^2 = a^2 + b^2$</h2>
+      <p>代回 Schwarz 的右邊：絕對值裡面是實數 $\av{[\Ot,\Lt]_+}$ 加上 i 乘實數 $\av{\Gamma}$。實部和虛部互相垂直，絕對值平方就是畢氏定理。</p>
+      <p>例子裡 a = 0.392、b = 0.500，$0.154 + 0.250 = 0.404$，跟兩個不確定量的乘積一樣大，因為 Schwarz 那一步沒丟東西。</p>
+      <div data-eq="pyth">$$(\Delta\Omega)^2(\Delta\Lambda)^2 \ge \frac14\Big|\T{a}{\av{[\Ot,\Lt]_+}} + i\,\T{b}{\av{\Gamma}}\Big|^2 = \T{a2}{\frac14\av{[\Ot,\Lt]_+}^2} + \T{b2}{\frac14\av{\Gamma}^2}$$</div>
+    </div></section>
+
+    <section class="step" data-step="drop"><div class="step-in">
+      <p class="kicker">03 · 拆實虛</p>
+      <h2>第二個 ≥：丟掉實部</h2>
+      <p>$a^2$ 不會是負的，丟掉它只會讓右邊變小，這是第二個 ≥。剩下的 $\tfrac14\av{\Gamma}^2$ 不管 ψ 是什麼都一樣。</p>
+      <p>代入 X、P，$\Gamma = \hbar$，開根號就是 $\Delta X\,\Delta P \ge \hbar/2$。例子的 0.635 比 0.500 多出來的部分，全部來自這一步丟掉的 $a^2 = 0.154$。</p>
+      <div data-eq="drop">$$(\Delta\Omega)^2(\Delta\Lambda)^2 \ge \T{b2}{\frac14\av{\Gamma}^2} \quad\xRightarrow{\;\Gamma\,=\,\hbar\;}\quad \T{xp}{\Delta X\,\Delta P \ge \frac{\hbar}{2}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="run"><div class="step-in">
+      <p class="kicker">04 · 代入三個 ψ</p>
+      <h2>把推導當函式跑三次</h2>
+      <p>回到黑板，把第 3 到 8 行當成一個函式，餵三個 ψ 進去，游標每走一行就算出那一行的值。數字變小的地方，就是那個 ≥ 丟掉的量。</p>
+      <p>高斯：每一行都是 0.250，兩個 ≥ 都是等號。chirp 高斯：0.404 一路保持，到丟掉實部那一行才少了 $a^2 = 0.154$。諧振子 $|1\rangle$：2.250 在 Schwarz 那一行就掉到 0.250，之後 a = 0，沒有再丟。</p>
+      <p>這些數字都是載入頁面時在網格上數值積分算出來的（$\hbar = 1$，格點間距 0.002）。</p>
+    </div></section>
+
+    <section class="step" data-step="cond"><div class="step-in">
+      <p class="kicker">05 · 最小波包</p>
+      <h2>等號要兩個 ≥ 都成立</h2>
+      <p>$\Delta X\,\Delta P$ 要剛好等於 $\hbar/2$，兩個 ≥ 都得取等號。Schwarz 取等號表示兩個向量平行，$\Lt|\psi\rangle$ 是 $\Ot|\psi\rangle$ 的倍數 ①；第二個 ≥ 取等號表示被丟掉的實部是 0 ②。</p>
+      <p>對照剛剛的三個 ψ：chirp 高斯過了 ① 沒過 ②，諧振子 $|1\rangle$ 過了 ② 沒過 ①，只有高斯兩關都過。</p>
+      <div data-eq="cond">$$\T{c1}{\Lt|\psi\rangle = c\,\Ot|\psi\rangle} \qquad\qquad \T{c2}{\av{[\Ot,\Lt]_+} = 0}$$</div>
+    </div></section>
+
+    <section class="step" data-step="ode"><div class="step-in">
+      <p class="kicker">05 · 最小波包</p>
+      <h2>條件 ① 是一條微分方程</h2>
+      <p>把 ① 寫成 X、P：$(P - \av{P})|\psi\rangle = c\,(X - \av{X})|\psi\rangle$。在 X 基底，P 是 $-i\hbar\,d/dx$，於是變成一階微分方程：ψ 在每一點的斜率由 ψ 自己決定。</p>
+      <p>往下捲，從 $x = \av{X}$ 開始往兩邊一步一步積分（RK4，步長 0.02）。c 先用 chirp 高斯那一組 $c = 0.80 + 1.02\,i$，它只滿足 ①。</p>
+      <div data-eq="ode">$$\Big(\T{p}{-i\hbar\frac{d}{dx}} - \av{P}\Big)\,\psi(x) = c\,\T{x}{(x - \av{X})}\,\psi(x)$$</div>
+    </div></section>
+
+    <section class="step" data-step="sol"><div class="step-in">
+      <p class="kicker">05 · 最小波包</p>
+      <h2>解出來：平面波乘上包絡</h2>
+      <p>這條方程可以直接積出來。第一個指數是平面波，帶著平均動量 $\av{P}$；第二個指數裡的 c 決定包絡：c 的虛部讓 $|\psi|$ 往兩邊衰減，實部只轉相位，就是 chirp。</p>
+      <p>下圖把剛剛一步一步積出來的曲線疊上這個解析解，兩條重合，差距在 $10^{-7}$ 以下。</p>
+      <div data-eq="sol">$$\psi(x) = \psi(\av{X})\;\T{wave}{e^{\,i\av{P}(x-\av{X})/\hbar}}\;\T{env}{e^{\,ic\,(x-\av{X})^2/2\hbar}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="phase"><div class="step-in">
+      <p class="kicker">05 · 最小波包</p>
+      <h2>條件 ②：c 必須是純虛數</h2>
+      <p>把 ① 代進 ②：$\langle\Pt\Xt\rangle = c^*\langle\Xt^2\rangle$、$\langle\Xt\Pt\rangle = c\,\langle\Xt^2\rangle$，加起來是 $(c + c^*)\langle\Xt^2\rangle$。要它是 0，c 的實部就得是 0。</p>
+      <p>往下捲，c 的長度固定、相位 α 從 10° 掃到 170°：$c + c^* = 2\,\mathrm{Re}\,c$ 只有在 90° 是 0，這時 $\Delta X\,\Delta P = \hbar/2\sin\alpha$ 才降到 $\hbar/2$。c 也不能落在下半平面：$\mathrm{Im}\,c < 0$ 的解往兩邊越來越大，沒辦法歸一化。</p>
+      <div data-eq="phase">$$\av{[\Xt,\Pt]_+} = \T{cc}{(c + c^*)}\,\av{\Xt^2} = 0 \quad\Longrightarrow\quad \T{res}{c = i\,|c|}$$</div>
+    </div></section>
+
+    <section class="step" data-step="gauss"><div class="step-in">
+      <p class="kicker">05 · 最小波包</p>
+      <h2>剩下的就是高斯</h2>
+      <p>把 $c = i|c|$ 代回解，指數裡的 $ic$ 變成 $-|c|$：一個平面波乘上高斯包絡。</p>
+      <p>對照 $|\psi|^2$ 的寬度，$|c| = \hbar/2(\Delta X)^2$。例子的 $\Delta X = 0.70$，所以 $|c| = 1.02$、$\Delta P = \hbar/2\Delta X = 0.714$，乘積剛好是 $\hbar/2$。</p>
+      <div data-eq="gauss">$$\psi(x) = \psi(\av{X})\;\T{wave}{e^{\,i\av{P}(x-\av{X})/\hbar}}\;\T{env}{e^{-|c|\,(x-\av{X})^2/2\hbar}}$$</div>
+    </div></section>
+
+    <section class="step" data-step="end"><div class="step-in">
+      <p class="kicker">06 · 回顧</p>
+      <h2>整面黑板，填上三個 ψ</h2>
+      <p>兩個 ≥ 就是全部的損失：Schwarz 丟掉夾角，第二個 ≥ 丟掉實部。高斯兩樣都不丟，所以停在 $\hbar/2$；chirp 高斯丟了實部，諧振子 $|1\rangle$ 丟了夾角。</p>
+      <p><a href="<%- url_for('/lab/uncertainty/') %>">圖解版</a>有這些步驟的物理圖像，還有用它估氫原子大小、能量與時間的關係。</p>
+    </div></section>
+  </div>
+
+  <div class="mw-stage" data-stage role="img" aria-label="Shankar 第 9 章測不準關係的推導：一次一個式子，上面是它從哪一式來；概觀和回顧是整段推導的黑板。每一式都寫在左邊的說明裡。">
+    <div class="mw-board-host" data-board-host></div>
+    <div class="mw-eqs" data-eqs></div>
+    <svg class="mw-ov" data-ov aria-hidden="true"></svg>
+    <div class="mw-notes" data-notes aria-hidden="true"></div>
+    <div class="mw-figwrap" data-figwrap aria-hidden="true">
+      <p class="mw-fig-title" data-fig-title></p>
+      <div class="mw-figs" data-figs></div>
+    </div>
+  </div>
+</div>
+
+<footer class="ud-outro wrap mw-up">
+  <p class="kicker">§ Sources</p>
+  <ul class="ud-sources">
+    <li>R. Shankar, <em>Principles of Quantum Mechanics</em>, 2nd ed., Ch. 9：§9.2 推導測不準關係、§9.3 最小不確定波包。符號照這本書，只把 $\Omega - \av{\Omega}$ 寫成 $\Ot$。</li>
+    <li>三個測試用的 ψ 都在 $x \in [-12, 12]$、間距 0.002 的網格上數值積分（$\hbar = 1$），微分用中央差分；條件 ① 的微分方程用 RK4 積分，步長 0.02；c 的相位每 10° 一格。都是載入頁面時在瀏覽器裡算的。</li>
+    <li><a href="<%- url_for('/lab/uncertainty/') %>">圖解版：測不準關係</a>：同一章的物理圖像，加上氫原子大小和能量–時間關係。</li>
+  </ul>
+</footer>
